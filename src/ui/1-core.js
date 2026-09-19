@@ -19,7 +19,7 @@ function usdM(v){ const a = Math.abs(v), neg = v < 0 ? MINUS : '';
   if (AR()) return a >= 1000 ? `${neg}${(a/1000).toFixed(2)} مليار$` : `${neg}${a.toFixed(0)} مليون$`;
   return a >= 1000 ? `${neg}$${(a/1000).toFixed(2)}B` : `${neg}$${a.toFixed(0)}M`; }
 const usd = v => AR() ? `${v.toFixed(0)}$` : `$${v.toFixed(0)}`;
-const fog = (v, stepv, dp=0) => (S.flags.stats ? v.toFixed(dp) : '~' + (Math.round(v / stepv) * stepv).toFixed(dp));
+const fog = (v, stepv, dp=0) => v.toFixed(dp);   // the dashboard tells you the truth; guessing was not teaching anyone anything
 const TIER_COL = { calm:'var(--calm)', tense:'var(--tense)', riot:'var(--riot)', revolt:'var(--revolt)' };
 const tierName = tr => t({ calm:'tierCalm', tense:'tierTense', riot:'tierRiot', revolt:'tierRevolt' }[tr]);
 const arrowFwd = () => AR() ? '←' : '→';
@@ -105,7 +105,7 @@ function renderRibbon(P){
     ${metric('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
     ${metric('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
     ${metric('fx', st ? S.parallel.toFixed(0) : fog(S.parallel, 5), S.parallel, P.parallel, false, sign((P.parallel / S.parallel - 1) * 100, 0) + '%')}
-    ${metric('pay', st ? usd(rw) : '~' + usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
+    ${metric('pay', usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
     ${metric('pc', `${Math.round(S.pc)}`, S.pc, P.pc, true, '', fill(t('leftToSpend'), [Math.round(pcLeft())]))}
     ${metric('trust', st ? Math.round(S.trust) : fog(S.trust, 5), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
     ${metric('anger', st ? Math.round(nu) : fog(nu, 5), nu, natUnrest(P), false, sign(natUnrest(P) - nu, 1))}

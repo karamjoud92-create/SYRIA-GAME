@@ -18,13 +18,15 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // the work number is on the dashboard
   const jb = await page.$eval('[data-act=gloss][data-k=jobs] .num', e => e.textContent);
-  if (tag === 'en') ok(/^~?\d+%$/.test(jb), `work is a headline number (${jb} — '~' until the statistics office exists)`);
+  if (tag === 'en') ok(/^\d+%$/.test(jb), `work is a headline number (${jb})`);
 
-  // all twelve sectors are offered, split into two groups
-  await page.click('.dbtn[data-v=trade]'); await page.waitForTimeout(250);
+  // all fifteen sectors are offered, split into groups — once the stages have opened them
+  await page.evaluate(() => { for (let i = 0; i < 50; i++) S = step(S); render(true); });
+  await page.evaluate(() => { if (document.querySelector('#modal .scrim')) closeModal(); });
+  await page.evaluate(() => { UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); }); await page.waitForTimeout(250);
   const cards = await page.$$eval('.dcard.inv [data-act=invest]', e => e.map(n => n.dataset.id));
-  const want = ['textiles','food','pharma','cement','telecom','tourism','oilwells','refinery','gasfield','offshore','phosphate','farm'];
-  if (tag === 'en') ok(want.every(w => cards.includes(w)), `all 12 sectors offered (${cards.length} buyable)`);
+  const want = ['textiles','food','pharma','cement','telecom','tourism','logistics','coldchain','packaging','oilwells','refinery','gasfield','offshore','phosphate','farm'];
+  if (tag === 'en') ok(want.every(w => cards.includes(w)), `all 15 sectors offered (${cards.length} buyable)`);
   const heads = await page.$$eval('.drawer .body h3.bh', e => e.map(n => n.textContent.trim()));
   if (tag === 'en') ok(heads.some(h => /Build an economy/.test(h)) && heads.some(h => /Dig it up/.test(h)), `industry and extraction are separate groups`);
 
@@ -41,7 +43,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // the work map layer
   await clear(page);
-  await page.click('[data-act=layer][data-v=jobs]'); await page.waitForTimeout(250);
+  await page.evaluate(() => { UI.layer = 'jobs'; render(true); }); await page.waitForTimeout(250);
   const lab = await page.$$eval('svg.map text.lval', e => e.slice(0, 3).map(n => n.textContent));
   if (tag === 'en') ok(lab.every(x => /%/.test(x)), `the map shows work per province (${lab.join(' ')})`);
 

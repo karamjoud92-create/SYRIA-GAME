@@ -14,6 +14,8 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run check`  → all of the above. Run this after every engine change.
 - `npm run serve`  → a score server on localhost:8787, for working on the scoreboard.
 - `npm run browser`→ two real browsers in one room (needs `npm i -D playwright`). Writes `tools/shot-mp-*.png`.
+- `npm run onboard`→ checks the game opens up slowly: 3 panels and 1 map layer at month 0, 7 panels and 4 layers
+  by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 12 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
 - Optional browser test: `npm i -D playwright && npx playwright install chromium`, then `node tools/smoke.mjs`.
@@ -33,6 +35,14 @@ fast: a player should be able to think, and should not have to wait two years to
     jobs land and what they earn abroad. Extraction earns more dollars per dollar spent; industry employs people,
     and people are what hold the country together. Levels live in `s.ind`, built count in `s.invests`.
     Tourism earns without a ship, so the ports never throttle it — unrest and blackouts do.
+  - **Services, `s.edu`, `s.health`.** `SERVICES` (schools, clinics, universities) are built in waves against a
+    need that scales with `s.popM`; `svcCover` is how much of that need is met. Education and health relax toward
+    targets set by that coverage and drag on unrest, trust, capacity and unemployment when neglected. They decay
+    if you build nothing, but only to the floor the war left behind — never to zero.
+  - **`classes(s)` and `s.popM`.** Population grows, and shrinks when people emigrate (driven by unemployment,
+    wages against expectations, unrest and trust). `classes()` splits it into poor / getting by / rich as a
+    *result* of wages, work, health, schooling, inflation and corruption — never a dial. `poor` is one of the
+    effects every decision previews, which is how a player sees what a policy does to people rather than ledgers.
   - **`s.bar` — the rising bar.** Ratchets up with the score and never falls. It raises what people expect of a
     wage, shortens their patience (trust and unrest), makes the state costlier to run, grows electricity demand,
     makes crises more frequent, and — the sharp end — is the yardstick two of the six score components are
@@ -45,6 +55,11 @@ fast: a player should be able to think, and should not have to wait two years to
 - `src/net/net.js` — the shared scoreboard's transport. No DOM, no game logic: it turns `legacy(S)` into a small
   entry, sends it to a score server (`worker/`), merges what comes back with any pasted score codes, and ranks.
   Every player's game stays on their own device; only name, score, grade and date travel.
+- **Progressive unlock** (`STAGE_AT`, `UNLOCK`, `isOpen()` in `src/ui/5-game.js`). The game opens in stages at
+  months 0 / 7 / 15 / 27 / 45: three panels, three policy dials and one map layer to start, the whole game by
+  year 4. Gate new UI by adding a key to `UNLOCK` and wrapping the control in `isOpen('key')` — and add it to
+  `STAGE_GIFTS` so the unlock is announced. This is engine-independent: `stageNow()` reads only `S.t`, so the
+  balance sim and missions are unaffected.
 - `src/ui/6-multiplayer.js` — the lobby, the scoreboard panel and the header chip. It **wraps** `render`, `advance`,
   `begin`, `renderHUD`, `ensureFrame`, `startScreen` and `menu` rather than redefining them, so single-player
   behaviour is untouched. Add to the wrappers, don't copy the originals.
@@ -53,6 +68,8 @@ fast: a player should be able to think, and should not have to wait two years to
 
 ## Rules for changes
 1. **Every string needs English and Arabic.** Never add English-only UI text. Arabic should be plain Modern Standard Arabic a teenager understands; Syrian month names are used.
+1b. **Do not show the player a fogged number.** `fog()` returns the exact value; there is no '~'. If something
+   should be hidden, hide it — do not blur it.
 2. **RTL:** use CSS logical properties (`inset-inline-start`, `padding-inline-end`, `border-inline-end`…), never left/right, except inside the map SVG (which is always LTR).
 3. **Balance:** after touching `engine.js`, run `npm run check`. Doing nothing must eventually fail; steady play
    (`smart`) should reach about B on Learner and C on Realistic, and building industry (`builder`) should beat

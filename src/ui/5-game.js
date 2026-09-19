@@ -1,6 +1,6 @@
 // ===== Transition: UI v5 (continuous time + trade). Overrides earlier render functions. =====
 const SPEEDS = [0, 9500, 5600, 3000];
-UI.speed = 0; UI.flash = {}; UI.effect = null; UI.toasts = []; UI.sub = { money:'actions', progress:'why', trade:'resources' }; UI.pdown = false; UI.hover = false; UI.dirty = false;
+UI.speed = 0; UI.flash = {}; UI.effect = null; UI.toasts = []; UI.sub = { money:'actions', progress:'why', trade:'resources', people:'families' }; UI.pdown = false; UI.hover = false; UI.dirty = false;
 let TIMER = null, TOAST_ID = 0;
 D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:0 };
 const syncD = () => { if (S) D.policy = S.policy; };
@@ -10,6 +10,23 @@ const DRAWERS5 = [
   ['trade', '🚢', 'dTrade', 'tradeSub'],
   ['people', '👥', 'dPeople', 'peopleSub'], ['chains', '🔗', 'dSupply', 'supplySub'], ['progress', '📈', 'dProgress', 'progressSub'],
 ];
+
+
+// ---------- opening up slowly ----------
+// A new president does not get fourteen provinces and twelve industries on day one. Each stage
+// hands over one more part of the job, so the player learns it before the next thing arrives.
+const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
+function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
+const UNLOCK = {
+  policy:0, money:0, people:0, layerUnrest:0, projects:0,
+  decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
+  trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2,
+  services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
+  supply:4, unis:4,
+};
+const isOpen = f => stageNow() >= (UNLOCK[f] === undefined ? 0 : UNLOCK[f]);
+// what each stage hands over, for the announcement
+const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['subServices', 'sectorTitle'], ['extractTitle', 'svcUnis']];
 
 // ---------- time words ----------
 function monthsTxt(n){
@@ -23,7 +40,7 @@ const seasonsTxt = n => monthsTxt(n);
 const gradeOf = v => v >= 75 ? 'A' : v >= 62 ? 'B' : v >= 50 ? 'C' : v >= 38 ? 'D' : 'F';
 
 // ---------- saves ----------
-function snap(s){ return { t:s.t, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score, jobs:joblessNat(s), bar:s.bar || 0,
+function snap(s){ return { t:s.t, popM:s.popM, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score, jobs:joblessNat(s), bar:s.bar || 0,
   print:s.policy.print, capex:s.policy.capex, corr:s.corr, cap:s.cap, mw:s.mw, debt:s.debt, privB:(s.last && s.last.privB) || 0, contagion:(s.last && s.last.maxContagion) || 0 }; }
 function persist(){ STORE[UI.active] = { S }; STORE.active = UI.active; try { localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e){} }
 function restore(){
@@ -55,7 +72,7 @@ function tick(){
   advance();
 }
 function advance(){
-  const prevScore = S.score, prev = S;
+  const prevScore = S.score, prev = S, prevStage = stageNow();
   S = step(S); syncD();
   UI.flash = {};
   [['cash', s => s.treasury, 1.5, true], ['usd', s => s.reserves, 12, true], ['fx', s => s.parallel, 1.5, false], ['pay', s => realWage(s), 0.3, true], ['trust', s => s.trust, 0.35, true], ['anger', s => natUnrest(s), 0.35, false], ['power', s => nationalHours(s), 0.08, true]]
@@ -69,6 +86,7 @@ function advance(){
   if (S.t % 6 === 0){ const nc = detectCycles(); if (nc.length){ S.cycles = (S.cycles || []).concat(nc); UI.newCycle = true; UI.queue = nc.map(id => ['cycle', id]); } }
   const fail = checkFail(S);
   if (fail){ S.over = { fail:fail.id }; setSpeed(0); persist(); render(true); sfx('fail'); return showFail(fail.id); }
+  if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
   if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
   if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('year'); return showMilestone(); }
@@ -85,8 +103,11 @@ const EFX_KEYS = [
   ['usd', s => s.reserves, 3, true, v => (v > 0 ? '+' : MINUS) + usdM(Math.abs(v))], ['fx', s => s.parallel, 0.8, false, v => sign(v, 0) + (AR() ? ' ليرة' : ' lira')],
   ['pay', s => realWage(s), 0.25, true, v => (v > 0 ? '+' : MINUS) + usd(Math.abs(v))], ['trust', s => s.trust, 0.4, true, v => sign(v, 1)],
   ['anger', s => natUnrest(s), 0.4, false, v => sign(v, 1)], ['power', s => nationalHours(s), 0.1, true, v => sign(v, 1) + (AR() ? 'س' : 'h')],
+  ['poor', s => (s.cls || classes(s)).poor, 0.4, false, v => sign(v, 1) + '%'],
+  ['edu', s => s.edu, 0.35, true, v => sign(v, 1)], ['health', s => s.health, 0.35, true, v => sign(v, 1)],
   ['score', s => s.score, 0.2, true, v => sign(v, 1)],
 ];
+const EFX_ICON = { poor:'🧍' };
 function withEffects(title, fn){
   const before = clone(S), pB = step(before, 0.5);
   const ok = fn(); if (!ok) return false;
@@ -102,7 +123,7 @@ function withEffects(title, fn){
   sfx(later.some(x => !x[2]) && !later.some(x => x[2]) ? 'down' : 'decide');
   return true;
 }
-function effChip([k, , good, txt]){ const g = GLOSS[k]; return `<span class="chip ${good ? 'up' : 'down'}">${g ? g.icon : '⭐'} ${esc(txt)}</span>`; }
+function effChip([k, , good, txt]){ const g = GLOSS[k]; return `<span class="chip ${good ? 'up' : 'down'}">${EFX_ICON[k] || (g ? g.icon : '⭐')} ${esc(txt)}</span>`; }
 function renderEffect(){
   const el = $('#effectbox'); if (!el) return;
   const e = UI.effect; if (!e){ el.innerHTML = ''; return; }
@@ -134,6 +155,8 @@ function noteText(n){
     case 'grant': case 'wbGrid': case 'gridDone': return fill(N[k], [a]);
     case 'private': return '';
     case 'event': return fill(t('youChose'), [L2(EV_TXT[a])[0], L2(EV_TXT[a])[2][b][0]]);
+    case 'svcStart': return fill(N.svcStart, [svcLabel(a), monthsTxt(b)]);
+    case 'svcDone': return fill(N.svcDone, [svcLabel(a), b]);
     case 'portDone': return fill(N.portDone, [PORT_NAME[LANG][a], b]);
     case 'portStart': case 'portConcession': return fill(N[k], [PORT_NAME[LANG][a]]);
     case 'dealOn': case 'dealOff': case 'dealSign': return fill(N[k], [partner(a)]);
@@ -232,7 +255,7 @@ function renderHUD(P){
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
       ${res('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
       ${res('fx', st ? S.parallel.toFixed(0) : fog(S.parallel, 5), S.parallel, P.parallel, false, sign((P.parallel / S.parallel - 1) * 100, 0) + '%')}
-      ${res('pay', st ? usd(rw) : '~' + usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
+      ${res('pay', usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
     </div>
     <div class="tray" role="group">
       ${res('trust', st ? Math.round(S.trust) : fog(S.trust, 5), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
@@ -261,9 +284,38 @@ function advisors(P){
   const worst = PROVS.map(p => ({ id:p.id, u:S.provs[p.id].u })).sort((a, b) => b.u - a.u)[0];
   if (worst.u >= 65) sec.push({ lvl:'bad', text:fill(A.prov, [PN(worst.id), Math.round(worst.u)]), act:A.provAct, sel:worst.id });
   if (natUnrest(S) >= 55 && S.policy.security !== 'heavy') sec.push({ lvl:'warn', text:A.heavy, act:A.heavyAct, go:'policy' });
-  if (S.pc >= 40) sec.push({ lvl:'ok', text:fill(A.spend, [Math.round(S.pc)]), act:A.spendAct, go:'decrees' });
+  if (S.pc >= 40 && isOpen('decrees')) sec.push({ lvl:'ok', text:fill(A.spend, [Math.round(S.pc)]), act:A.spendAct, go:'decrees' });
   if (!sec.length) sec.push({ lvl:'ok', text:A.calmSec, act:A.calmSecAct });
-  return { econ:econ[0], sec:sec[0] };
+
+  // health and schools
+  const hea = [];
+  if (S.health < 34) hea.push({ lvl:'bad', text:A.health, act:A.healthAct, go:'people', sub:['people', 'services'] });
+  if (S.edu < 34) hea.push({ lvl:'bad', text:A.school, act:A.schoolAct, go:'people', sub:['people', 'services'] });
+  if (S.edu >= 45 && !(S.svc.unis || 0) && isOpen('unis')) hea.push({ lvl:'warn', text:A.uni, act:A.uniAct, go:'people', sub:['people', 'services'] });
+  if (!hea.length) hea.push({ lvl:'ok', text:A.calmHealth, act:A.calmHealthAct, go:'people', sub:['people', 'services'] });
+
+  // factories and getting the goods out
+  const ind = [];
+  const sectorsBuilt = Object.keys(IND).reduce((n, k) => n + ((S.ind && S.ind[k]) || 0), 0);
+  if ((S.clogged || 0) > 5) ind.push({ lvl:'bad', text:A.clogNow, act:A.clogNowAct, go:'trade', sub:['trade', 'ports'] });
+  if (joblessNat(S) > 52) ind.push({ lvl:'bad', text:A.jobsBad, act:A.jobsBadAct, go:'trade' });
+  if (!sectorsBuilt && isOpen('sectors')) ind.push({ lvl:'warn', text:A.noInd, act:A.noIndAct, go:'trade' });
+  if (!ind.length) ind.push({ lvl:'ok', text:A.calmInd, act:A.calmIndAct, go:'trade' });
+
+  return { econ:econ[0], sec:sec[0], health:hea[0], ind:ind[0] };
+}
+const ADVISORS = [['econ', '🧑‍💼', 'economist'], ['sec', '🎖️', 'securityChief'], ['health', '🩺', 'ministerHealth'], ['ind', '🏭', 'ministerInd']];
+function renderAdvisors(P){
+  const a = advisors(P), rank = { bad:2, warn:1, ok:0 };
+  // only ministers whose brief is open yet
+  const shown = ADVISORS.filter(([k]) => k === 'econ' || k === 'sec' || (k === 'health' && isOpen('services')) || (k === 'ind' && isOpen('trade')));
+  const cur = UI.adv && a[UI.adv] && shown.some(([k]) => k === UI.adv) ? UI.adv
+    : shown.slice().sort((x, y) => rank[a[y[0]].lvl] - rank[a[x[0]].lvl])[0][0];
+  const x = a[cur], who = shown.find(([k]) => k === cur);
+  const por = ([k, icon, name]) => `<button class="portrait" data-act="adv" data-v="${k}" aria-pressed="${UI.advOpen && cur === k}" aria-label="${esc(t(name))}" title="${esc(t(name))}">${icon}<span class="dot ${a[k].lvl}"></span></button>`;
+  return `<div class="advisors"><div class="portraits">${shown.map(por).join('')}</div>
+    ${UI.advOpen ? `<div class="bubble"><button class="advhide" data-act="advhide" aria-label="${t('hide')}" title="${t('hide')}">✕</button><div class="who">${esc(t(who[2]))}</div>${esc(x.text)}<span class="act">${esc(x.act)}</span>
+      ${x.go || x.sel ? `<div class="row"><button class="btn small primary" data-act="advgo" data-go="${x.go || ''}" data-sel="${x.sel || ''}" data-sub="${x.sub ? x.sub.join(',') : ''}">${t('showMe')}</button></div>` : ''}</div>` : ''}</div>`;
 }
 
 // ---------- province card (instant actions) ----------
@@ -296,8 +348,9 @@ function renderProvince(){
 }
 
 // ---------- drawers ----------
+const POL_GATE = { bread:'policy', fuel:'policy', security:'policy', tax:'polTax', print:'polPrint', capex:'polCapex', recon:'polRecon', intervene:'polIntervene', crackdown:'polCrackdown' };
 function renderPolicy(){
-  return Object.keys(POL).map(k => { const p = L2(POL[k]), cur = S.policy[k];
+  return Object.keys(POL).filter(k => isOpen(POL_GATE[k])).map(k => { const p = L2(POL[k]), cur = S.policy[k];
     return `<div class="pol"><div class="ph"><span class="pic" aria-hidden="true">${POL[k].icon}</span><div><h3>${p.name}</h3><div class="q">${p.q}</div></div></div>
       <div class="seg" role="group">${POL_VALUES[k].map(v => `<button data-act="pol" data-k="${k}" data-v="${v}" aria-pressed="${String(cur) === String(v)}">${p.opts[String(v)]}</button>`).join('')}</div>
       <div class="hint">${esc(p.hint[String(cur)])}</div></div>`; }).join('');
@@ -380,8 +433,10 @@ function renderTradeResources(){
       <div class="row spread"><div class="row"><span class="chip">⏳ ${monthsTxt(x.months)}</span>${x.jobs ? `<span class="chip up">💼 ${fill(t('jobsChip'), ['+' + x.jobs])}</span>` : ''}${x.gamble ? `<span class="chip down">🎲 ${t('gamble')}</span>` : ''}${pb ? `<span class="chip up">${fill(t('payback'), [monthsTxt(Math.round(pb * 12 / 6) * 6)])}</span>` : `<span class="chip">${t('paybackNever')}</span>`}${built}</div>${status}</div>
       ${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   };
-  const SECTORS = Object.keys(INVEST).filter(k => INVEST[k].sector), DIG = Object.keys(INVEST).filter(k => !INVEST[k].sector);
-  h += `<h3 class="bh">🏭 ${t('sectorTitle')}</h3><p class="small muted">${t('sectorSub')}</p>` + SECTORS.map(investCard).join('');
+  const SECTORS = Object.keys(INVEST).filter(k => INVEST[k].sector && !INVEST[k].supply && isOpen('sectors'))
+    .concat(Object.keys(INVEST).filter(k => INVEST[k].supply && isOpen('supply')));
+  const DIG = Object.keys(INVEST).filter(k => !INVEST[k].sector);
+  if (SECTORS.length) h += `<h3 class="bh">🏭 ${t('sectorTitle')}</h3><p class="small muted">${t('sectorSub')}</p>` + SECTORS.map(investCard).join('');
   h += `<h3 class="bh">⛏️ ${t('extractTitle')}</h3><p class="small muted">${t('extractSub')}</p>` + DIG.map(investCard).join('');
   return h;
 }
@@ -409,6 +464,36 @@ function renderTradePartners(){
       <div class="row spread" style="margin-top:8px"><span></span>${status}</div>${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   }).join('');
 }
+const svcLabel = id => ({ schools:t('svcSchools'), clinics:t('svcClinics'), unis:t('svcUnis') })[id];
+const SVC_ICON = { schools:'🏫', clinics:'🏥', unis:'🎓' };
+function renderServices(){
+  const meterRow = (key, name, v) => `<div class="rcard"><div class="rh"><span class="ri" aria-hidden="true">${GLOSS[key].icon}</span><div><h3>${name}</h3><div class="rv">${Math.round(v)} / 100</div></div></div>
+    <div class="bar big"><i style="width:${clamp(v, 0, 100)}%;background:${v > 60 ? 'var(--good)' : v > 35 ? 'var(--tense)' : 'var(--bad)'}"></i></div></div>`;
+  let h = `<p class="small muted" style="margin-top:0">${t('svcSub')}</p>`;
+  h += `<div class="rgrid">${meterRow('edu', t('eduName'), S.edu)}${meterRow('health', t('healthName'), S.health)}</div>`;
+  h += Object.keys(SERVICES).filter(id => id !== 'unis' || isOpen('unis')).map(id => {
+    const x = SERVICES[id], have = S.svc[id] || 0, need = svcNeed(S, id), cov = svcCover(S, id);
+    const running = S.pipe.find(p => p.kind === 'svc' && p.id === id), enough = have >= need;
+    let why = ''; if (!running){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = t(x.reqKey); }
+    const txt = { schools:t('svcSchoolsTxt'), clinics:t('svcClinicsTxt'), unis:t('svcUnisTxt') }[id];
+    return `<div class="dcard"><span class="gem">🏦 ${usdM(x.usd)}</span><h4>${SVC_ICON[id]} ${esc(svcLabel(id))}</h4><p class="kid">${esc(txt)}</p>
+      <div class="bar big"><i style="width:${clamp(cov * 100, 0, 100)}%;background:${enough ? 'var(--good)' : 'var(--tense)'}"></i></div>
+      <div class="row spread" style="margin-top:8px"><div class="row"><span class="chip${enough ? ' up' : ''}">${fill(t('svcCover'), [have, need])}</span><span class="chip">💵 ${bn(x.syp)}</span><span class="chip">⏳ ${monthsTxt(x.months)}</span>${enough ? `<span class="chip up">${t('svcEnough')}</span>` : `<span class="chip down">${t('svcNeedMore')}</span>`}</div>
+      ${running ? `<span class="chip">⏳ ${fill(t('svcRunning'), [monthsTxt(running.due - S.t)])}</span>` : `<button class="btn primary" data-act="svc" data-id="${id}" ${why ? 'disabled' : ''}>${t('svcBuild')}</button>`}</div>
+      ${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
+  }).join('');
+  return h;
+}
+function renderPopulation(){
+  const c = S.cls || classes(S), H = S.history, prev = H.length > 12 ? H[H.length - 13] : null;
+  const trend = prev && prev.popM ? S.popM - prev.popM : 0;
+  const seg = (k, v, col) => `<div class="popseg" style="width:${clamp(v, 0, 100)}%;background:${col}" title="${esc(t(k))} ${Math.round(v)}%"></div>`;
+  return `<div class="rcard"><div class="rh"><span class="ri" aria-hidden="true">👪</span><div><h3>${t('popTitle')}</h3><div class="rv">${fill(t('popNow'), [S.popM.toFixed(1)])}</div></div></div>
+      ${trend < -0.02 || trend > 0.02 ? `<p class="small ${trend < 0 ? 'bad' : 'good'}">${trend < 0 ? t('popFalling') : t('popRising')}</p>` : ''}
+      <div class="popbar">${seg('clsPoor', c.poor, 'var(--bad)')}${seg('clsMiddle', c.middle, 'var(--tense)')}${seg('clsRich', c.rich, 'var(--good)')}</div>
+      <div class="poplegend"><span><i style="background:var(--bad)"></i>${t('clsPoor')} ${Math.round(c.poor)}%</span><span><i style="background:var(--tense)"></i>${t('clsMiddle')} ${Math.round(c.middle)}%</span><span><i style="background:var(--good)"></i>${t('clsRich')} ${Math.round(c.rich)}%</span></div>
+      <p class="small muted">${t('popSub')}</p></div>` + renderBarCard();
+}
 // The bar is the one force the player cannot see on the map, so it gets said out loud.
 function renderBarCard(){
   const b = clamp(S.bar || 0, 0, 1), pct = Math.round(b * 100);
@@ -428,7 +513,7 @@ function drawerBody(id){
     case 'decrees': return renderDecrees();
     case 'money': return UI.sub.money === 'budget' ? renderMoneyBudget() : renderMoneyActions();
     case 'trade': return UI.sub.trade === 'ports' ? renderTradePorts() : UI.sub.trade === 'partners' ? renderTradePartners() : renderTradeResources();
-    case 'people': return renderPeople();
+    case 'people': return UI.sub.people === 'services' ? renderServices() : UI.sub.people === 'pop' ? renderPopulation() : renderPeople();
     case 'chains': return renderChains();
     case 'progress': return UI.sub.progress === 'cycles' ? renderProgressCycles() : UI.sub.progress === 'news' ? renderNews() : UI.sub.progress === 'charts' ? renderProgressCharts() : renderWhyPanel();
   }
@@ -436,7 +521,7 @@ function drawerBody(id){
 function renderDrawer(){
   const d = DRAWERS5.find(x => x[0] === UI.drawer); if (!d) return '';
   const sub = d[0] === 'decrees' ? fill(t('decreesIntro'), [Math.round(S.pc)]) : t(d[3]);
-  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : null;
+  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
   return `<aside class="drawer"><div class="head"><span class="dic" aria-hidden="true">${d[1]}</span><h2>${t(d[2])}</h2><button class="close" data-act="closeDrawer" aria-label="${t('close')}">✕</button></div>
     <div class="sub">${sub}</div>
     ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
@@ -458,11 +543,13 @@ function renderProgressCharts(){
 
 // ---------- dock ----------
 function renderDock(){
+  const DR = DRAWERS5.filter(d => isOpen({ policy:'policy', decrees:'decrees', money:'money', trade:'trade', people:'people', chains:'chains', progress:'progress' }[d[0]]));
   const ps = personas(S), sad = Object.values(ps).filter(o => o.net < 0).length, ch = chains(S);
   const badge = { people: sad ? `<span class="badge">${sad}</span>` : '', chains: (ch.sb === 2 || ch.se === 2) ? '<span class="badge">!</span>' : '', progress: UI.newCycle ? '<span class="badge star">★</span>' : '', trade: (S.clogged || 0) > 5 ? '<span class="badge">!</span>' : '' };
   const btn = ([k, i, l]) => `<button class="dbtn" data-act="drawer" data-v="${k}" aria-pressed="${UI.drawer === k}"><span class="di" aria-hidden="true">${i}</span><span class="dt">${t(l)}</span>${badge[k] || ''}</button>`;
   const sp = [[0, '❚❚', 'pause'], [1, '▶', 'slow'], [2, '▶▶', 'normal'], [3, '▶▶▶', 'fastest']];
-  return `<div class="dgroup">${DRAWERS5.slice(0, 3).map(btn).join('')}</div><div class="dgroup trade">${btn(DRAWERS5[3])}</div><div class="dgroup">${DRAWERS5.slice(4).map(btn).join('')}</div>
+  const tr = DR.find(d => d[0] === 'trade'), rest = DR.filter(d => d[0] !== 'trade');
+  return `<div class="dgroup">${rest.slice(0, 3).map(btn).join('')}</div>${tr ? `<div class="dgroup trade">${btn(tr)}</div>` : ''}${rest.length > 3 ? `<div class="dgroup">${rest.slice(3).map(btn).join('')}</div>` : ''}
     <span class="spacer"></span>
     <button class="influence" data-act="drawer" data-v="decrees"><span class="st" aria-hidden="true">⭐</span><span><span class="n">${Math.round(S.pc)}</span><span class="l">${t('influenceLbl')}</span></span></button>
     ${S.over ? `<button class="endturn" data-act="restart">${t('playAgain')}</button>` : `<div class="clock" role="group" aria-label="${t('play')}">${sp.map(([v, ic, l]) => `<button class="cbtn${v === 0 ? ' pause' : ''}" data-act="speed" data-v="${v}" aria-pressed="${UI.speed === v}" aria-label="${t(l)}" title="${t(l)}"><span dir="ltr">${ic}</span></button>`).join('')}</div>`}`;
@@ -500,6 +587,12 @@ function render(force){
 }
 
 // ---------- milestone, crisis, endings ----------
+function showStage(st){
+  const gifts = (STAGE_GIFTS[st] || []).map(k => t(k));
+  modal(`<div class="tut-icon" aria-hidden="true">🔓</div><h2>${t('stageTitle')}</h2>
+    <p class="lede">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>
+    <div class="row"><button class="btn primary" data-act="close">${t('stageGo')}</button></div>`);
+}
 function showMilestone(){
   const yrs = S.t / 12, Lg = legacy(S), chs = whyLive();
   modal(`<div class="row" style="align-items:flex-end;gap:18px"><div class="grade">${Lg.grade}</div><div><h2>${fill(t('milestoneTitle'), [yrs])}</h2><div class="src">${fill(t('milestoneSub'), [esc(whenTxt(S.t))])}</div></div></div>
@@ -548,9 +641,11 @@ document.addEventListener('click', ev => {
     case 'closeProv': UI.provOpen = false; break;
     case 'subtab': UI.sub[b.dataset.d] = v; break;
     case 'adv': if (UI.advOpen && UI.adv === v) UI.advOpen = false; else { UI.adv = v; UI.advOpen = true; } break;
+    case 'advhide': UI.advOpen = false; break;
     case 'layer': UI.layer = v; break;
     case 'sel': UI.sel = id; UI.provOpen = true; if (isPhone()) UI.drawer = null; break;
-    case 'advgo': if (b.dataset.go){ UI.drawer = b.dataset.go; if (isPhone()) UI.provOpen = false; } if (b.dataset.sel){ UI.sel = b.dataset.sel; UI.provOpen = true; if (isPhone()) UI.drawer = null; } break;
+    case 'advgo': if (b.dataset.sub){ const [d, v] = b.dataset.sub.split(','); UI.sub[d] = v; }
+      if (b.dataset.go){ UI.drawer = b.dataset.go; if (isPhone()) UI.provOpen = false; } if (b.dataset.sel){ UI.sel = b.dataset.sel; UI.provOpen = true; if (isPhone()) UI.drawer = null; } break;
     case 'pol': { const k = b.dataset.k, val = POL_VALUES[k].find(o => String(o) === v); if (S.policy[k] === val) break; const p = L2(POL[k]);
       withEffects(`${p.name}: ${p.opts[String(val)]}`, () => { S.policy[k] = val; return true; }); persist(); break; }
     case 'oilHome': if (S.policy.oilHome !== +v) withEffects(`${t('oilTitle')}: ${t('oilUse')[+v]}`, () => ACT.oilHome(S, +v)); persist(); break;
@@ -561,6 +656,7 @@ document.addEventListener('click', ev => {
     case 'grantPop': if (!cooldown('lastGift', 6)) withEffects(t('giftTitle'), () => { const ok = ACT.gift(S); if (ok) S.flags.lastGift = S.t; return ok; }); break;
     case 'relief': if (!cooldown('lastRelief', 6)) withEffects(t('reliefTitle'), () => { const ok = ACT.relief(S); if (ok) S.flags.lastRelief = S.t; return ok; }); break;
     case 'invest': withEffects(L2(INV_TXT[id])[0], () => ACT.invest(S, id)); break;
+    case 'svc': withEffects(svcLabel(id), () => ACT.service(S, id)); break;
     case 'portUp': withEffects(`${t('upgrade')}: ${PORT_NAME[LANG][id]}`, () => ACT.portUpgrade(S, id)); break;
     case 'portCon': withEffects(`${t('concession')}: ${PORT_NAME[LANG][id]}`, () => ACT.portConcession(S, id)) && sfx('coin'); break;
     case 'deal': withEffects(`${L2(PART_TXT[id])[0]}: ${L2(PART_TXT[id])[1]}`, () => ACT.deal(S, id)); break;

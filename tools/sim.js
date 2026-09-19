@@ -11,7 +11,7 @@ function run(name, fn, seed=7, diff='learner', months=240){
   console.log(name.padEnd(10),diff.padEnd(9), fail?('FAIL '+fail.id+' @'+(s.t/12).toFixed(1)+'y'):'survived', 'score',L.avg.toFixed(0),L.grade,'res',s.reserves.toFixed(0),'fx',s.parallel.toFixed(0),'pay',E.realWage(s).toFixed(0),'hrs',E.nationalHours(s).toFixed(1),'cap',s.cap.toFixed(0),'clog',(s.clogged||0).toFixed(0));
 }
 const passive=()=>{};
-const smart=(s,m)=>{ const P=s.policy; P.fuel='market'; P.tax='aggressive'; P.crackdown=true; P.capex=s.reserves>300?40:20; P.recon=s.treasury>20?10:0; P.print=s.treasury<0?5:0;
+const smart=(s,m)=>{ const P=s.policy; P.fuel='market'; P.tax='aggressive'; P.crackdown=true; P.capex=s.reserves>450?40:s.reserves>220?20:0; P.recon=s.treasury>20?10:0; P.print=s.treasury<0?5:0;
   if (E.realWage(s)<s.expWage-4 && s.treasury>10 && m%6==0) E.ACT.wage(s,10);
   for (const id of ['imf']) if(!s.facilities[id]) E.ACT.facility(s,id);
   for (const id of ['tribal','integrity','audit','digitax','dialogue','restitution','unify','northeast','braingain','suwayda']) if (s.decrees[id]===undefined && E.ACT.decree(s,id)) break;
@@ -24,7 +24,9 @@ const trader=(s,m)=>{ smart(s,m);
 };
 // builds an economy out of factories and people rather than out of holes in the ground
 const builder=(s,m)=>{ smart(s,m);
-  if (s.reserves>260){ for(const id of ['textiles','food','pharma','cement','telecom','tourism']) E.ACT.invest(s,id); }
+  // a state that teaches and treats its people, and can move what it makes
+  if (s.reserves>200){ for(const id of ['schools','clinics','unis']) E.ACT.service(s,id); }
+  if (s.reserves>260){ for(const id of ['textiles','food','pharma','logistics','coldchain','packaging','cement','telecom','tourism']) E.ACT.invest(s,id); }
   if (s.reserves>700){ for(const id of ['refinery','farm','oilwells']) E.ACT.invest(s,id); E.ACT.portUpgrade(s,'latakia'); E.ACT.portUpgrade(s,'tartus'); }
   for (const id of ['jordan','turkey','iraq','gulf','eu']) E.ACT.deal(s,id);
 };

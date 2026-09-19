@@ -38,7 +38,7 @@ function renderHUD(P){
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
       ${res('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
       ${res('fx', st ? S.parallel.toFixed(0) : fog(S.parallel, 5), S.parallel, P.parallel, false, sign((P.parallel / S.parallel - 1) * 100, 0) + '%')}
-      ${res('pay', st ? usd(rw) : '~' + usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
+      ${res('pay', usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
     </div>
     <div class="tray" role="group">
       ${res('trust', st ? Math.round(S.trust) : fog(S.trust, 5), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
@@ -58,7 +58,7 @@ function renderAdvisors(P){
   const x = a[cur];
   const por = (k, icon, lvl, name) => `<button class="portrait" data-act="adv" data-v="${k}" aria-pressed="${UI.advOpen && cur === k}" aria-label="${esc(name)}">${icon}<span class="dot ${lvl}"></span></button>`;
   return `<div class="advisors"><div class="portraits">${por('econ', '🧑‍💼', a.econ.lvl, t('economist'))}${por('sec', '🎖️', a.sec.lvl, t('securityChief'))}</div>
-    ${UI.advOpen ? `<div class="bubble"><div class="who">${cur === 'econ' ? t('economist') : t('securityChief')}</div>${esc(x.text)}<span class="act">${esc(x.act)}</span>
+    ${UI.advOpen ? `<div class="bubble"><button class="advhide" data-act="advhide" aria-label="${t('hide')}" title="${t('hide')}">✕</button><div class="who">${cur === 'econ' ? t('economist') : t('securityChief')}</div>${esc(x.text)}<span class="act">${esc(x.act)}</span>
       ${x.go || x.sel ? `<div class="row"><button class="btn small primary" data-act="advgo" data-go="${x.go || ''}" data-sel="${x.sel || ''}">${t('showMe')}</button></div>` : ''}</div>` : ''}</div>`;
 }
 
@@ -95,7 +95,12 @@ function renderMapSvg(){
   return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${labels}${inset}${star}</svg>`;
 }
 function renderLayers(){
-  return `<div class="layers" role="group">${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
+  // a layer shows up with the problem it describes, not before
+  const gate = { unrest:'layerUnrest', power:'layerPower', damage:'layerDamage', jobs:'layerJobs' };
+  const open = [['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']]
+    .filter(([k]) => typeof isOpen !== 'function' || isOpen(gate[k]));
+  if (!open.some(([k]) => k === UI.layer)) UI.layer = 'unrest';
+  return `<div class="layers" role="group">${open.map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
 }
 function renderLegend(){
   const items = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('')

@@ -50,7 +50,7 @@ const DECREES = [
   { id:'oligarch', name:'Oligarch asset settlements', desc:'Old-regime cronies keep part of their fortunes if they hand over the rest.', pc:30, syp:0, usd:0, fx:'+25bn lira and +$60M once. Corruption -6, trust +5.' },
   { id:'fighters', name:'Fighter integration program', desc:'Salaries, training and a uniform for ex-faction fighters.', pc:25, syp:6, usd:0, fx:'Unrest drops 4 everywhere, compliance +2. Adds 40,000 to payroll.' },
   { id:'dialogue', name:'National dialogue conference', desc:'A televised constitutional dialogue with every community at the table.', pc:35, syp:1, usd:0, fx:'Trust +8, unrest drops 5 everywhere.' },
-  { id:'stats', name:'Independent statistics office', desc:'Honest numbers.', pc:10, syp:0, usd:5, fx:'Exact numbers on your dashboard.' },
+  { id:'stats', name:'Independent statistics office', desc:'Honest numbers, published, that nobody can quietly edit.', pc:10, syp:0, usd:5, fx:'Corruption falls and more people pay tax, because the books can be checked.' },
   { id:'vocational', name:'Vocational training and apprenticeships', desc:'Trade schools and paid apprenticeships in every province.', pc:15, syp:0, usd:0, fx:'Unemployment falls everywhere, every month. Costs $20M a year.', ongoing:true },
 ];
 const DECREE_BY = Object.fromEntries(DECREES.map(d => [d.id, d]));
@@ -102,6 +102,10 @@ const INVEST = {
   cement:{ usd:55, months:9, max:3, jobs:6, sector:true },
   telecom:{ usd:70, months:9, max:3, jobs:5, sector:true },
   tourism:{ usd:40, months:12, max:3, jobs:10, sector:true, req:s => natUnrest(s) < 48 },
+  // supply: nothing you make is worth anything until it can move
+  logistics:{ usd:40, months:6, max:3, jobs:8, sector:true, supply:true },
+  coldchain:{ usd:35, months:6, max:3, jobs:6, sector:true, supply:true },
+  packaging:{ usd:25, months:6, max:3, jobs:7, sector:true, supply:true },
 };
 // Where each sector's jobs land, and what it earns abroad per half-year, per level.
 const IND = {
@@ -111,6 +115,9 @@ const IND = {
   cement:{ exp:5, prov:['homs','hama'], reconBoost:0.16 },
   telecom:{ exp:4, prov:['damascus','aleppo'], comp:4, capGain:0.3 },
   tourism:{ exp:0, prov:['damascus','latakia','homs'] },   // earns through visitors, not ports
+  logistics:{ exp:6, prov:['homs','damascus','daraa'], capacity:38 },   // trucks and warehouses: more can leave
+  coldchain:{ exp:8, prov:['latakia','hama','tartus'], spoilCut:0.05 },  // less of the harvest rots on the way
+  packaging:{ exp:5, prov:['aleppo','damascus'], valueUp:0.06 },        // the same goods, worth more abroad
 };
 const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
 // Jobs a province gets from the sectors: full weight where they are built, a share elsewhere.
@@ -138,6 +145,21 @@ const PARTNERS = {
   russia:{ flag:'🌾', pc:8, sov:5, ok:() => true },
 };
 const PORT_UPGRADE = { usd:60, months:8 };
+// What a state is actually for. Each level is a wave of buildings, not one building.
+const SERVICES = {
+  schools:{ usd:16, syp:3, months:4, per:0.55, run:0.5 },
+  clinics:{ usd:24, syp:3, months:5, per:0.42, run:0.8, runUsd:4 },
+  unis:{ usd:52, syp:4, months:10, per:0.16, run:1.2, runUsd:3, req:s => s.edu >= 42, reqKey:'needsEdu' },
+};
+const svcNeed = (s, k) => Math.max(1, Math.round(s.popM * SERVICES[k].per));
+const svcCover = (s, k) => clamp(((s.svc && s.svc[k]) || 0) / svcNeed(s, k), 0, 1.25);
+// How many out of every hundred are poor, comfortable, or rich. Not a dial you set — a result.
+function classes(s){
+  const rw = realWage(s), jl = joblessNat(s);
+  const poor = clamp(74 - (rw - 18) * 0.85 - s.health * 0.07 - s.edu * 0.05 + (jl - 40) * 0.38 + Math.max(0, s.infl - 20) * 0.22, 6, 93);
+  const rich = clamp(2.5 + s.corr * 0.09 + Math.max(0, s.cap - 20) * 0.07, 1.5, 24);
+  return { poor, rich:Math.min(rich, 100 - poor - 3), middle:Math.max(3, 100 - poor - Math.min(rich, 100 - poor - 3)) };
+}
 const eastAnger = s => (s.provs.deir.u + s.provs.hasakeh.u + s.provs.raqqa.u) / 3;
 const dealOn = (s, id) => s.deals[id] && s.deals[id].on;
 
@@ -153,7 +175,8 @@ function newGame(seed, diff = 'learner', mission = null){
     grant:0, repaired:0,
     policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
     res:{ oilCap:60, refinery:25, gas:7, phos:1, farm:1, offshore:null },
-    ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0 }, bar:0,
+    ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0, logistics:0, coldchain:0, packaging:0 },
+    svc:{ schools:0, clinics:0, unis:0 }, edu: easy ? 32 : 26, health: easy ? 34 : 27, popM:21.9, bar:0,
     ports:{ latakia:{ lvl:1, op:'state' }, tartus:{ lvl:1, op:'state' } },
     deals:{}, invests:{}, decrees:{}, facilities:{}, flags:{}, provs,
     pipe:[], history:[], log:[], event:null, recentEvents:[], over:null, last:null, cycles:[], scoreHist:[],
@@ -191,8 +214,11 @@ function oilNumbers(s){
 }
 function exportCapacity(s){
   const L = s.ports.latakia.lvl, T = s.ports.tartus.lvl;
-  return 70 + 45 * (L + T - 2) + (dealOn(s, 'turkey') ? 30 : 0) + (dealOn(s, 'jordan') ? 25 : 0) + (built(s, 'latakia') ? 20 : 0) + (built(s, 'daraa') ? 15 : 0);
+  return 70 + 45 * (L + T - 2) + (dealOn(s, 'turkey') ? 30 : 0) + (dealOn(s, 'jordan') ? 25 : 0) + (built(s, 'latakia') ? 20 : 0) + (built(s, 'daraa') ? 15 : 0)
+    + indLvl(s, 'logistics') * IND.logistics.capacity;
 }
+// packaging lifts what the same goods fetch; cold chain stops the harvest rotting on the road
+const exportValue = s => 1 + indLvl(s, 'packaging') * IND.packaging.valueUp + indLvl(s, 'coldchain') * IND.coldchain.spoilCut;
 
 // ---------- one month (or any dt) ----------
 function step(state, dt = MONTH, policyOverride){
@@ -212,6 +238,7 @@ function step(state, dt = MONTH, policyOverride){
     if (item.kind === 'proj') finishProject(s, item, notes);
     if (item.kind === 'invest') finishInvest(s, item, notes);
     if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl = Math.min(3, p.lvl + 1); notes.push(['portDone', item.id, p.lvl]); }
+    if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); }
     return false;
   });
 
@@ -244,6 +271,9 @@ function step(state, dt = MONTH, policyOverride){
   if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
   addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
+  { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
+    if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
+    if (svcU) addU('medicine', -svcU); }
   if (P.recon) addS('recon', -P.recon);
   if (s.decrees.integrity) addS('integrity', -0.5);
   if (state.treasury < 0) addS('interest', state.treasury * 0.04);
@@ -264,7 +294,7 @@ function step(state, dt = MONTH, policyOverride){
     industry: industryExports(s) * euMult * (dealOn(s, 'turkey') ? 1.15 : 1),
   };
   const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
-  const fit = wantTotal > capE ? capE / wantTotal : 1;
+  const fit = (wantTotal > capE ? capE / wantTotal : 1) * exportValue(s);
   Object.entries(exportsWanted).forEach(([k, v]) => { if (v > 0.05) addU(k, v * fit); });
   s.clogged = wantTotal > capE ? wantTotal - capE : 0; s.exportWant = wantTotal; s.exportCap = capE;
   // --- dollars: transit, ports, investment ---
@@ -319,7 +349,7 @@ function step(state, dt = MONTH, policyOverride){
   const tp = { base:45, decrees:(s.trustMod || 0), bread:{ full:6, partial:0, removed:-10 }[P.bread], fuel:{ full:4, partial:0, market:-6 }[P.fuel],
     pay:clamp((rw - s.expWage) * 0.6, -15, 15), power:(hrs - 6) * 1.2, prices:clamp(-(s.infl - 20) * 0.4, -15, 5),
     security:{ light:2, balanced:0, heavy:-6 }[P.security], tax:(P.tax === 'aggressive' ? -3 : 0), anger:-(nu - 45) * 0.5, debt:(s.treasury < -30 ? -5 : 0),
-    jobs:-(joblessNat(s) - 55) * 0.16, bar:-s.bar * 12 };
+    jobs:-(joblessNat(s) - 55) * 0.16, bar:-s.bar * 12, services:(s.health - 30) * 0.09 + (s.edu - 30) * 0.05 };
   s.trustTarget = clamp(Object.values(tp).reduce((a, b) => a + b, 0), 0, 100);
   s.trust = clamp(s.trust + (s.trustTarget - s.trust) * relax(0.38, dt), 0, 100);
   let dPC = 4 + (s.trust - 45) / 10 - (nu > 60 ? 3 : 0) + (P.security === 'heavy' ? 2 : 0) - (s.decrees.integrity ? 1 : 0);
@@ -328,9 +358,14 @@ function step(state, dt = MONTH, policyOverride){
   s.corr = clamp(s.corr + (cT - s.corr) * relax(0.22, dt), 5, 100);
   const compT = 38 + s.trust * 0.35 - s.corr * 0.3 + { lax:-4, standard:0, aggressive:8 }[P.tax] + (s.decrees.digitax ? 12 : 0) + (s.decrees.braingain ? 3 : 0) + indLvl(s, 'telecom') * IND.telecom.comp;
   s.comp = clamp(s.comp + (compT - s.comp) * relax(0.35, dt), 5, 95);
+  const eduT = clamp(27 + 52 * svcCover(s, 'schools') + 15 * svcCover(s, 'unis') - s.corr * 0.09 - Math.max(0, nu - 55) * 0.28, 5, 100);
+  s.edu = clamp(s.edu + (eduT - s.edu) * relax(0.22, dt), 0, 100);
+  const healthT = clamp(28 + 56 * svcCover(s, 'clinics') + (hrs - 8) * 0.7 - Math.max(0, nu - 55) * 0.30 - Math.max(0, s.infl - 25) * 0.13, 5, 100);
+  s.health = clamp(s.health + (healthT - s.health) * relax(0.26, dt), 0, 100);
   const revolts = PROVS.filter(p => tierOf(s.provs[p.id].u) === 'revolt').length;
   let gain = { 0:-0.8, 20:0.5, 40:1 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (s.decrees.braingain ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
-    + indLvl(s, 'telecom') * IND.telecom.capGain + clamp((38 - joblessNat(s)) * 0.04, -0.8, 1.2);
+    + indLvl(s, 'telecom') * IND.telecom.capGain + clamp((38 - joblessNat(s)) * 0.04, -0.8, 1.2)
+    + (s.edu - 30) * 0.018 + (s.health - 30) * 0.012;
   if (gain > 0 && s.corr > 60) gain *= 0.5;
   if (gain > 0) gain *= Math.max(0.15, 1 - s.cap / 110);
   s.cap = clamp(s.cap + (gain - revolts * 1.5 - (nu > 60 ? 1 : 0)) * dt, 5, 100);
@@ -339,13 +374,13 @@ function step(state, dt = MONTH, policyOverride){
   const reconB = P.recon * dt / s.parallel * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
   const privB = (s.trust > 40 ? (s.trust - 40) * s.cap * 0.0004 : 0) * dt;
   const totalDmg = PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) || 1;
-  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, prices:0, local:0, neighbors:0 };
+  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0 };
   let wsum = 0, maxContagion = 0;
   PROVS.forEach(p => {
     const pv = s.provs[p.id], blackout = 24 - provHours(s, p.id);
     const parts = { trust:(50 - s.trust) * 0.4, pay:clamp((s.expWage - rw) * 0.5, -10, 15), power:blackout * 0.8 - 10,
       subsidies:{ full:-4, partial:0, removed:9 }[P.bread] + { full:-2, partial:0, market:5 }[P.fuel], security:{ light:5, balanced:0, heavy:-7 }[P.security],
-      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5 };
+      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5 };
     const tgt = clamp(p.base + Object.values(parts).reduce((a, b) => a + b, 0), 12, 100);
     let contagion = 0; p.nb.forEach(n => contagion += Math.max(0, s.provs[n].u - 60) * 0.06);
     maxContagion = Math.max(maxContagion, contagion);
@@ -356,6 +391,7 @@ function step(state, dt = MONTH, policyOverride){
     const jt = clamp(p.jobless + (pv.jobsMod || 0)
       - indJobsAt(s, p.id)
       - Math.max(0, s.cap - 20) * 0.38
+      - Math.max(0, s.edu - 30) * 0.14 - Math.max(0, s.health - 30) * 0.06
       - (s.decrees.vocational ? 9 : 0)
       - (built(s, p.id) ? 7 : 0)
       + Math.max(0, 12 - provHours(s, p.id)) * 0.55
@@ -366,6 +402,9 @@ function step(state, dt = MONTH, policyOverride){
   PROVS.forEach(p => s.provs[p.id].u = newU[p.id]);
 
   s.trust = clamp(s.trust, 0, 100); s.corr = clamp(s.corr, 5, 100); s.sov = clamp(s.sov, 0, 100);
+  { const leave = clamp((joblessNat(s) - 42) * 0.016 + (s.expWage - rw) * 0.010 + (nu - 48) * 0.012 - (s.trust - 45) * 0.006, -0.5, 1.6);
+    s.popM = clamp(s.popM * (1 + (0.006 - leave / 100) * dt * 2), 12, 40); }
+  s.cls = classes(s);
   s.t = endT;
   s.score = legacy(s).avg;
   s.last = { ledger:L, notes, dt, privB:privB / dt, maxContagion, clogged:s.clogged, oil,
@@ -417,7 +456,7 @@ const ACT = {
       case 'oligarch': s.treasury += 25; s.reserves += 60; s.corr -= 6; s.trust += 5; s.trustMod = (s.trustMod||0) + 2; break;
       case 'fighters': PROVS.forEach(p => pv[p.id].mod -= 4); s.comp += 2; s.head += 0.04; break;
       case 'dialogue': s.trust += 8; s.trustMod = (s.trustMod||0) + 6; PROVS.forEach(p => pv[p.id].mod -= 5); break;
-      case 'stats': s.flags.stats = true; break;
+      case 'stats': s.flags.stats = true; s.corr -= 4; s.comp += 5; break;
     }
     s.log.push([s.t, 'decree', id]); return true;
   },
@@ -460,6 +499,14 @@ const ACT = {
     s.log.push([s.t, 'portConcession', id]); return true;
   },
   oilHome(s, v){ s.policy.oilHome = v; return true; },
+  service(s, id){
+    const x = SERVICES[id];
+    if (s.reserves < x.usd || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'svc' && p.id === id)) return false;
+    if ((s.svc[id] || 0) >= svcNeed(s, id) + 2) return false;
+    s.reserves -= x.usd; s.treasury -= x.syp;
+    s.pipe.push({ due:s.t + x.months, kind:'svc', id });
+    s.log.push([s.t, 'svcStart', id, x.months]); return true;
+  },
   deal(s, id){
     const x = PARTNERS[id]; if (s.deals[id] || s.pc < x.pc || (x.usd && s.reserves < x.usd) || (x.signReq && !x.signReq(s))) return false;
     s.pc -= x.pc; if (x.usd) s.reserves -= x.usd; s.sov -= x.sov;
@@ -647,4 +694,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

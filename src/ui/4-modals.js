@@ -65,8 +65,14 @@ function detectCycles(){
 function cycleSvg(id){
   const cy = CYCLE_TXT[id], nodes = L2(cy)[1], N = nodes.length, R = 118, cx = 170, cyy = 150, col = cy.bad ? 'var(--revolt)' : 'var(--calm)';
   const pos = nodes.map((_, i) => { const ang = -Math.PI / 2 + i * 2 * Math.PI / N; return [cx + R * Math.cos(ang), cyy + R * Math.sin(ang)]; });
-  const arcs = pos.map((p, i) => { const q = pos[(i + 1) % N], dx = q[0] - p[0], dy = q[1] - p[1], len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
-    const off = k => 18 + 44 * Math.abs(k); const s0 = [p[0] + ux * off(ux), p[1] + uy * off(uy)], e0 = [q[0] - ux * off(ux), q[1] - uy * off(uy)];
+  // Where the line leaves a pill: the ray from the centre, clipped by that pill's own box.
+  // (The old version offset x and y by different amounts, which pulled both ends off the line
+  //  and left nothing but a floating arrowhead.)
+  const halfW = nodes.map(txt => Math.max(124, txt.length * 7.2 + 26) / 2 + 7), halfH = 16 + 7;
+  const arcs = pos.map((p, i) => { const j = (i + 1) % N, q = pos[j], dx = q[0] - p[0], dy = q[1] - p[1], len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+    const edge = k => Math.min(Math.abs(ux) > 1e-6 ? halfW[k] / Math.abs(ux) : 1e6, Math.abs(uy) > 1e-6 ? halfH / Math.abs(uy) : 1e6);
+    const a = Math.min(edge(i), len * 0.42), b = Math.min(edge(j) + 9, len * 0.42);   // +9 leaves room for the arrowhead
+    const s0 = [p[0] + ux * a, p[1] + uy * a], e0 = [q[0] - ux * b, q[1] - uy * b];
     const mxp = (s0[0] + e0[0]) / 2, myp = (s0[1] + e0[1]) / 2, ox = (mxp - cx) * 0.25, oy = (myp - cyy) * 0.25;
     return `<path d="M${s0[0].toFixed(1)},${s0[1].toFixed(1)} Q${(mxp + ox).toFixed(1)},${(myp + oy).toFixed(1)} ${e0[0].toFixed(1)},${e0[1].toFixed(1)}" fill="none" stroke="${col}" stroke-width="2.5" marker-end="url(#ah)"/>`; }).join('');
   // the pill grows with the label: a fixed width cut long ones in half
