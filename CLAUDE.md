@@ -16,7 +16,7 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run browser`→ two real browsers in one room (needs `npm i -D playwright`). Writes `tools/shot-mp-*.png`.
 - `npm run onboard`→ checks the game opens up slowly: 3 panels and 1 map layer at month 0, 7 panels and 4 layers
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
-- `npm run econ`   → drives the economy in a real browser: all 12 sectors offered, a factory built and opened,
+- `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
 - Optional browser test: `npm i -D playwright && npx playwright install chromium`, then `node tools/smoke.mjs`.
 
@@ -30,8 +30,9 @@ fast: a player should be able to think, and should not have to wait two years to
     biggest single driver of provincial anger. It falls when factories open, the province's project is built,
     the economy grows and the lights stay on; it rises with blackouts and violence. `joblessNat(s)` is the
     pop-weighted national figure and a headline number on the dashboard.
-  - **`INVEST` / `IND` — twelve sectors.** `INVEST` holds cost, months, `max` and `jobs` for each. The six with
-    `sector:true` (textiles, food, pharma, cement, telecom, tourism) also have an `IND` entry saying where their
+  - **`INVEST` / `IND` — fifteen sectors.** `INVEST` holds cost, months, `max` and `jobs` for each. The nine with
+    `sector:true` (textiles, food, pharma, cement, telecom, tourism, plus the three `supply:true` ones — logistics,
+    cold chain, packaging) also have an `IND` entry saying where their
     jobs land and what they earn abroad. Extraction earns more dollars per dollar spent; industry employs people,
     and people are what hold the country together. Levels live in `s.ind`, built count in `s.invests`.
     Tourism earns without a ship, so the ports never throttle it — unrest and blackouts do.
@@ -88,6 +89,9 @@ fast: a player should be able to think, and should not have to wait two years to
   The server does the same, so a bad client cannot poison a room.
 - Scores are client-reported. That is deliberate — see `worker/README.md`. Don't add accounts to "fix" it.
 - Traffic has a ceiling: one call per player per 4s, a push at most every 5s, polling 6s open / 20s closed.
+
+## Where we are
+See `docs/PROGRESS.md` for what has been built, the decisions worth not undoing, and what is still open.
 
 ## Saves
 Browser `localStorage` key `transition-syria-v6`, plus copy/paste save codes (base64 JSON). Bump the key/`state.v` if the state shape changes incompatibly (v6 added `pv.jobless`, `s.ind` and `s.bar`, and dropped `pv.mines`).

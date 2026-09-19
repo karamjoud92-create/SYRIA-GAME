@@ -4,7 +4,9 @@ A bilingual (English / العربية) game about rebuilding Syria after the war
 and handle crises while a live score shows how history will judge you. Made to help young Syrians see how many connected systems a country runs on.
 
 ## Play
-Open `dist/index.html` in any browser, or visit the published site. No install, no account.
+- **Play now:** https://claude.ai/artifact/3uGH9P8cq58Uj8uFYsB7Ye — open to anyone with the link.
+- **Or:** open `dist/index.html` in any browser. No install, no account, works offline.
+- **The full website** (with live shared scores) is one switch away — see *Publish it as a website* below.
 
 ## Play with friends
 Everyone runs their own Syria — nothing you do changes anyone else's country. What is shared is the scoreboard:
@@ -21,6 +23,10 @@ chat, and paste your friends' codes in with ➕. Same scoreboard, moved by hand.
 ## Publish it as a website
 `.github/workflows/pages.yml` publishes `dist/index.html` to GitHub Pages on every push to the default branch.
 Turn it on once in **Settings → Pages → Source: GitHub Actions**.
+
+## Picking this up again
+`docs/PROGRESS.md` is the state of play: what has been built, the decisions worth not undoing, and what
+is still open. `CLAUDE.md` is the architecture and the rules for changing things.
 
 ## Develop
 Requires Node.js 18+.
