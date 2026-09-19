@@ -42,7 +42,10 @@ Built in this session, in order:
 6. **A population** (`s.popM`) that grows and emigrates, split into poor / getting by / rich by
    `classes()` — a result, never a dial. `poor` is previewed on every decision.
 7. **Progressive unlock.** Three panels and one map layer at month 0; the whole game by year 4.
-8. **The Guide.** A panel open from month 0 that says what to do next, ticks off six first steps as you do
+8. **Decisions come to you.** The primary way to play is now a card that asks one question and offers two or
+   three answers, in the decision-making genre (which is what *Conquer Countries* actually is — Supersonic name
+   the genre themselves). The panels are all still there underneath for anyone who wants them.
+9. **The Guide.** A panel open from month 0 that says what to do next, ticks off six first steps as you do
    them, explains why the numbers just moved, and lists the cause-and-effect chains.
 
 ## Decisions worth not undoing
@@ -61,6 +64,9 @@ Built in this session, in order:
   ministry are facts while "is life good" is always a comparison.
 - **Unlock is UI-only.** `stageNow()` reads `S.t` and nothing else, so the balance sim and the missions
   never see it. Keep it that way.
+- **A decision card must never offer what the player cannot do.** Same rule as the guide's advice, and it is
+  enforced per branch in `decisionDeck()`: affordability *and* `isOpen()`. A card offering a greyed-out option
+  is worse than no card.
 - **Advice must be reachable.** The guide suggested building schools, and then funding power stations, to
   players who were months away from either panel existing. Suggestions carry `need:'<unlock key>'` and are
   filtered; `npm run guide` fails if a suggestion ever names a locked panel again. When adding a new adviser
@@ -73,6 +79,8 @@ Built in this session, in order:
   authority" fits post-war Syria and would cut the early-game load further, but it needs real engine
   work: unrest in a province you do not control has to be scored differently, or you are punished for
   a place you were never given.
+- **The decision deck has seven sources.** Ports, oil policy, facilities/loans, crisis follow-ups and the
+  multiplayer scoreboard never surface as questions; a player who only taps cards will never meet them.
 - **The first steps do not cover the later game.** The six guide tasks teach months 0–3. Nothing walks a
   player through their first factory, their first school or their first trade deal when those unlock; the
   "what to do next" line carries all of it alone.

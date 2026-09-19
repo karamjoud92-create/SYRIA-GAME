@@ -24,8 +24,10 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(slides.length >= 7, `${tag}: the tutorial runs (${slides.length} screens)`);
   await clear(page);
 
-  // a new game opens ON the guide, not on a blank board
-  ok(await page.$('.drawer'), `${tag}: a new game opens with the guide showing`);
+  // a new game opens on a question you can answer, with the guide one tap away
+  ok(await page.$('.deck'), `${tag}: a new game opens with a decision to make`);
+  ok(await page.$('.dbtn[data-v=guide] .badge'), `${tag}: the guide is one tap away, badged`);
+  await page.evaluate(() => { UI.drawer = 'guide'; render(true); }); await page.waitForTimeout(200);
   const steps = await page.$$eval('.gstep', e => e.length);
   ok(steps === 6, `${tag}: six first steps are listed (${steps})`);
   const nowStep = await page.$$eval('.gstep.now b', e => e.map(n => n.textContent));
@@ -43,6 +45,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(chains === 5, `${tag}: five cause-and-effect chains are shown (${chains})`);
 
   // doing the thing ticks the box
+  await page.evaluate(() => { UI.drawer = null; render(true); }); await page.waitForTimeout(150);
   await page.click('[data-act=speed][data-v="1"]'); await page.waitForTimeout(200);
   await page.evaluate(() => { UI.drawer = 'guide'; render(true); }); await page.waitForTimeout(150);
   ok(await page.evaluate(() => S.flags.g_start === true), `${tag}: starting the clock ticks the first step off`);

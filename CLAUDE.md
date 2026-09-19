@@ -14,6 +14,9 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run check`  → all of the above. Run this after every engine change.
 - `npm run serve`  → a score server on localhost:8787, for working on the scoreboard.
 - `npm run browser`→ two real browsers in one room (needs `npm i -D playwright`). Writes `tools/shot-mp-*.png`.
+- `npm run decide` → the casual loop in a real browser: the game asks a question unprompted, offers 2–3
+  answers the player can actually afford, tapping one changes the country and shows what it did, "Not now"
+  moves on, and the card steps aside for panels. Desktop and phone, both languages.
 - `npm run guide`  → checks a new player is taught: the tutorial runs, the game opens on the Guide, the six first
   steps tick off as they are actually done, and — the important one — **no advice ever points at a panel or dial
   the player has not been given yet**. Both languages.
@@ -59,6 +62,14 @@ fast: a player should be able to think, and should not have to wait two years to
 - `src/net/net.js` — the shared scoreboard's transport. No DOM, no game logic: it turns `legacy(S)` into a small
   entry, sends it to a score server (`worker/`), merges what comes back with any pasted score codes, and ranks.
   Every player's game stays on their own device; only name, score, grade and date travel.
+- **Decisions come to you** (`src/ui/7-decisions.js`, loaded last). The panels ask the player to go looking;
+  this layer asks *them*. `decisionDeck()` reads the current state and returns a ranked list of questions —
+  the angriest fixable province, a policy that is costing money, wages behind expectations, a service behind
+  the population, a sector nobody has built, a neighbour's offer, a decree you can afford — each with two or
+  three options. Every option calls the same `ACT.*` the panels call; the simulation is untouched. Rules:
+  a question is only built when the player can *afford it and reach it* (`isOpen()` on every branch), the card
+  hides behind drawers and modals, and "Not now" parks that question for `decMonths`. When adding a source,
+  filter skipped items *before* picking the best one, or skipping the top item silences the whole category.
 - **The Guide** (`GUIDE_TASKS`, `renderGuide()` in `src/ui/5-game.js`) is the first panel a new player sees and
   the only one open from month 0 to the end. It holds four things: the six first steps (ticked off by
   `guideTick()` from the real click handlers, stored in `S.flags.g_*` so no save bump is needed), the single most

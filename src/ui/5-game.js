@@ -52,7 +52,7 @@ function begin(diff, mission){
   setSpeed(0);
   UI.active = mission ? 'mission' : 'campaign';
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
-  UI.drawer = guideLeft() ? 'guide' : null; UI.provOpen = false; UI.toasts = []; persist();
+  UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
 }
 function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
 function loadCode(code){
