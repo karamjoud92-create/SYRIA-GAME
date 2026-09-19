@@ -1,0 +1,43 @@
+# Publishes the game to GitHub Pages on every push to the main branch.
+# Turn it on once: repository Settings -> Pages -> Source: "GitHub Actions".
+name: Publish the game
+on:
+  push:            # deploys only from the repository's default branch, whatever it is called
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    if: github.ref_name == github.event.repository.default_branch || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build the single-file game
+        run: node build.js
+      - name: Check the scoreboard client
+        run: node tools/mp-test.js
+      - name: Lay out the site
+        run: |
+          mkdir -p site
+          cp dist/index.html site/index.html
+          cp dist/index.html site/404.html   # an invite link with a typo still lands on the game
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

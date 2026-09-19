@@ -397,6 +397,50 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .endturn{ flex:1; justify-content:center; font-size:17px; padding:11px 16px; }
   .modal{ padding:18px 16px; border-radius:22px; } .modal h2{ font-size:24px; } .lede{ font-size:16px; }
 }
+
+/* ===== v7: play with friends (shared scoreboard) ===== */
+.board.has-mp .mapbox{ padding-inline-end:360px; }
+.board.has-mp .legend{ display:none; }
+@media (max-width: 760px){ .board.has-mp .mapbox{ padding-inline-end:4px; } }
+.iconbtn.mpchip{ width:auto; padding:0 11px; gap:6px; display:flex; font-size:15px; white-space:nowrap; }
+.iconbtn.mpchip b{ font-size:13.5px; font-weight:800; }
+.iconbtn.mpchip.s-offline{ opacity:.6; }
+.iconbtn.mpchip.s-live b{ color:var(--good); }
+.mppanel{ position:absolute; inset-inline-end:12px; top:12px; bottom:12px; width:330px; z-index:9; background:var(--card); color:var(--card-ink);
+  border-radius:22px; box-shadow:0 6px 0 rgba(10,14,30,.35); display:flex; flex-direction:column; overflow:hidden; animation:slidein .22s ease-out; }
+.mppanel .head{ padding:12px 14px 10px; background:var(--card-2); display:flex; align-items:center; gap:10px; }
+.mppanel .head .dic{ width:40px; height:40px; border-radius:13px; background:var(--gold); display:grid; place-items:center; font-size:21px; flex:0 0 auto; }
+.mppanel .head .ht{ min-width:0; } .mppanel .head h2{ font-size:20px; }
+.mppanel .head .sub{ font-size:12.5px; color:var(--card-muted); font-weight:700; display:flex; align-items:center; gap:5px; }
+.mppanel .body{ padding:10px 14px; overflow-y:auto; flex:1; }
+.mppanel .foot{ padding:8px 10px 10px; border-top:2px dotted var(--card-line); display:flex; flex-wrap:wrap; gap:5px; }
+.mppanel .foot .btn{ flex:1 1 auto; }
+.dot{ width:9px; height:9px; border-radius:50%; background:var(--card-muted); display:inline-block; }
+.dot.live{ background:var(--good); } .dot.syncing{ background:var(--tense); } .dot.offline{ background:var(--bad); } .dot.codes{ background:var(--calm); }
+.mprow{ display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:14px; border:2px solid var(--card-line); background:#fff; margin-bottom:7px; }
+.mprow.me{ border-color:var(--gold-deep); background:#fff4dc; }
+.mprow.done{ opacity:.75; }
+.mprow .pl{ font-size:14px; font-weight:800; color:var(--card-muted); min-width:16px; text-align:center; }
+.mprow .gr{ width:30px; height:30px; border-radius:10px; display:grid; place-items:center; font-size:16px; font-weight:800; background:var(--gold); color:var(--gold-ink); flex:0 0 auto; }
+.mprow .gr.g-A{ background:#3f9a4a; color:#fff; } .mprow .gr.g-B{ background:#35b6a3; color:#fff; }
+.mprow .gr.g-D{ background:#f08a3c; color:#fff; } .mprow .gr.g-F{ background:#d93a4a; color:#fff; }
+.mprow .nm{ flex:1; min-width:0; font-size:14.5px; line-height:1.2; }
+.mprow .nm b{ font-weight:800; } .mprow .nm small{ display:block; font-size:11.5px; color:var(--card-muted); font-weight:700; }
+.mprow .nm i{ font-style:normal; font-size:11px; font-weight:800; border-radius:99px; padding:0 6px; margin-inline-start:5px; background:var(--gold); color:var(--gold-ink); }
+.mprow .nm i.code{ background:var(--card-2); color:var(--card-muted); }
+.mprow .nm .ago{ font-weight:600; }
+.mprow .sc{ font-size:21px; font-weight:800; }
+.mpnote{ font-size:13px; background:#fff4dc; border-radius:12px; padding:9px 11px; margin:0 0 10px; }
+.mpnote.bad{ background:#fde3e3; } .mpnote.small{ background:none; padding:0; color:var(--card-muted); font-size:12px; margin-top:10px; }
+.mpalone{ font-size:13px; margin:8px 0 0; }
+.mpfield{ display:block; margin-top:10px; } .mpfield span{ display:block; font-size:13px; font-weight:800; color:var(--card-muted); margin-bottom:3px; }
+.mpfield input{ width:100%; font:700 17px var(--font); color:var(--card-ink); background:var(--card-2); border:2px solid var(--card-line); border-radius:12px; padding:9px 12px; }
+.mpfield input:focus{ outline:3px solid var(--gold); outline-offset:1px; }
+@media (max-width: 760px){
+  .mppanel{ inset:auto 0 0 0; width:auto; top:auto; max-height:76%; border-radius:22px 22px 0 0; }
+  .iconbtn.mpchip{ height:38px; padding:0 8px; } .iconbtn.mpchip b{ font-size:12px; }
+}
+@media (prefers-reduced-motion: reduce){ .mppanel{ animation:none; } }
 </style>
 </head>
 <body>
@@ -1591,6 +1635,280 @@ const PART_TXT = {
   russia:{ en:['Russia','Wheat supply deal','Cheaper wheat, in exchange for a long lease on part of Tartus port.','Wheat imports cost 25% less. Independence −5.','No conditions'],
     ar:['روسيا','اتفاق توريد القمح','قمح أرخص مقابل تأجير طويل لجزء من ميناء طرطوس.','استيراد القمح أرخص بـ25%. الاستقلال −5.','بلا شروط'] },
 };
+
+// ===== Text: play with friends (shared scoreboard). Every string needs en + ar. =====
+Object.assign(STR.en, {
+  mpFriends:'Friends', mpTitle:'Play with friends', mpSub:'Everyone runs their own Syria. You all see each other’s scores as you play.',
+  mpRules:'Nothing you do changes anyone else’s country. Only the scoreboard is shared.',
+  mpName:'Your name', mpNamePh:'Your name', mpRoom:'Room code', mpRoomPh:'5 letters',
+  mpCreateBtn:'Create a room', mpJoinBtn:'Join a room', mpGo:'Join', mpLeaveBtn:'Leave the room', mpPlayAlone:'Play alone',
+  mpNeedName:'Type a name first.', mpNeedRoom:'Type the room code your friend sent you.',
+  mpInRoom:'Room {0}', mpInvite:'Copy invite link', mpCopied:'Copied. Send it to your friends.', mpCopyFail:'Copy it by hand:',
+  mpAlone:'No one else here yet. Send your friends the invite link.',
+  mpYou:'you', mpRankOf:'{0} of {1}', mpRank:'Rank',
+  mpLive:'Live', mpSyncing:'Connecting…', mpOffline:'Offline',
+  mpOfflineTxt:'Could not reach the score server. Your game keeps running and scores sync again when it comes back.',
+  mpNoServer:'Codes only', mpNoServerTxt:'No score server is set, so scores do not travel on their own. Send your friends your score code and paste theirs in.',
+  mpMyCode:'My score code', mpMyCodeTxt:'Send this to your friends. It only carries your name and your score.',
+  mpAddCode:'Add a friend’s code', mpAddBtn:'Add', mpBadCode:'That is not a score code.', mpAdded:'{0} added to the board.',
+  mpPassed:'You passed {0}', mpPassedBy:'{0} passed you', mpJoinedRoom:'{0} joined the room',
+  mpNow:'just now', mpMinAgo:'{0} min ago', mpHrAgo:'{0} h ago', mpDayAgo:'{0} d ago',
+  mpFinished:'finished', mpFell:'government fell', mpPlaying:'playing',
+  mpServerTitle:'Score server', mpServerBtn:'Score server',
+  mpServerTxt:'Paste the address of your score server. Everyone you invite with the link uses the same one, so you only do this once.',
+  mpServerPh:'https://…workers.dev', mpSave:'Save', mpServerHost:'Server: {0}', mpServerNone:'No server set', mpServerBad:'That does not look like a web address.',
+  mpStartFirst:'Start a game first.', mpFromCode:'from a code', mpDiffMix:'Playing on {0}',
+  mpOpenBoard:'Scoreboard', mpCloseBoard:'Close the scoreboard',
+});
+Object.assign(STR.ar, {
+  mpFriends:'الأصدقاء', mpTitle:'العب مع أصدقائك', mpSub:'كل لاعب يدير سوريا الخاصة به، وتظهر نتائج الجميع أثناء اللعب.',
+  mpRules:'لا شيء تفعله يغيّر بلد غيرك. لوحة النتائج وحدها مشتركة.',
+  mpName:'اسمك', mpNamePh:'اسمك', mpRoom:'رمز الغرفة', mpRoomPh:'خمسة أحرف',
+  mpCreateBtn:'أنشئ غرفة', mpJoinBtn:'ادخل غرفة', mpGo:'ادخل', mpLeaveBtn:'اخرج من الغرفة', mpPlayAlone:'العب وحدك',
+  mpNeedName:'اكتب اسمك أولاً.', mpNeedRoom:'اكتب رمز الغرفة الذي أرسله صديقك.',
+  mpInRoom:'غرفة {0}', mpInvite:'انسخ رابط الدعوة', mpCopied:'تم النسخ. أرسله لأصدقائك.', mpCopyFail:'انسخه يدوياً:',
+  mpAlone:'لا أحد غيرك هنا بعد. أرسل رابط الدعوة لأصدقائك.',
+  mpYou:'أنت', mpRankOf:'{0} من {1}', mpRank:'الترتيب',
+  mpLive:'مباشر', mpSyncing:'جارٍ الاتصال…', mpOffline:'غير متصل',
+  mpOfflineTxt:'تعذّر الوصول إلى خادم النتائج. لعبتك مستمرة، وستعود المزامنة عند رجوع الاتصال.',
+  mpNoServer:'رموز فقط', mpNoServerTxt:'لا يوجد خادم نتائج، لذلك لا تنتقل النتائج وحدها. أرسل رمز نتيجتك لأصدقائك وألصق رموزهم هنا.',
+  mpMyCode:'رمز نتيجتي', mpMyCodeTxt:'أرسل هذا لأصدقائك. لا يحمل سوى اسمك ونتيجتك.',
+  mpAddCode:'أضف رمز صديق', mpAddBtn:'أضف', mpBadCode:'هذا ليس رمز نتيجة.', mpAdded:'تمت إضافة {0} إلى اللوحة.',
+  mpPassed:'تجاوزتَ {0}', mpPassedBy:'{0} تجاوزك', mpJoinedRoom:'انضم {0} إلى الغرفة',
+  mpNow:'الآن', mpMinAgo:'قبل {0} دقيقة', mpHrAgo:'قبل {0} ساعة', mpDayAgo:'قبل {0} يوم',
+  mpFinished:'أنهى اللعبة', mpFell:'سقطت حكومته', mpPlaying:'يلعب الآن',
+  mpServerTitle:'خادم النتائج', mpServerBtn:'خادم النتائج',
+  mpServerTxt:'ألصق عنوان خادم النتائج. كل من تدعوه بالرابط سيستخدم العنوان نفسه، فتفعل هذا مرة واحدة فقط.',
+  mpServerPh:'https://…workers.dev', mpSave:'احفظ', mpServerHost:'الخادم: {0}', mpServerNone:'لا يوجد خادم', mpServerBad:'هذا لا يشبه عنوان موقع.',
+  mpStartFirst:'ابدأ لعبة أولاً.', mpFromCode:'من رمز', mpDiffMix:'يلعب على {0}',
+  mpOpenBoard:'لوحة النتائج', mpCloseBoard:'أغلق لوحة النتائج',
+});
+
+// ===== Shared scores: transport =====
+// Everyone plays their own game; only the scoreboard travels. Two ways it travels:
+//   server — a tiny score server (see worker/). Anyone with the invite link plays, no account needed.
+//   codes  — no server at all: players send each other a short score code and paste it in.
+// Neither is required. Every call here is wrapped: if the network dies the game carries on unchanged.
+
+const MP_LS = { id:'sy-mp-id', name:'sy-mp-name', room:'sy-mp-room', relay:'sy-mp-relay', codes:'sy-mp-codes' };
+const MP_ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no I/O/0/1: room codes get read out loud
+const MP_PUSH_MS = 20000, MP_POLL_OPEN_MS = 6000, MP_POLL_SHUT_MS = 20000, MP_STALE_MS = 6 * 3600 * 1000;
+const MP = {
+  id:'', name:'', room:null, relay:'',
+  state:'off',          // off | codes | syncing | live | offline
+  roster:[], rank:0, open:false, err:null,
+  lastPush:0, lastScore:null, busy:false, timer:null, above:{},
+};
+
+function mpLS(k, v){
+  try {
+    if (v === undefined) return localStorage.getItem(k);
+    if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+  } catch(e){}
+  return null;
+}
+function mpId(){
+  if (MP.id) return MP.id;
+  let v = mpLS(MP_LS.id);
+  if (!v || !/^p[a-z0-9]{6,16}$/.test(v)){ v = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); mpLS(MP_LS.id, v); }
+  return (MP.id = v);
+}
+function mpNewRoom(){ let s = ''; for (let i = 0; i < 5; i++) s += MP_ALPHA[Math.floor(Math.random() * MP_ALPHA.length)]; return s; }
+const mpRoomOk = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+const mpNameOk = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 18);
+function mpRelayOk(v){
+  const s = String(v || '').trim().replace(/\/+$/, '');
+  if (!s) return '';
+  if (!/^https?:\/\/[^\s/]+/i.test(s)) return null;                 // null = typed something that is not a URL
+  if (location.protocol === 'https:' && /^http:/i.test(s)) return null;  // a page on https cannot call http
+  return s;
+}
+const mpHost = u => { try { return new URL(u).host; } catch(e){ return u; } };
+
+// ---------- what we tell the others ----------
+function mpEntry(){
+  if (!S) return null;
+  const lg = legacy(S), comp = {};
+  Object.keys(lg.comp).forEach(k => comp[k] = Math.round(lg.comp[k]));
+  return { v:1, id:mpId(), name:MP.name || '—', score:Math.round(S.score * 10) / 10, grade:lg.grade, comp,
+    t:S.t, diff:S.diff, mission:(S.mission && S.mission.id) || null,
+    over:S.over ? (S.over.fail ? 'fail' : 'end') : null };
+}
+// Anything arriving from another player is untrusted: rebuild it field by field.
+function mpClean(e, now){
+  if (!e || typeof e !== 'object') return null;
+  const id = String(e.id || '').slice(0, 40); if (!id) return null;
+  const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
+  const comp = {};
+  if (e.comp && typeof e.comp === 'object') ['Stability','Livelihoods','Reconstruction','Institutions','Solvency','Sovereignty']
+    .forEach(k => { if (e.comp[k] !== undefined) comp[k] = num(e.comp[k], 0, 100, 0); });
+  const at = num(e.at, 0, 4e12, now);
+  return { id, name:mpNameOk(e.name) || '—', score:num(e.score, 0, 100, 0), grade:['A','B','C','D','F'].includes(e.grade) ? e.grade : 'F',
+    comp, t:num(e.t, 0, 100000, 0), diff:e.diff === 'realistic' ? 'realistic' : 'learner',
+    mission:e.mission ? String(e.mission).slice(0, 20) : null, over:['fail','end'].includes(e.over) ? e.over : null,
+    at, age:Math.max(0, now - at), src:e.src === 'code' ? 'code' : 'server' };
+}
+
+// ---------- score codes (work with no server at all) ----------
+function mpCode(){
+  const e = mpEntry(); if (!e) return '';
+  delete e.comp;                 // codes get pasted into chat apps: keep them short
+  e.at = Date.now();
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(e)))).replace(/=+$/, ''); } catch(err){ return ''; }
+}
+function mpReadCode(code){
+  try {
+    let c = String(code || '').trim().replace(/\s+/g, '');
+    const m = c.match(/[A-Za-z0-9+/=]{24,}$/); if (m) c = m[0];
+    while (c.length % 4) c += '=';
+    const o = JSON.parse(decodeURIComponent(escape(atob(c))));
+    if (!o || !o.id || o.score === undefined) return null;
+    o.src = 'code';
+    return mpClean(o, Date.now());
+  } catch(e){ return null; }
+}
+function mpCodes(){ try { const o = JSON.parse(mpLS(MP_LS.codes) || '{}'); return o && typeof o === 'object' ? o : {}; } catch(e){ return {}; } }
+function mpSaveCode(e){
+  if (!e || e.id === mpId()) return false;
+  const all = mpCodes(), key = MP.room || '-';
+  const room = all[key] && typeof all[key] === 'object' ? all[key] : {};
+  const old = room[e.id];
+  if (old && Number(old.at) >= e.at) return false;      // an older code never overwrites a newer one
+  room[e.id] = e; all[key] = room;
+  const ids = Object.keys(room);
+  if (ids.length > 30){ ids.sort((a, b) => room[a].at - room[b].at).slice(0, ids.length - 30).forEach(k => delete room[k]); }
+  mpLS(MP_LS.codes, JSON.stringify(all));
+  return true;
+}
+function mpCodeList(now){
+  const room = mpCodes()[MP.room || '-'] || {};
+  return Object.values(room).map(e => mpClean(e, now)).filter(Boolean);
+}
+
+// ---------- the score server ----------
+async function mpCall(entry){
+  const url = MP.relay + '/r/' + encodeURIComponent(MP.room);
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const bail = setTimeout(() => ctl && ctl.abort(), 9000);
+  try {
+    const r = await fetch(url, Object.assign({ signal:ctl ? ctl.signal : undefined },
+      entry ? { method:'POST', headers:{ 'content-type':'application/json' }, body:JSON.stringify(entry) } : { method:'GET' }));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    return { players:Array.isArray(j.players) ? j.players : [], now:Number(j.now) || Date.now() };
+  } finally { clearTimeout(bail); }
+}
+
+// ---------- merge, rank, notify ----------
+function mpMerge(list, now){
+  const by = {};
+  (list || []).forEach(e => { const c = mpClean(e, now); if (c) by[c.id] = c; });
+  mpCodeList(now).forEach(c => { const cur = by[c.id]; if (!cur || cur.at < c.at) by[c.id] = c; });   // freshest wins
+  const mine = mpEntry();
+  if (mine) by[mine.id] = Object.assign(mpClean(mine, now), { at:now, age:0, src:'me' });
+  const rows = Object.values(by).filter(e => e.age < MP_STALE_MS || e.id === MP.id);
+  rows.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  rows.forEach((e, i) => { e.place = i + 1; e.me = e.id === MP.id; });
+  MP.roster = rows;
+  MP.rank = (rows.find(e => e.me) || {}).place || 0;
+  return rows;
+}
+// Who was ahead of me last time but is not now (and the other way round)? That is the whole point of playing together.
+function mpNoticeMoves(rows){
+  const above = {}, was = MP.above;
+  rows.forEach(e => { if (!e.me && MP.rank && e.place < MP.rank) above[e.id] = e.name; });
+  if (MP.seenOnce){   // not "if anyone was ahead": going from first place to second is exactly the news we want
+    Object.keys(was).forEach(id => { if (!above[id] && rows.some(e => e.id === id)) mpSay(fill(t('mpPassed'), [was[id]])); });
+    Object.keys(above).forEach(id => { if (!was[id]) mpSay(fill(t('mpPassedBy'), [above[id]])); });
+  }
+  MP.above = above; MP.seenOnce = true;
+}
+function mpSay(text){ if (typeof toast === 'function') toast('🏆 ' + text); }
+
+// ---------- the loop ----------
+// One call at a time. A forced call that arrives mid-flight is not dropped, it runs straight after —
+// otherwise the push that matters most (the game just ended) is the one that goes missing.
+function mpSync(force){
+  if (!MP.room) return Promise.resolve();
+  if (MP.busy){ if (force) MP.again = true; return MP.inflight || Promise.resolve(); }
+  const now0 = Date.now();
+  if (!force && now0 - (MP.lastCall || 0) < 4000) return Promise.resolve();   // hard ceiling on traffic, whatever calls us
+  MP.lastCall = now0; MP.busy = true;
+  MP.inflight = mpRun(force, now0).then(() => {
+    MP.busy = false;
+    if (MP.again){ MP.again = false; return mpSync(true); }
+  }, () => { MP.busy = false; });
+  return MP.inflight;
+}
+async function mpRun(force, now0){
+  const e = mpEntry();
+  if (!MP.relay){                                   // codes only: nothing to call, just re-rank
+    MP.state = 'codes'; mpMerge([], now0); if (typeof mpPaint === 'function') mpPaint();
+    return;
+  }
+  const since = now0 - MP.lastPush;
+  const changed = !e || MP.lastScore === null || Math.abs(e.score - MP.lastScore) >= 0.3 || e.over !== MP.lastOver;
+  const push = e && (force || (changed && since >= 5000) || since >= MP_PUSH_MS);
+  try {
+    const r = await mpCall(push ? Object.assign({}, e, { at:now0 }) : null);
+    if (push){ MP.lastPush = now0; MP.lastScore = e.score; MP.lastOver = e.over; }
+    MP.state = 'live'; MP.err = null;
+    const rows = mpMerge(r.players, r.now);
+    mpNoticeMoves(rows);
+  } catch(err){
+    MP.state = 'offline'; MP.err = String((err && err.message) || err);
+    mpMerge([], Date.now());
+  } finally {
+    if (typeof mpPaint === 'function') mpPaint();
+  }
+}
+function mpLoop(){
+  if (MP.timer) clearInterval(MP.timer);
+  MP.timer = null;
+  if (!MP.room) return;
+  MP.timer = setInterval(() => { if (!document.hidden) mpSync(false); }, MP.open ? MP_POLL_OPEN_MS : MP_POLL_SHUT_MS);
+}
+
+// ---------- joining and leaving ----------
+function mpJoin(room, name){
+  MP.room = mpRoomOk(room); MP.name = mpNameOk(name) || '—';
+  mpLS(MP_LS.room, MP.room); mpLS(MP_LS.name, MP.name);
+  MP.state = MP.relay ? 'syncing' : 'codes';
+  MP.above = {}; MP.seenOnce = false; MP.lastScore = null; MP.lastPush = 0; MP.roster = [];
+  mpLoop(); mpSync(true);
+}
+function mpLeave(){
+  MP.room = null; MP.roster = []; MP.rank = 0; MP.state = 'off'; MP.open = false; MP.above = {};
+  mpLS(MP_LS.room, null);
+  if (MP.timer) clearInterval(MP.timer);
+  MP.timer = null;
+}
+function mpSetRelay(url){
+  const v = mpRelayOk(url);
+  if (v === null) return false;
+  MP.relay = v; mpLS(MP_LS.relay, v || null);
+  if (MP.room){ MP.lastPush = 0; MP.state = v ? 'syncing' : 'codes'; mpSync(true); }
+  return true;
+}
+function mpInviteLink(){
+  const base = location.origin + location.pathname;
+  const q = ['room=' + encodeURIComponent(MP.room || '')];
+  if (MP.relay) q.push('relay=' + encodeURIComponent(MP.relay));
+  return base + '?' + q.join('&');
+}
+// Read the invite link and whatever we remembered last time. Called once, at boot.
+function mpBoot(){
+  mpId();
+  MP.name = mpNameOk(mpLS(MP_LS.name) || '');
+  MP.relay = mpRelayOk(mpLS(MP_LS.relay) || '') || '';
+  let p = null;
+  try { p = new URLSearchParams(location.search || ''); if (!p.get('room') && location.hash.indexOf('room=') >= 0) p = new URLSearchParams(location.hash.slice(1)); } catch(e){}
+  const fromLink = p && mpRoomOk(p.get('room'));
+  if (p && p.get('relay')){ const r = mpRelayOk(p.get('relay')); if (r){ MP.relay = r; mpLS(MP_LS.relay, r); } }
+  const remembered = mpRoomOk(mpLS(MP_LS.room) || '');
+  MP.pendingRoom = fromLink || remembered || '';
+  MP.fromLink = !!fromLink;
+}
 
 // ===== Soft sound effects (Web Audio, synthesized, quiet) =====
 const SFX = { ctx:null, master:null, on:true, last:{} };
@@ -3091,6 +3409,217 @@ document.addEventListener('keydown', ev => {
   if (isPhone()) UI.advOpen = false;
   if (restore()){ render(true); if (S.over){ S.over.fail ? showFail(S.over.fail) : showMissionEnd(); } else if (S.event) showEvent(); }
   else { S = startGame(undefined, 'learner'); S.history = [snap(S)]; S.log = []; syncD(); render(true); startScreen(); }
+})();
+
+// ===== Shared scores: screens. Wraps the single-player UI instead of replacing it. =====
+
+// ---------- small helpers ----------
+function mpAgo(ms){
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return t('mpNow');
+  if (m < 60) return fill(t('mpMinAgo'), [m]);
+  const h = Math.floor(m / 60);
+  return h < 24 ? fill(t('mpHrAgo'), [h]) : fill(t('mpDayAgo'), [Math.floor(h / 24)]);
+}
+function mpWhen(e){
+  const when = MONTHS[LANG][((e.t % 12) + 12) % 12] + ' ' + (START_YEAR + Math.floor(e.t / 12));
+  const what = e.over === 'fail' ? t('mpFell') : e.over === 'end' ? t('mpFinished') : t('mpPlaying');
+  return when + ' · ' + what;
+}
+const mpStateTxt = () => ({ live:t('mpLive'), syncing:t('mpSyncing'), offline:t('mpOffline'), codes:t('mpNoServer') }[MP.state] || '');
+function mpCopy(text, okMsg){
+  const done = () => toast('✅ ' + (okMsg || t('mpCopied')));
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(done, () => mpShowText(text));
+  } catch(e){}
+  mpShowText(text);
+}
+function mpShowText(text){
+  modal(`<h2>${t('mpCopyFail')}</h2><textarea class="code" readonly onclick="this.select()">${esc(text)}</textarea>
+  <button class="btn primary" data-act="close">${t('gotIt')}</button>`);
+  const ta = $('#modal textarea'); if (ta){ ta.focus(); ta.select(); }
+}
+
+// ---------- the scoreboard panel ----------
+function mpRow(e){
+  const flag = e.me ? `<i class="you">${t('mpYou')}</i>` : e.src === 'code' ? `<i class="code">${t('mpFromCode')}</i>` : '';
+  const stale = !e.me && e.age > 120000 ? `<span class="ago">${esc(mpAgo(e.age))}</span>` : '';
+  return `<div class="mprow${e.me ? ' me' : ''}${e.over ? ' done' : ''}">
+    <span class="pl">${e.place}</span><span class="gr g-${e.grade}">${e.grade}</span>
+    <span class="nm"><b>${esc(e.name)}</b>${flag}<small>${esc(mpWhen(e))} ${stale}</small></span>
+    <span class="sc">${Math.round(e.score)}</span></div>`;
+}
+function mpPanel(){
+  if (!MP.open || !MP.room) return '';
+  const rows = MP.roster, others = rows.filter(e => !e.me).length;
+  return `<aside class="mppanel" role="region" aria-label="${t('mpOpenBoard')}">
+    <div class="head"><div class="dic" aria-hidden="true">🏆</div>
+      <div class="ht"><h2>${t('mpFriends')}</h2><div class="sub">${fill(t('mpInRoom'), [esc(MP.room)])} · <span class="dot ${MP.state}"></span>${esc(mpStateTxt())}</div></div>
+      <button class="close" data-act="mpClose" aria-label="${t('mpCloseBoard')}">✕</button></div>
+    <div class="body">
+      ${MP.state === 'offline' ? `<p class="mpnote bad">${t('mpOfflineTxt')}</p>` : ''}
+      ${MP.state === 'codes' ? `<p class="mpnote">${t('mpNoServerTxt')}</p>` : ''}
+      ${rows.length ? rows.map(mpRow).join('') : `<p class="muted">${t('mpStartFirst')}</p>`}
+      ${others ? '' : `<p class="muted mpalone">${t('mpAlone')}</p>`}
+      <p class="mpnote small">${t('mpRules')}</p>
+    </div>
+    <div class="foot">
+      <button class="btn primary small" data-act="mpInvite">🔗 ${t('mpInvite')}</button>
+      <button class="btn small" data-act="mpCode">🔑 ${t('mpMyCode')}</button>
+      <button class="btn small" data-act="mpPaste">➕ ${t('mpAddCode')}</button>
+      <button class="btn small" data-act="mpServer">⚙️ ${t('mpServerBtn')}</button>
+      <button class="btn small" data-act="mpLeave">🚪 ${t('mpLeaveBtn')}</button>
+    </div></aside>`;
+}
+function mpHudBtn(){
+  if (!MP.room) return `<button class="iconbtn" data-act="mpLobby" aria-label="${t('mpTitle')}" title="${t('mpTitle')}">🏆</button>`;
+  const n = MP.roster.length;
+  return `<button class="iconbtn mpchip s-${MP.state}" data-act="mpBoard" aria-label="${t('mpOpenBoard')}" title="${t('mpOpenBoard')}">🏆 <b>${MP.rank && n > 1 ? fill(t('mpRankOf'), [MP.rank, n]) : esc(MP.room)}</b></button>`;
+}
+// Repaint only the two things that change; the rest of the board is untouched.
+function mpPaint(){
+  const box = $('#mpbox'); if (box) box.innerHTML = mpPanel();
+  const chip = $('#hud [data-act="mpBoard"], #hud [data-act="mpLobby"]');
+  if (chip){ const tmp = document.createElement('div'); tmp.innerHTML = mpHudBtn(); chip.replaceWith(tmp.firstElementChild); }
+}
+
+// ---------- screens ----------
+function mpLobby(msg){
+  const room = MP.room || MP.pendingRoom || '';
+  modal(`<div class="tut-icon" aria-hidden="true">🏆</div><h2>${t('mpTitle')}</h2><p class="lede">${t('mpSub')}</p>
+  ${msg ? `<p class="why">${esc(msg)}</p>` : ''}
+  <label class="mpfield"><span>${t('mpName')}</span><input id="mpname" maxlength="18" placeholder="${t('mpNamePh')}" value="${esc(MP.name || '')}"></label>
+  <label class="mpfield"><span>${t('mpRoom')}</span><input id="mproom" maxlength="10" placeholder="${t('mpRoomPh')}" value="${esc(room)}" style="text-transform:uppercase"></label>
+  <div class="row" style="margin-top:12px">
+    <button class="btn primary" data-act="mpGo">${t('mpGo')}</button>
+    <button class="btn" data-act="mpNew">✨ ${t('mpCreateBtn')}</button>
+    ${MP.room ? `<button class="btn" data-act="mpLeave">${t('mpLeaveBtn')}</button>` : `<button class="btn" data-act="mpSkip">${t('mpPlayAlone')}</button>`}
+  </div>
+  <p class="muted small" style="margin-top:12px">${t('mpRules')}</p>
+  <div class="row" style="margin-top:6px"><button class="btn small" data-act="mpServer">⚙️ ${MP.relay ? esc(fill(t('mpServerHost'), [mpHost(MP.relay)])) : t('mpServerNone')}</button></div>`);
+  const f = $('#mpname'); if (f) f.focus();
+}
+// Leaving the lobby for the server settings must not throw away what the player already typed.
+function mpStash(){
+  const n = $('#mpname'), r = $('#mproom');
+  if (n) MP.name = mpNameOk(n.value);
+  if (r) MP.pendingRoom = mpRoomOk(r.value);
+}
+function mpServerModal(msg){
+  modal(`<h2>⚙️ ${t('mpServerTitle')}</h2><p class="lede">${t('mpServerTxt')}</p>
+  ${msg ? `<p class="why">${esc(msg)}</p>` : ''}
+  <label class="mpfield"><span>${t('mpServerTitle')}</span><input id="mprelay" placeholder="${t('mpServerPh')}" value="${esc(MP.relay || '')}" dir="ltr"></label>
+  <div class="row" style="margin-top:12px"><button class="btn primary" data-act="mpRelaySave">${t('mpSave')}</button><button class="btn" data-act="mpBack">${t('back')}</button></div>`);
+  const f = $('#mprelay'); if (f) f.focus();
+}
+function mpCodeModal(){
+  const code = mpCode();
+  if (!code) return modal(`<p class="lede">${t('mpStartFirst')}</p><button class="btn primary" data-act="close">${t('gotIt')}</button>`);
+  mpCopy(code);
+  modal(`<h2>🔑 ${t('mpMyCode')}</h2><p>${t('mpMyCodeTxt')}</p><textarea class="code" readonly onclick="this.select()">${esc(code)}</textarea>
+  <div class="row"><button class="btn primary" data-act="mpBack">${t('back')}</button></div>`);
+  const ta = $('#modal textarea'); if (ta){ ta.focus(); ta.select(); }
+}
+function mpPasteModal(msg){
+  modal(`<h2>➕ ${t('mpAddCode')}</h2>${msg ? `<p class="why">${esc(msg)}</p>` : ''}
+  <textarea class="code" id="mpcodein" placeholder="${t('pasteCode')}"></textarea>
+  <div class="row"><button class="btn primary" data-act="mpAdd">${t('mpAddBtn')}</button><button class="btn" data-act="mpBack">${t('back')}</button></div>`);
+  const f = $('#mpcodein'); if (f) f.focus();
+}
+
+// ---------- hooks into the single-player game ----------
+const mpBaseFrame = ensureFrame;
+ensureFrame = function(){
+  mpBaseFrame();
+  if (!$('#mpbox')){ const b = $('#board'); if (b){ const d = document.createElement('div'); d.id = 'mpbox'; b.appendChild(d); } }
+};
+const mpBaseHUD = renderHUD;
+renderHUD = function(P){ return mpBaseHUD(P) + mpHudBtn(); };
+const mpBaseRender = render;
+render = function(force){
+  mpBaseRender(force);
+  const box = $('#mpbox'); if (box) box.innerHTML = mpPanel();
+  const b = $('#board'); if (b) b.classList.toggle('has-mp', !!(MP.open && MP.room));
+};
+const mpBaseAdvance = advance;
+advance = function(){ mpBaseAdvance(); if (MP.room) mpSync(false); };
+const mpBaseBegin = begin;
+begin = function(diff, mission){ mpBaseBegin(diff, mission); if (MP.room){ MP.lastScore = null; MP.above = {}; MP.seenOnce = false; mpSync(true); } };
+['showFail', 'showLegacy', 'showMissionEnd', 'showMilestone'].forEach(fn => {
+  if (typeof window[fn] !== 'function') return;
+  const base = window[fn];
+  window[fn] = function(){ const r = base.apply(this, arguments); if (MP.room) mpSync(true); return r; };
+});
+const mpBaseMenu = menu;
+menu = function(){
+  mpBaseMenu();
+  const box = $('#modal .modal'); if (!box) return;
+  const d = document.createElement('div');
+  d.className = 'row'; d.style.marginTop = '10px';
+  d.innerHTML = `<button class="btn primary" data-act="${MP.room ? 'mpBoard' : 'mpLobby'}">🏆 ${MP.room ? t('mpOpenBoard') : t('mpTitle')}</button>`;
+  box.appendChild(d);
+};
+const mpBaseStart = startScreen;
+startScreen = function(){
+  mpBaseStart();
+  const box = $('#modal .modal'); if (!box) return;
+  const d = document.createElement('div');
+  d.innerHTML = `<button class="opt" data-act="mpLobby"><b>🏆 ${t('mpTitle')}</b><span class="t">${t('mpSub')}</span></button>`;
+  const anchor = box.querySelector('[data-act="loadcode"]');
+  if (anchor) anchor.after(d.firstElementChild); else box.appendChild(d.firstElementChild);
+};
+
+// ---------- input ----------
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a.slice(0, 2) !== 'mp') return;
+  const val = el => { const x = $(el); return x ? x.value : ''; };
+  switch(a){
+    case 'mpLobby':   // opened from the start screen? come back to it, so the player still picks a difficulty
+      MP.afterLobby = $('#modal [data-act="newgame"]') ? 'start' : 'close';
+      return mpLobby();
+    case 'mpBack': return MP.room ? closeModal() : mpLobby();
+    case 'mpNew': { const f = $('#mproom'); if (f){ f.value = mpNewRoom(); f.focus(); } return; }
+    case 'mpSkip': { MP.pendingRoom = ''; const back = MP.afterLobby === 'start'; MP.afterLobby = null; closeModal(); return back ? startScreen() : render(true); }
+    case 'mpGo': {
+      const name = mpNameOk(val('#mpname')), room = mpRoomOk(val('#mproom'));
+      if (!name) return mpLobby(t('mpNeedName'));
+      if (!room) return mpLobby(t('mpNeedRoom'));
+      mpJoin(room, name); MP.open = true; closeModal();
+      if (MP.afterLobby === 'start'){ MP.afterLobby = null; return startScreen(); }
+      MP.afterLobby = null; return render(true);
+    }
+    case 'mpBoard': MP.open = true; mpLoop(); closeModal(); mpSync(true); return render(true);
+    case 'mpClose': MP.open = false; mpLoop(); return render(true);
+    case 'mpLeave': mpLeave(); closeModal(); return render(true);
+    case 'mpInvite': return mpCopy(mpInviteLink());
+    case 'mpCode': return mpCodeModal();
+    case 'mpPaste': return mpPasteModal();
+    case 'mpAdd': {
+      const e = mpReadCode(val('#mpcodein'));
+      if (!e) return mpPasteModal(t('mpBadCode'));
+      mpSaveCode(e); mpMerge([], Date.now()); closeModal();
+      toast('🏆 ' + fill(t('mpAdded'), [e.name])); MP.open = true;
+      return render(true);
+    }
+    case 'mpServer': mpStash(); return mpServerModal();
+    case 'mpRelaySave': {
+      if (!mpSetRelay(val('#mprelay'))) return mpServerModal(t('mpServerBad'));
+      closeModal(); if (!MP.room) return mpLobby();
+      return render(true);
+    }
+  }
+});
+
+// ---------- boot ----------
+(function(){
+  const onStartScreen = !!$('#modal [data-act="newgame"]');
+  mpBoot();
+  if (MP.pendingRoom && MP.name && !MP.fromLink){ mpJoin(MP.pendingRoom, MP.name); MP.open = false; }
+  else if (MP.pendingRoom || MP.fromLink){ MP.afterLobby = onStartScreen ? 'start' : 'close'; mpLobby(); }
+  else if (onStartScreen) startScreen();   // 5-game.js drew it before this file wrapped it: draw it again, with the friends button
+  if (S) render(true);
 })();
 
 </script>

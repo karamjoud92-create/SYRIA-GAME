@@ -397,6 +397,50 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .endturn{ flex:1; justify-content:center; font-size:17px; padding:11px 16px; }
   .modal{ padding:18px 16px; border-radius:22px; } .modal h2{ font-size:24px; } .lede{ font-size:16px; }
 }
+
+/* ===== v7: play with friends (shared scoreboard) ===== */
+.board.has-mp .mapbox{ padding-inline-end:360px; }
+.board.has-mp .legend{ display:none; }
+@media (max-width: 760px){ .board.has-mp .mapbox{ padding-inline-end:4px; } }
+.iconbtn.mpchip{ width:auto; padding:0 11px; gap:6px; display:flex; font-size:15px; white-space:nowrap; }
+.iconbtn.mpchip b{ font-size:13.5px; font-weight:800; }
+.iconbtn.mpchip.s-offline{ opacity:.6; }
+.iconbtn.mpchip.s-live b{ color:var(--good); }
+.mppanel{ position:absolute; inset-inline-end:12px; top:12px; bottom:12px; width:330px; z-index:9; background:var(--card); color:var(--card-ink);
+  border-radius:22px; box-shadow:0 6px 0 rgba(10,14,30,.35); display:flex; flex-direction:column; overflow:hidden; animation:slidein .22s ease-out; }
+.mppanel .head{ padding:12px 14px 10px; background:var(--card-2); display:flex; align-items:center; gap:10px; }
+.mppanel .head .dic{ width:40px; height:40px; border-radius:13px; background:var(--gold); display:grid; place-items:center; font-size:21px; flex:0 0 auto; }
+.mppanel .head .ht{ min-width:0; } .mppanel .head h2{ font-size:20px; }
+.mppanel .head .sub{ font-size:12.5px; color:var(--card-muted); font-weight:700; display:flex; align-items:center; gap:5px; }
+.mppanel .body{ padding:10px 14px; overflow-y:auto; flex:1; }
+.mppanel .foot{ padding:8px 10px 10px; border-top:2px dotted var(--card-line); display:flex; flex-wrap:wrap; gap:5px; }
+.mppanel .foot .btn{ flex:1 1 auto; }
+.dot{ width:9px; height:9px; border-radius:50%; background:var(--card-muted); display:inline-block; }
+.dot.live{ background:var(--good); } .dot.syncing{ background:var(--tense); } .dot.offline{ background:var(--bad); } .dot.codes{ background:var(--calm); }
+.mprow{ display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:14px; border:2px solid var(--card-line); background:#fff; margin-bottom:7px; }
+.mprow.me{ border-color:var(--gold-deep); background:#fff4dc; }
+.mprow.done{ opacity:.75; }
+.mprow .pl{ font-size:14px; font-weight:800; color:var(--card-muted); min-width:16px; text-align:center; }
+.mprow .gr{ width:30px; height:30px; border-radius:10px; display:grid; place-items:center; font-size:16px; font-weight:800; background:var(--gold); color:var(--gold-ink); flex:0 0 auto; }
+.mprow .gr.g-A{ background:#3f9a4a; color:#fff; } .mprow .gr.g-B{ background:#35b6a3; color:#fff; }
+.mprow .gr.g-D{ background:#f08a3c; color:#fff; } .mprow .gr.g-F{ background:#d93a4a; color:#fff; }
+.mprow .nm{ flex:1; min-width:0; font-size:14.5px; line-height:1.2; }
+.mprow .nm b{ font-weight:800; } .mprow .nm small{ display:block; font-size:11.5px; color:var(--card-muted); font-weight:700; }
+.mprow .nm i{ font-style:normal; font-size:11px; font-weight:800; border-radius:99px; padding:0 6px; margin-inline-start:5px; background:var(--gold); color:var(--gold-ink); }
+.mprow .nm i.code{ background:var(--card-2); color:var(--card-muted); }
+.mprow .nm .ago{ font-weight:600; }
+.mprow .sc{ font-size:21px; font-weight:800; }
+.mpnote{ font-size:13px; background:#fff4dc; border-radius:12px; padding:9px 11px; margin:0 0 10px; }
+.mpnote.bad{ background:#fde3e3; } .mpnote.small{ background:none; padding:0; color:var(--card-muted); font-size:12px; margin-top:10px; }
+.mpalone{ font-size:13px; margin:8px 0 0; }
+.mpfield{ display:block; margin-top:10px; } .mpfield span{ display:block; font-size:13px; font-weight:800; color:var(--card-muted); margin-bottom:3px; }
+.mpfield input{ width:100%; font:700 17px var(--font); color:var(--card-ink); background:var(--card-2); border:2px solid var(--card-line); border-radius:12px; padding:9px 12px; }
+.mpfield input:focus{ outline:3px solid var(--gold); outline-offset:1px; }
+@media (max-width: 760px){
+  .mppanel{ inset:auto 0 0 0; width:auto; top:auto; max-height:76%; border-radius:22px 22px 0 0; }
+  .iconbtn.mpchip{ height:38px; padding:0 8px; } .iconbtn.mpchip b{ font-size:12px; }
+}
+@media (prefers-reduced-motion: reduce){ .mppanel{ animation:none; } }
 </style>
 </head>
 <body>

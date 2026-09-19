@@ -3,8 +3,9 @@
 const fs = require('fs'), path = require('path');
 const r = f => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 const ENGINE = ['engine/engine.js', 'engine/mapdata.js'];
-const UI = ['text/1-ui-strings.js', 'text/2-content.js', 'text/3-stories.js', 'text/4-time-trade.js',
-  'ui/0-sfx.js', 'ui/1-core.js', 'ui/2-map-panels.js', 'ui/3-board.js', 'ui/4-modals.js', 'ui/5-game.js'];
+const UI = ['text/1-ui-strings.js', 'text/2-content.js', 'text/3-stories.js', 'text/4-time-trade.js', 'text/5-multiplayer.js',
+  'net/net.js',
+  'ui/0-sfx.js', 'ui/1-core.js', 'ui/2-map-panels.js', 'ui/3-board.js', 'ui/4-modals.js', 'ui/5-game.js', 'ui/6-multiplayer.js'];
 const html = r('shell.html').replace('/*ENGINE*/', () => ENGINE.map(r).join('\n')).replace('/*UI*/', () => UI.map(r).join('\n')); // function form: avoids $ patterns in replace
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist', 'index.html'), html);
