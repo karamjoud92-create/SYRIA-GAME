@@ -6,6 +6,7 @@ D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:
 const syncD = () => { if (S) D.policy = S.policy; };
 
 const DRAWERS5 = [
+  ['guide', '🧭', 'dGuide', 'guideSub'],
   ['policy', '📜', 'dPolicy', 'policySub'], ['decrees', '⭐', 'dDecrees', 'decreesSub'], ['money', '💰', 'dMoney', 'moneySub'],
   ['trade', '🚢', 'dTrade', 'tradeSub'],
   ['people', '👥', 'dPeople', 'peopleSub'], ['chains', '🔗', 'dSupply', 'supplySub'], ['progress', '📈', 'dProgress', 'progressSub'],
@@ -18,7 +19,7 @@ const DRAWERS5 = [
 const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
 function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
 const UNLOCK = {
-  policy:0, money:0, people:0, layerUnrest:0, projects:0,
+  guide:0, policy:0, money:0, people:0, layerUnrest:0, projects:0,
   decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
   trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2,
   services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
@@ -51,7 +52,7 @@ function begin(diff, mission){
   setSpeed(0);
   UI.active = mission ? 'mission' : 'campaign';
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
-  UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
+  UI.drawer = guideLeft() ? 'guide' : null; UI.provOpen = false; UI.toasts = []; persist();
 }
 function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
 function loadCode(code){
@@ -274,13 +275,13 @@ function advisors(P){
   const A = ADV[LANG], net = P.reserves - S.reserves, runway = net < 0 ? Math.max(1, Math.floor(S.reserves / -net * 6)) : 999;
   const econ = [], sec = [];
   if (runway <= 18) econ.push({ lvl:'bad', text:fill(A.usd, [runway]), act:A.usdAct, go:'money' });
-  if (P.treasury < -20 || (S.treasury < 0 && P.treasury < S.treasury)) econ.push({ lvl:'bad', text:A.cash, act:A.cashAct, go:'policy' });
-  if ((S.clogged || 0) > 5) econ.push({ lvl:'warn', text:A.clog, act:A.clogAct, go:'trade' });
-  if (S.policy.print >= 15) econ.push({ lvl:'warn', text:A.print, act:A.printAct, go:'policy' });
+  if (P.treasury < -20 || (S.treasury < 0 && P.treasury < S.treasury)) econ.push({ lvl:'bad', text:A.cash, act:A.cashAct, go:'policy', need:'polTax' });
+  if ((S.clogged || 0) > 5) econ.push({ lvl:'warn', text:A.clog, act:A.clogAct, go:'trade', need:'trade' });
+  if (S.policy.print >= 15) econ.push({ lvl:'warn', text:A.print, act:A.printAct, go:'policy', need:'polPrint' });
   const rw = realWage(S), ex = S.expWage || 25;
   if (rw < ex - 6) econ.push({ lvl:'warn', text:fill(A.pay, [rw.toFixed(0), ex.toFixed(0)]), act:A.payAct, go:'money' });
-  if (nationalHours(S) < 6 && S.policy.capex === 0) econ.push({ lvl:'warn', text:A.grid, act:A.gridAct, go:'policy' });
-  if (!econ.length) econ.push({ lvl:'ok', text:A.calmEcon, act:A.calmEconAct, go:'trade' });
+  if (nationalHours(S) < 6 && S.policy.capex === 0) econ.push({ lvl:'warn', text:A.grid, act:A.gridAct, go:'policy', need:'polCapex' });
+
   const worst = PROVS.map(p => ({ id:p.id, u:S.provs[p.id].u })).sort((a, b) => b.u - a.u)[0];
   if (worst.u >= 65) sec.push({ lvl:'bad', text:fill(A.prov, [PN(worst.id), Math.round(worst.u)]), act:A.provAct, sel:worst.id });
   if (natUnrest(S) >= 55 && S.policy.security !== 'heavy') sec.push({ lvl:'warn', text:A.heavy, act:A.heavyAct, go:'policy' });
@@ -297,18 +298,28 @@ function advisors(P){
   // factories and getting the goods out
   const ind = [];
   const sectorsBuilt = Object.keys(IND).reduce((n, k) => n + ((S.ind && S.ind[k]) || 0), 0);
-  if ((S.clogged || 0) > 5) ind.push({ lvl:'bad', text:A.clogNow, act:A.clogNowAct, go:'trade', sub:['trade', 'ports'] });
-  if (joblessNat(S) > 52) ind.push({ lvl:'bad', text:A.jobsBad, act:A.jobsBadAct, go:'trade' });
-  if (!sectorsBuilt && isOpen('sectors')) ind.push({ lvl:'warn', text:A.noInd, act:A.noIndAct, go:'trade' });
+  if ((S.clogged || 0) > 5) ind.push({ lvl:'bad', text:A.clogNow, act:A.clogNowAct, go:'trade', sub:['trade', 'ports'], need:'trade' });
+  if (joblessNat(S) > 52) ind.push({ lvl:'bad', text:A.jobsBad, act:A.jobsBadAct, go:'trade', need:'trade' });
+  if (!sectorsBuilt && isOpen('sectors')) ind.push({ lvl:'warn', text:A.noInd, act:A.noIndAct, go:'trade', need:'sectors' });
   if (!ind.length) ind.push({ lvl:'ok', text:A.calmInd, act:A.calmIndAct, go:'trade' });
 
-  return { econ:econ[0], sec:sec[0], health:hea[0], ind:ind[0] };
+  // an adviser who can only point at a locked panel says the calm line instead
+  const usable = (arr, fallback) => { const ok = arr.filter(x => !x.need || isOpen(x.need)); return ok.length ? ok[0] : fallback; };
+  return {
+    econ:usable(econ, isOpen('trade') ? { lvl:'ok', text:A.calmEcon, act:A.calmEconAct, go:'trade' } : { lvl:'ok', text:t('calmEconEarly'), act:t('calmEconEarlyAct') }),
+    sec:usable(sec, { lvl:'ok', text:A.calmSec, act:A.calmSecAct }),
+    health:usable(hea, { lvl:'ok', text:A.calmHealth, act:A.calmHealthAct }),
+    ind:usable(ind, { lvl:'ok', text:A.calmInd, act:A.calmIndAct }),
+  };
 }
 const ADVISORS = [['econ', '🧑‍💼', 'economist'], ['sec', '🎖️', 'securityChief'], ['health', '🩺', 'ministerHealth'], ['ind', '🏭', 'ministerInd']];
+// Never suggest something the player cannot reach yet: a minister whose panel is still locked
+// has nothing useful to say, however worried they are.
+const advisorsOpen = () => ADVISORS.filter(([k]) => k === 'econ' || k === 'sec' || (k === 'health' && isOpen('services')) || (k === 'ind' && isOpen('trade')));
 function renderAdvisors(P){
   const a = advisors(P), rank = { bad:2, warn:1, ok:0 };
   // only ministers whose brief is open yet
-  const shown = ADVISORS.filter(([k]) => k === 'econ' || k === 'sec' || (k === 'health' && isOpen('services')) || (k === 'ind' && isOpen('trade')));
+  const shown = advisorsOpen();
   const cur = UI.adv && a[UI.adv] && shown.some(([k]) => k === UI.adv) ? UI.adv
     : shown.slice().sort((x, y) => rank[a[y[0]].lvl] - rank[a[x[0]].lvl])[0][0];
   const x = a[cur], who = shown.find(([k]) => k === cur);
@@ -464,6 +475,56 @@ function renderTradePartners(){
       <div class="row spread" style="margin-top:8px"><span></span>${status}</div>${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   }).join('');
 }
+
+// ---------- the guide ----------
+// A new president should never be staring at a screen wondering what a button does. This panel
+// always answers two questions: what should I do now, and why did that just change?
+const GUIDE_TASKS = [
+  { id:'start',   icon:'▶️' },
+  { id:'gloss',   icon:'🔎' },
+  { id:'policy',  icon:'📜', go:'policy' },
+  { id:'prov',    icon:'🗺️' },
+  { id:'project', icon:'🏗️' },
+  { id:'money',   icon:'💰', go:'money' },
+];
+const guideDone = id => !!(S && S.flags && S.flags['g_' + id]);
+function guideTick(id){ if (S && S.flags && !S.flags['g_' + id]){ S.flags['g_' + id] = true; persist(); } }
+const guideLeft = () => GUIDE_TASKS.filter(x => !guideDone(x.id)).length;
+
+function renderGuide(){
+  const left = guideLeft(), A = AR();
+  let h = '';
+  if (left){
+    const next = GUIDE_TASKS.find(x => !guideDone(x.id));
+    h += `<h3 class="bh" style="margin-top:0">🧭 ${t('guideSteps')} <span class="chip">${fill(t('guideLeft'), [left])}</span></h3>`;
+    h += GUIDE_TASKS.map(x => {
+      const ok = guideDone(x.id), isNext = !ok && x.id === next.id;
+      return `<div class="gstep${ok ? ' done' : ''}${isNext ? ' now' : ''}">
+        <span class="gmark" aria-hidden="true">${ok ? '✅' : isNext ? x.icon : '⚪'}</span>
+        <div><b>${esc(t('gt_' + x.id))}</b>${isNext ? `<p>${esc(t('gw_' + x.id))}</p>${x.go ? `<button class="btn small primary" data-act="advgo" data-go="${x.go}">${t('showMe')}</button>` : ''}` : ''}</div></div>`;
+    }).join('');
+  } else {
+    h += `<p class="mpnote" style="margin-top:0">✅ ${t('guideDone')}</p>`;
+  }
+
+  // what to do next, in one line, from whichever adviser is most worried
+  const P = step(S, 0.5), a = advisors(P), rank = { bad:2, warn:1, ok:0 };
+  const keys = advisorsOpen().map(x => x[0]);
+  const worst = keys.slice().sort((x, y) => rank[a[y].lvl] - rank[a[x].lvl])[0], w = a[worst];
+  h += `<h3 class="bh">👉 ${t('guideNext')}</h3>
+    <div class="rcard"><p style="margin:0 0 6px"><b>${esc(w.text)}</b></p><p class="small" style="margin:0 0 8px">${esc(w.act)}</p>
+    ${w.go || w.sel ? `<button class="btn primary small" data-act="advgo" data-go="${w.go || ''}" data-sel="${w.sel || ''}" data-sub="${w.sub ? w.sub.join(',') : ''}">${t('showMe')}</button>` : ''}</div>`;
+
+  // why things moved — the thing a beginner has nowhere else to look for
+  const chs = whyLive();
+  h += `<h3 class="bh">🔗 ${t('guideWhy')}</h3>` + (chs.length ? renderWhy(chs) : `<p class="muted small">${t('guideNothing')}</p>`);
+
+  // and the chains themselves, always available
+  h += `<h3 class="bh">⚙️ ${t('guideChains')}</h3><ul class="chainlist">`
+    + [1, 2, 3, 4, 5].map(i => `<li>${esc(t('chain' + i))}</li>`).join('')
+    + `</ul><p class="small muted">${t('chainHelp')}</p>`;
+  return h;
+}
 const svcLabel = id => ({ schools:t('svcSchools'), clinics:t('svcClinics'), unis:t('svcUnis') })[id];
 const SVC_ICON = { schools:'🏫', clinics:'🏥', unis:'🎓' };
 function renderServices(){
@@ -509,6 +570,7 @@ function renderWhyPanel(){
 }
 function drawerBody(id){
   switch(id){
+    case 'guide': return renderGuide();
     case 'policy': return renderPolicy();
     case 'decrees': return renderDecrees();
     case 'money': return UI.sub.money === 'budget' ? renderMoneyBudget() : renderMoneyActions();
@@ -543,9 +605,9 @@ function renderProgressCharts(){
 
 // ---------- dock ----------
 function renderDock(){
-  const DR = DRAWERS5.filter(d => isOpen({ policy:'policy', decrees:'decrees', money:'money', trade:'trade', people:'people', chains:'chains', progress:'progress' }[d[0]]));
+  const DR = DRAWERS5.filter(d => isOpen({ guide:'guide', policy:'policy', decrees:'decrees', money:'money', trade:'trade', people:'people', chains:'chains', progress:'progress' }[d[0]]));
   const ps = personas(S), sad = Object.values(ps).filter(o => o.net < 0).length, ch = chains(S);
-  const badge = { people: sad ? `<span class="badge">${sad}</span>` : '', chains: (ch.sb === 2 || ch.se === 2) ? '<span class="badge">!</span>' : '', progress: UI.newCycle ? '<span class="badge star">★</span>' : '', trade: (S.clogged || 0) > 5 ? '<span class="badge">!</span>' : '' };
+  const badge = { guide: guideLeft() ? `<span class="badge star">${guideLeft()}</span>` : '', people: sad ? `<span class="badge">${sad}</span>` : '', chains: (ch.sb === 2 || ch.se === 2) ? '<span class="badge">!</span>' : '', progress: UI.newCycle ? '<span class="badge star">★</span>' : '', trade: (S.clogged || 0) > 5 ? '<span class="badge">!</span>' : '' };
   const btn = ([k, i, l]) => `<button class="dbtn" data-act="drawer" data-v="${k}" aria-pressed="${UI.drawer === k}"><span class="di" aria-hidden="true">${i}</span><span class="dt">${t(l)}</span>${badge[k] || ''}</button>`;
   const sp = [[0, '❚❚', 'pause'], [1, '▶', 'slow'], [2, '▶▶', 'normal'], [3, '▶▶▶', 'fastest']];
   const tr = DR.find(d => d[0] === 'trade'), rest = DR.filter(d => d[0] !== 'trade');
@@ -635,22 +697,22 @@ document.addEventListener('click', ev => {
   switch(a){
     case 'mute': sfxToggle(); break;
     case 'closeEffect': UI.effect = null; renderEffect(); return;
-    case 'speed': setSpeed(+v); break;
-    case 'drawer': UI.drawer = UI.drawer === v ? null : v; if (v === 'progress') UI.newCycle = false; if (UI.drawer && isPhone()) UI.provOpen = false; break;
+    case 'speed': setSpeed(+v); if (+v > 0) guideTick('start'); break;
+    case 'drawer': UI.drawer = UI.drawer === v ? null : v; if (v === 'progress') UI.newCycle = false; if (v === 'money') guideTick('money'); if (UI.drawer && isPhone()) UI.provOpen = false; break;
     case 'closeDrawer': UI.drawer = null; break;
     case 'closeProv': UI.provOpen = false; break;
     case 'subtab': UI.sub[b.dataset.d] = v; break;
     case 'adv': if (UI.advOpen && UI.adv === v) UI.advOpen = false; else { UI.adv = v; UI.advOpen = true; } break;
     case 'advhide': UI.advOpen = false; break;
     case 'layer': UI.layer = v; break;
-    case 'sel': UI.sel = id; UI.provOpen = true; if (isPhone()) UI.drawer = null; break;
+    case 'sel': UI.sel = id; UI.provOpen = true; guideTick('prov'); if (isPhone()) UI.drawer = null; break;
     case 'advgo': if (b.dataset.sub){ const [d, v] = b.dataset.sub.split(','); UI.sub[d] = v; }
       if (b.dataset.go){ UI.drawer = b.dataset.go; if (isPhone()) UI.provOpen = false; } if (b.dataset.sel){ UI.sel = b.dataset.sel; UI.provOpen = true; if (isPhone()) UI.drawer = null; } break;
     case 'pol': { const k = b.dataset.k, val = POL_VALUES[k].find(o => String(o) === v); if (S.policy[k] === val) break; const p = L2(POL[k]);
-      withEffects(`${p.name}: ${p.opts[String(val)]}`, () => { S.policy[k] = val; return true; }); persist(); break; }
+      withEffects(`${p.name}: ${p.opts[String(val)]}`, () => { S.policy[k] = val; return true; }); guideTick('policy'); persist(); break; }
     case 'oilHome': if (S.policy.oilHome !== +v) withEffects(`${t('oilTitle')}: ${t('oilUse')[+v]}`, () => ACT.oilHome(S, +v)); persist(); break;
     case 'decree': withEffects(L2(DEC_TXT[id])[0], () => ACT.decree(S, id)); break;
-    case 'proj': withEffects(`${PN(id)}: ${L2(PROJ_TXT[id])[0]}`, () => ACT.project(S, id, b.dataset.mode)); break;
+    case 'proj': if (withEffects(`${PN(id)}: ${L2(PROJ_TXT[id])[0]}`, () => ACT.project(S, id, b.dataset.mode))) guideTick('project'); break;
     case 'fac': withEffects(L2(FAC_TXT[id])[0], () => ACT.facility(S, id)) && sfx('coin'); break;
     case 'wage': if (!cooldown('lastRaise', 6)) withEffects(`${t('raiseTitle')} +${v}%`, () => { ACT.wage(S, +v); S.flags.lastRaise = S.t; return true; }); break;
     case 'grantPop': if (!cooldown('lastGift', 6)) withEffects(t('giftTitle'), () => { const ok = ACT.gift(S); if (ok) S.flags.lastGift = S.t; return ok; }); break;
@@ -660,7 +722,7 @@ document.addEventListener('click', ev => {
     case 'portUp': withEffects(`${t('upgrade')}: ${PORT_NAME[LANG][id]}`, () => ACT.portUpgrade(S, id)); break;
     case 'portCon': withEffects(`${t('concession')}: ${PORT_NAME[LANG][id]}`, () => ACT.portConcession(S, id)) && sfx('coin'); break;
     case 'deal': withEffects(`${L2(PART_TXT[id])[0]}: ${L2(PART_TXT[id])[1]}`, () => ACT.deal(S, id)); break;
-    case 'gloss': return gloss(b.dataset.k);
+    case 'gloss': guideTick('gloss'); return gloss(b.dataset.k);
     case 'afterresults': case 'nextq': return afterResults();
     case 'choose': sfx('decide'); return choose(+b.dataset.i);
     case 'cycle': return showCycle(id, false);

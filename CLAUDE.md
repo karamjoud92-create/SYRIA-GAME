@@ -14,6 +14,9 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run check`  → all of the above. Run this after every engine change.
 - `npm run serve`  → a score server on localhost:8787, for working on the scoreboard.
 - `npm run browser`→ two real browsers in one room (needs `npm i -D playwright`). Writes `tools/shot-mp-*.png`.
+- `npm run guide`  → checks a new player is taught: the tutorial runs, the game opens on the Guide, the six first
+  steps tick off as they are actually done, and — the important one — **no advice ever points at a panel or dial
+  the player has not been given yet**. Both languages.
 - `npm run onboard`→ checks the game opens up slowly: 3 panels and 1 map layer at month 0, 7 panels and 4 layers
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
@@ -56,6 +59,14 @@ fast: a player should be able to think, and should not have to wait two years to
 - `src/net/net.js` — the shared scoreboard's transport. No DOM, no game logic: it turns `legacy(S)` into a small
   entry, sends it to a score server (`worker/`), merges what comes back with any pasted score codes, and ranks.
   Every player's game stays on their own device; only name, score, grade and date travel.
+- **The Guide** (`GUIDE_TASKS`, `renderGuide()` in `src/ui/5-game.js`) is the first panel a new player sees and
+  the only one open from month 0 to the end. It holds four things: the six first steps (ticked off by
+  `guideTick()` from the real click handlers, stored in `S.flags.g_*` so no save bump is needed), the single most
+  useful thing to do next, why the numbers just moved (`whyLive()`), and the cause-and-effect chains.
+  **Any advice must be reachable.** An adviser suggestion that points at a locked control carries `need:'<unlock
+  key>'` and is filtered out by `usable()`; `advisorsOpen()` hides ministers whose brief has not opened. This
+  was wrong twice — the guide told a brand-new player to build schools, then to fund power stations, both of
+  them months away from existing. `npm run guide` now fails if it happens again.
 - **Progressive unlock** (`STAGE_AT`, `UNLOCK`, `isOpen()` in `src/ui/5-game.js`). The game opens in stages at
   months 0 / 7 / 15 / 27 / 45: three panels, three policy dials and one map layer to start, the whole game by
   year 4. Gate new UI by adding a key to `UNLOCK` and wrapping the control in `isOpen('key')` — and add it to

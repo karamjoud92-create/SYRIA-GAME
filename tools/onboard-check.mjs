@@ -19,8 +19,8 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // --- month 0: a small game ---
   const dock0 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
-  ok(dock0.length === 3 && dock0.includes('policy') && dock0.includes('money') && dock0.includes('people'),
-     `${tag}: month 0 offers 3 panels, not 7 (${dock0.join(',')})`);
+  ok(dock0.length === 4 && ['guide','policy','money','people'].every(k => dock0.includes(k)),
+     `${tag}: month 0 offers 4 panels, not 8 (${dock0.join(',')})`);
   const layers0 = await page.$$eval('.layers button', e => e.length);
   ok(layers0 === 1, `${tag}: month 0 has one map layer (${layers0})`);
   await page.click('.dbtn[data-v=policy]'); await page.waitForTimeout(200);
@@ -38,7 +38,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   await jump(page, 20); await clear(page);
   const dock3 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
   const layers3 = await page.$$eval('.layers button', e => e.length);
-  ok(dock3.length === 7 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
+  ok(dock3.length === 8 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
 
   // --- schools, clinics, universities ---
   await page.evaluate(() => { UI.drawer = 'people'; UI.sub.people = 'services'; render(true); }); await page.waitForTimeout(250);
