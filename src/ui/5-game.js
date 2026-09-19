@@ -1,5 +1,5 @@
 // ===== Transition: UI v5 (continuous time + trade). Overrides earlier render functions. =====
-const SPEEDS = [0, 6000, 3500, 1800];
+const SPEEDS = [0, 9500, 5600, 3000];
 UI.speed = 0; UI.flash = {}; UI.effect = null; UI.toasts = []; UI.sub = { money:'actions', progress:'why', trade:'resources' }; UI.pdown = false; UI.hover = false; UI.dirty = false;
 let TIMER = null, TOAST_ID = 0;
 D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:0 };
@@ -23,12 +23,12 @@ const seasonsTxt = n => monthsTxt(n);
 const gradeOf = v => v >= 75 ? 'A' : v >= 62 ? 'B' : v >= 50 ? 'C' : v >= 38 ? 'D' : 'F';
 
 // ---------- saves ----------
-function snap(s){ return { t:s.t, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score,
+function snap(s){ return { t:s.t, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score, jobs:joblessNat(s), bar:s.bar || 0,
   print:s.policy.print, capex:s.policy.capex, corr:s.corr, cap:s.cap, mw:s.mw, debt:s.debt, privB:(s.last && s.last.privB) || 0, contagion:(s.last && s.last.maxContagion) || 0 }; }
 function persist(){ STORE[UI.active] = { S }; STORE.active = UI.active; try { localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e){} }
 function restore(){
   try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!o) return false; STORE = o; UI.active = o.active || 'campaign';
-    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 5) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
+    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
 }
 function begin(diff, mission){
   setSpeed(0);
@@ -36,9 +36,9 @@ function begin(diff, mission){
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
   UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
 }
-function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:5, S, active:UI.active })))); }
+function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
 function loadCode(code){
-  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 5) return false;
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 6) return false;
     UI.active = o.active || 'campaign'; S = o.S; syncD(); setSpeed(0); persist(); return true; } catch(e){ return false; }
 }
 function pcLeft(){ return S.pc; }
@@ -88,9 +88,9 @@ const EFX_KEYS = [
   ['score', s => s.score, 0.2, true, v => sign(v, 1)],
 ];
 function withEffects(title, fn){
-  const before = clone(S), pB = step(before, 1);
+  const before = clone(S), pB = step(before, 0.5);
   const ok = fn(); if (!ok) return false;
-  const pA = step(S, 1), now = [], later = [];
+  const pA = step(S, 0.5), now = [], later = [];
   EFX_KEYS.forEach(([k, get, thr, goodUp, fmt]) => {
     const dn = get(S) - get(before), dl = (get(pA) - get(pB)) - dn;
     if (Math.abs(dn) >= thr) now.push([k, dn, (dn > 0) === goodUp, fmt(dn)]);
@@ -109,7 +109,7 @@ function renderEffect(){
   const A = AR();
   el.innerHTML = `<div class="effect" role="status"><button class="close" data-act="closeEffect" aria-label="${t('close')}">✕</button><div class="et">✅ ${esc(e.title)}</div>
     ${e.now.length ? `<div class="erow"><span class="el">${A ? 'الآن' : 'Right now'}</span><span class="chips">${e.now.map(effChip).join('')}</span></div>` : ''}
-    <div class="erow"><span class="el">${A ? 'خلال 6 أشهر' : 'Over 6 months'}</span><span class="chips">${e.later.length ? e.later.map(effChip).join('') : `<span class="chip">${A ? 'تأثير صغير أو بطيء' : 'Small or slow effect'}</span>`}</span></div></div>`;
+    <div class="erow"><span class="el">${A ? 'خلال 3 أشهر' : 'Over 3 months'}</span><span class="chips">${e.later.length ? e.later.map(effChip).join('') : `<span class="chip">${A ? 'تأثير صغير أو بطيء' : 'Small or slow effect'}</span>`}</span></div></div>`;
 }
 
 // ---------- toasts ----------
@@ -157,10 +157,10 @@ function personas(s){
   { const gen = (24 - h('aleppo')) * 1.1, bro = s.flags.unified || s.flags.remitBoost ? 45 : 32;
     out.rana = { inc:[['salary', rw], ['side', 12], ['brother', bro]], exp:[['food', 36 * (1 + infl / 200)], ['bread', breadC], ['generator', gen], ['transport', trans], ['rent', 18]], why: gen > 14 ? 'why_power' : rw < 22 ? 'why_pay' : breadC > 10 ? 'why_bread' : null }; }
   { const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil;
-    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.mines / 150) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100) * (s.res.farm > 1 ? 1 + (s.res.farm - 1) * 0.1 : 1);
-    out.khaled = { inc:[['crop', crop]], exp:[['diesel', { full:8, partial:14, market:22 }[P.fuel]], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]], why: drought ? 'why_drought' : s.provs.hasakeh.mines > 15 ? 'why_mines' : null }; }
+    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.jobless / 260) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100) * (s.res.farm > 1 ? 1 + (s.res.farm - 1) * 0.1 : 1);
+    out.khaled = { inc:[['crop', crop]], exp:[['diesel', { full:8, partial:14, market:22 }[P.fuel]], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]], why: drought ? 'why_drought' : s.provs.hasakeh.jobless > 45 ? 'why_nojobs' : null }; }
   { const pv = s.provs.rif, back = !!s.decrees.restitution;
-    out.hiba = { inc:[['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250)]], exp:[['rent', back ? 0 : 18 + 22 * (pv.dmg / pv.dmg0)], ['food', 28 * (1 + infl / 200)], ['bread', breadC], ['generator', (24 - h('rif')) * 0.8], ['transport', trans]], why: back ? 'why_homeback' : 'why_home' }; }
+    out.hiba = { inc:[['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250) * clamp(1.3 - pv.jobless / 90, 0.45, 1.15)]], exp:[['rent', back ? 0 : 18 + 22 * (pv.dmg / pv.dmg0)], ['food', 28 * (1 + infl / 200)], ['bread', breadC], ['generator', (24 - h('rif')) * 0.8], ['transport', trans]], why: pv.jobless > 48 ? 'why_nojobs' : back ? 'why_homeback' : 'why_home' }; }
   { const hd = h('damascus'), bribe = s.corr * 0.35;
     out.samer = { inc:[['shop', 75 * (1 + (s.cap - 20) / 100) * clamp(hd / 12, 0.45, 1.4) * (P.tax === 'aggressive' ? 0.9 : 1)]], exp:[['generator', (24 - hd) * 1.8], ['bribes', bribe], ['stock', 20 * (1 + infl / 100)], ['rent', 28], ['food', 30 * (1 + infl / 200)]], why: (24 - hd) * 1.8 > 25 ? 'why_power' : bribe > 18 ? 'why_bribes' : infl > 10 ? 'why_fx' : null }; }
   Object.values(out).forEach(o => { o.i = o.inc.reduce((a, x) => a + x[1], 0); o.e = o.exp.reduce((a, x) => a + x[1], 0); o.net = o.i - o.e; const r = o.i / o.e;
@@ -219,7 +219,7 @@ function detectCycles(){
 
 // ---------- HUD ----------
 function renderHUD(P){
-  const rw = realWage(S), nu = natUnrest(S), st = S.flags.stats, pw = nationalHours(S);
+  const rw = realWage(S), nu = natUnrest(S), st = S.flags.stats, pw = nationalHours(S), jb = joblessNat(S);
   const total = S.mission ? S.mission.end - S.mission.start : 60, done = S.mission ? S.t - S.mission.start : S.t % 60;
   const C = 2 * Math.PI * 22, frac = clamp(done / total, 0, 1);
   const ring = `<div class="ring"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22" fill="var(--board-2)" stroke="var(--board-2)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="ic">${seasonNow(S) === 'H1' ? '🌾' : '❄️'}</span></div>`;
@@ -237,6 +237,7 @@ function renderHUD(P){
     <div class="tray" role="group">
       ${res('trust', st ? Math.round(S.trust) : fog(S.trust, 5), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
       ${res('anger', st ? Math.round(nu) : fog(nu, 5), nu, natUnrest(P), false, sign(natUnrest(P) - nu, 1))}
+      ${res('jobs', (st ? Math.round(jb) : fog(jb, 5)) + '%', jb, joblessNat(P), false, sign(joblessNat(P) - jb, 1))}
       ${res('power', pw.toFixed(1) + (AR() ? 'س' : 'h'), pw, nationalHours(P), true, sign(nationalHours(P) - pw, 1))}
     </div>
     <span class="spacer"></span>
@@ -272,7 +273,7 @@ function renderProvince(){
   let why = ''; if (!pv.project){ if (x.pc > S.pc) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > S.reserves + S.grant) why = fill(t('needsUsdProj'), [x.usd]); }
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div>${icon} ${k}</div><div class="mv">${v}</div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const A = AR(), good = [];
-  if (x.unrest) good.push(`🔥 ${sign(x.unrest)}`); if (x.power) good.push(`💡 +${x.power}${A ? 'س' : 'h'}`); if (x.mines) good.push(A ? '💣 نزع ألغام' : '💣 clears mines');
+  if (x.unrest) good.push(`🔥 ${sign(x.unrest)}`); if (x.power) good.push(`💡 +${x.power}${A ? 'س' : 'h'}`); if (x.jobs) good.push(A ? `💼 ${-x.jobs} فرصة عمل` : `💼 ${-x.jobs} jobs`);
   if (x.rev) good.push(`💵 +${bn(x.rev * 2)}/${A ? 'سنة' : 'yr'}`); if (x.transit) good.push(`🏦 +${usdM(x.transit * 2)}/${A ? 'سنة' : 'yr'}`); if (x.phosphate) good.push(`⛏️ +${usdM(x.phosphate * 2)}/${A ? 'سنة' : 'yr'}`); if (x.oil) good.push(`🛢️ +${usdM(x.oil * 2)}/${A ? 'سنة' : 'yr'}`);
   if (x.wheat) good.push(`🌾 ${MINUS}${usdM(x.wheat * 2)}/${A ? 'سنة' : 'yr'}`); if (x.mw) good.push(`⚡ +${x.mw} MW`); if (x.cap) good.push(A ? '🏭 اقتصاد أكبر' : '🏭 bigger economy'); if (x.trust) good.push(`🤝 +${x.trust}`);
   const mF = projMonths(id, 'fast'), mT = projMonths(id, 'tender'), lF = Math.round(x.usd * projLeakRate(S, 'fast')), lT = Math.round(x.usd * projLeakRate(S, 'tender'));
@@ -287,7 +288,7 @@ function renderProvince(){
   return `<aside class="pcard"><div class="head"><div><h2>${esc(PN(id))}</h2><span class="tierpill" style="background:${TIER_COL[tier]}">${tierName(tier)}</span></div><button class="close" data-act="closeProv" aria-label="${t('close')}">✕</button></div>
     <div class="body"><p class="muted" style="margin:0 0 10px;font-size:13px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
       <div class="meters">${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
-        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💣', t('landmines'), Math.round(pv.mines) + '%', pv.mines, '#c8612f')}</div>
+        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}</div>
       <div class="quest${pv.project === true ? ' done' : ''}"><div class="qt">🏗️ ${t('bigProject')}</div><h4>${esc(tx[0])}</h4><p><b>${t('problem')}</b> ${esc(tx[1])}</p>
         <div class="reward">${good.map(g => `<span class="chip up">${esc(g)}</span>`).join('')}</div>
         <div class="row" style="margin-bottom:8px"><span class="chip">🏦 ${usdM(x.usd)}</span><span class="chip">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip">⭐ ${x.pc}</span>` : ''}</div>
@@ -348,7 +349,10 @@ function investValue(id){
     case 'offshore': return 30;
     case 'phosphate': return 35 * 0.35 * (1 - S.provs.homs.u / 150) * 2 * (dealOn(S, 'china') ? 0.7 : 1);
     case 'farm': return 20 * (dealOn(S, 'eu') ? 1.25 : 1);
+    case 'tourism': { const n = (S.ind && S.ind.tourism) || 0; const cur = tourismIncome(S);
+      return cur > 0 ? cur / Math.max(1, n) * 2 : 18 * clamp(1.25 - natUnrest(S) / 55, 0, 1.1) * clamp(nationalHours(S) / 14, 0.3, 1) * 2; }
   }
+  if (IND[id]) return IND[id].exp * 2 * (dealOn(S, 'eu') ? 1.25 : 1) + (IND[id].wheatCut || 0) * 2;
   return 0;
 }
 function renderTradeResources(){
@@ -363,17 +367,22 @@ function renderTradeResources(){
     <div class="rcard"><div class="rh"><span class="ri">🔥</span><div><h3>${t('gasTitle')}</h3><div class="rv">${fill(t('gasProd'), [r.gas.toFixed(0)])}</div></div></div>${bar(r.gas, 30, '#35b6a3')}<p class="small">${t('gasHint')}</p></div>
     <div class="rcard"><div class="rh"><span class="ri">⛏️</span><div><h3>${t('phosTitle')}</h3><div class="rv">×${r.phos.toFixed(2)}</div></div></div>${bar(r.phos, 2.1, '#8c5cc7')}<p class="small">${t('phosHint')}</p></div>
     <div class="rcard"><div class="rh"><span class="ri">🫒</span><div><h3>${t('farmTitle')}</h3><div class="rv">${'●'.repeat(r.farm)}${'○'.repeat(Math.max(0, 4 - r.farm))}</div></div></div><p class="small">${t('farmHint')}</p></div></div>`;
-  h += `<h3 class="bh">💡 ${t('investTitle')}</h3><p class="small muted">${t('investSub')}</p>` + Object.keys(INVEST).map(id => {
+  // one card, used by both groups below
+  const investCard = id => {
     const x = INVEST[id], tx = L2(INV_TXT[id]), running = S.pipe.find(p => p.kind === 'invest' && p.id === id), count = S.invests[id] || 0;
     const maxed = (x.max && count >= x.max) || (id === 'offshore' && r.offshore && r.offshore !== 'drilling');
     const v = investValue(id), pb = v > 0.5 ? x.usd / v + x.months / 12 : null;
-    let why = ''; if (!running && !maxed){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = t('needsCalmEast'); }
+    let why = ''; if (!running && !maxed){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
+    const built = count ? `<span class="chip up">${'●'.repeat(count)}${'○'.repeat(Math.max(0, (x.max || 3) - count))}</span>` : '';
     const status = running ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(running.due - S.t)])}</span>` : maxed ? `<span class="chip up">${id === 'offshore' ? (r.offshore === 'found' ? '✅ ' + (A ? 'وُجد غاز' : 'Gas found') : '❌ ' + (A ? 'بئر جافة' : 'Dry well')) : t('maxed')}</span>`
       : `<button class="btn primary" data-act="invest" data-id="${id}" ${why ? 'disabled' : ''}>${t('investBtn')}</button>`;
     return `<div class="dcard inv"><span class="gem">🏦 ${usdM(x.usd)}</span><h4>${INV_TXT[id].icon} ${esc(tx[0])}</h4><p class="kid">${esc(tx[1])}</p>
-      <div class="row spread"><div class="row"><span class="chip">⏳ ${monthsTxt(x.months)}</span>${x.gamble ? `<span class="chip down">🎲 ${t('gamble')}</span>` : ''}${pb ? `<span class="chip up">${fill(t('payback'), [monthsTxt(Math.round(pb * 12 / 6) * 6)])}</span>` : `<span class="chip">${t('paybackNever')}</span>`}</div>${status}</div>
+      <div class="row spread"><div class="row"><span class="chip">⏳ ${monthsTxt(x.months)}</span>${x.jobs ? `<span class="chip up">💼 ${fill(t('jobsChip'), ['+' + x.jobs])}</span>` : ''}${x.gamble ? `<span class="chip down">🎲 ${t('gamble')}</span>` : ''}${pb ? `<span class="chip up">${fill(t('payback'), [monthsTxt(Math.round(pb * 12 / 6) * 6)])}</span>` : `<span class="chip">${t('paybackNever')}</span>`}${built}</div>${status}</div>
       ${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
-  }).join('');
+  };
+  const SECTORS = Object.keys(INVEST).filter(k => INVEST[k].sector), DIG = Object.keys(INVEST).filter(k => !INVEST[k].sector);
+  h += `<h3 class="bh">🏭 ${t('sectorTitle')}</h3><p class="small muted">${t('sectorSub')}</p>` + SECTORS.map(investCard).join('');
+  h += `<h3 class="bh">⛏️ ${t('extractTitle')}</h3><p class="small muted">${t('extractSub')}</p>` + DIG.map(investCard).join('');
   return h;
 }
 function renderTradePorts(){
@@ -400,9 +409,18 @@ function renderTradePartners(){
       <div class="row spread" style="margin-top:8px"><span></span>${status}</div>${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   }).join('');
 }
+// The bar is the one force the player cannot see on the map, so it gets said out loud.
+function renderBarCard(){
+  const b = clamp(S.bar || 0, 0, 1), pct = Math.round(b * 100);
+  const line = b < 0.25 ? t('barLow') : b < 0.6 ? t('barMid') : t('barHigh');
+  const col = b < 0.25 ? 'var(--calm)' : b < 0.6 ? 'var(--tense)' : 'var(--riot)';
+  return `<div class="rcard"><div class="rh"><span class="ri" aria-hidden="true">📈</span><div><h3>${t('barTitle')}</h3><div class="rv">${fill(t('barNow'), [pct])}</div></div></div>
+    <div class="bar big"><i style="width:${pct}%;background:${col}"></i></div>
+    <p class="small">${esc(line)}</p><p class="small muted">${esc(t('barHelp'))}</p></div>`;
+}
 function renderWhyPanel(){
   const chs = whyLive();
-  return `<h3 class="bh" style="margin-top:0">🔗 ${t('whyNow')}</h3>` + renderWhy(chs);
+  return renderBarCard() + `<h3 class="bh">🔗 ${t('whyNow')}</h3>` + renderWhy(chs);
 }
 function drawerBody(id){
   switch(id){
@@ -433,6 +451,7 @@ function renderProgressCharts(){
   if (!pipe.length && mwSoon <= 1) h += `<p class="muted" style="font-size:13px">${t('comingNone')}</p>`;
   h += `<h3 class="bh">📈 ${t('subCharts')}</h3>` + (S.history.length < 3 ? `<p class="muted" style="font-size:13px">${t('chartsEmpty')}</p>` :
     spark('score', '🏆 ' + t('score'), v => v.toFixed(0), true, '#d89412') + spark('trust', '🤝 ' + G('trust'), v => v.toFixed(0), true, '#35b6a3') + spark('anger', '🔥 ' + G('anger'), v => v.toFixed(0), false, '#f08a3c') +
+    spark('jobs', '💼 ' + G('jobs'), v => v.toFixed(0) + '%', false, '#c8612f') +
     spark('usd', '🏦 ' + G('usd'), usdM, true, '#4c86d6') + spark('cash', '💵 ' + G('cash'), bn, true, '#3f9a4a') + spark('fx', '💱 ' + G('fx'), v => v.toFixed(0), false, '#b07a10') + spark('pay', '👷 ' + G('pay'), usd, true, '#8c5cc7') + spark('power', '💡 ' + G('power'), v => v.toFixed(1), true, '#e2b93b'));
   return h;
 }

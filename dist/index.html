@@ -354,6 +354,12 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 @media (prefers-reduced-motion: reduce){ .res .bub, .res .num, .effect, .mbarwrap i.run{ animation:none !important; } }
 @media (prefers-reduced-motion: reduce){ .modal, .drawer, .pcard, .node.l2, .startcue, .spop, .toast{ animation:none; } path.prov, .mapbox{ transition:none; } }
 
+/* Eight numbers no longer fit on one line on a laptop: let the two trays drop together. */
+@media (max-width: 1560px){
+  .hud{ flex-wrap:wrap; }
+  .hud .tray{ flex:1 1 auto; min-width:0; }
+  .hud .spacer{ order:-1; flex:1; }
+}
 /* ===== medium screens ===== */
 @media (max-width: 1250px){
   .res .lab .dl{ display:none; }
@@ -451,34 +457,34 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 const START_YEAR = 2027, MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
 
 const PROVS = [
-  // id, name, popM, base unrest target, start unrest, damage $B, mines %, power mod, col,row, neighbors
-  { id:'idlib', name:'Idlib', pop:3.0, base:30, u:48, dmg:8, mines:45, pmod:0, c:1, r:0, nb:['aleppo','hama','latakia'] },
-  { id:'aleppo', name:'Aleppo', pop:4.2, base:30, u:50, dmg:25, mines:40, pmod:0, c:2, r:0, nb:['idlib','hama','raqqa'] },
-  { id:'raqqa', name:'Raqqa', pop:0.8, base:34, u:52, dmg:7, mines:50, pmod:-1, c:3, r:0, nb:['aleppo','hasakeh','deir','hama','homs'] },
-  { id:'hasakeh', name:'Hasakeh', pop:1.2, base:36, u:50, dmg:3, mines:20, pmod:-1, c:4, r:0, nb:['raqqa','deir'] },
-  { id:'latakia', name:'Latakia', pop:1.2, base:32, u:46, dmg:2, mines:10, pmod:1, c:0, r:1, nb:['idlib','hama','tartus'] },
-  { id:'hama', name:'Hama', pop:1.6, base:28, u:42, dmg:6, mines:30, pmod:0, c:1, r:1, nb:['idlib','aleppo','latakia','homs','raqqa','tartus'] },
-  { id:'deir', name:'Deir ez-Zor', pop:1.0, base:38, u:56, dmg:9, mines:55, pmod:-1, c:3, r:1, nb:['raqqa','hasakeh','homs'] },
-  { id:'tartus', name:'Tartus', pop:0.9, base:28, u:40, dmg:1, mines:5, pmod:1, c:0, r:2, nb:['latakia','hama','homs'] },
-  { id:'homs', name:'Homs', pop:1.5, base:30, u:44, dmg:14, mines:35, pmod:0, c:2, r:1, nb:['hama','tartus','rif','deir','raqqa'] },
-  { id:'damascus', name:'Damascus', pop:2.0, base:24, u:36, dmg:5, mines:5, pmod:2, c:1, r:2, nb:['rif','quneitra','daraa'] },
-  { id:'rif', name:'Rural Damascus', pop:3.0, base:30, u:47, dmg:22, mines:30, pmod:0, c:2, r:2, nb:['damascus','homs','daraa','suwayda'] },
-  { id:'quneitra', name:'Quneitra', pop:0.1, base:34, u:45, dmg:1, mines:60, pmod:0, c:0, r:3, nb:['damascus','daraa'] },
-  { id:'daraa', name:'Daraa', pop:1.0, base:34, u:50, dmg:4, mines:35, pmod:0, c:1, r:3, nb:['quneitra','damascus','rif','suwayda'] },
-  { id:'suwayda', name:'Suwayda', pop:0.4, base:40, u:58, dmg:1, mines:15, pmod:-1, c:2, r:3, nb:['daraa','rif'] },
+  // id, name, popM, base unrest target, start unrest, damage $B, jobless %, power mod, col,row, neighbors
+  { id:'idlib', name:'Idlib', pop:3.0, base:30, u:48, dmg:8, jobless:58, pmod:0, c:1, r:0, nb:['aleppo','hama','latakia'] },
+  { id:'aleppo', name:'Aleppo', pop:4.2, base:30, u:50, dmg:25, jobless:62, pmod:0, c:2, r:0, nb:['idlib','hama','raqqa'] },
+  { id:'raqqa', name:'Raqqa', pop:0.8, base:34, u:52, dmg:7, jobless:66, pmod:-1, c:3, r:0, nb:['aleppo','hasakeh','deir','hama','homs'] },
+  { id:'hasakeh', name:'Hasakeh', pop:1.2, base:36, u:50, dmg:3, jobless:56, pmod:-1, c:4, r:0, nb:['raqqa','deir'] },
+  { id:'latakia', name:'Latakia', pop:1.2, base:32, u:46, dmg:2, jobless:44, pmod:1, c:0, r:1, nb:['idlib','hama','tartus'] },
+  { id:'hama', name:'Hama', pop:1.6, base:28, u:42, dmg:6, jobless:50, pmod:0, c:1, r:1, nb:['idlib','aleppo','latakia','homs','raqqa','tartus'] },
+  { id:'deir', name:'Deir ez-Zor', pop:1.0, base:38, u:56, dmg:9, jobless:66, pmod:-1, c:3, r:1, nb:['raqqa','hasakeh','homs'] },
+  { id:'tartus', name:'Tartus', pop:0.9, base:28, u:40, dmg:1, jobless:42, pmod:1, c:0, r:2, nb:['latakia','hama','homs'] },
+  { id:'homs', name:'Homs', pop:1.5, base:30, u:44, dmg:14, jobless:55, pmod:0, c:2, r:1, nb:['hama','tartus','rif','deir','raqqa'] },
+  { id:'damascus', name:'Damascus', pop:2.0, base:24, u:36, dmg:5, jobless:40, pmod:2, c:1, r:2, nb:['rif','quneitra','daraa'] },
+  { id:'rif', name:'Rural Damascus', pop:3.0, base:30, u:47, dmg:22, jobless:58, pmod:0, c:2, r:2, nb:['damascus','homs','daraa','suwayda'] },
+  { id:'quneitra', name:'Quneitra', pop:0.1, base:34, u:45, dmg:1, jobless:60, pmod:0, c:0, r:3, nb:['damascus','daraa'] },
+  { id:'daraa', name:'Daraa', pop:1.0, base:34, u:50, dmg:4, jobless:56, pmod:0, c:1, r:3, nb:['quneitra','damascus','rif','suwayda'] },
+  { id:'suwayda', name:'Suwayda', pop:0.4, base:40, u:58, dmg:1, jobless:58, pmod:-1, c:2, r:3, nb:['daraa','rif'] },
 ];
 const PROV_BY = Object.fromEntries(PROVS.map(p => [p.id, p]));
 
 const PROJECTS = {
   aleppo:  { title:'Industrial-zone substations', issue:'Workshops in the industrial city run on private generators or not at all. Owners are relocating to Turkey and Egypt.', usd:70, syp:5, pc:0, rev:1.2, power:6, unrest:-15, cap:5, repair:0.8 },
-  idlib:   { title:'Olive oil export co-op and orchard demining', issue:'Unexploded ordnance sits in the groves, and farmers sell oil at a loss to middlemen.', usd:20, syp:3, pc:5, rev:0.7, mines:-15, unrest:-12, cap:2, repair:0.25 },
+  idlib:   { title:'Olive oil export co-op and pressing plants', issue:'Farmers sell oil at a loss to middlemen, and the presses that used to employ the valley are shut.', usd:20, syp:3, pc:5, rev:0.7, jobs:-9, unrest:-12, cap:2, repair:0.25 },
   latakia: { title:'Container port rehabilitation', issue:'Cranes are decades old and ships wait days. Freight bypasses the coast entirely.', usd:60, syp:4, pc:0, rev:1.5, transit:15, unrest:-8, cap:4, repair:0.3 },
   tartus:  { title:'Cold-chain fisheries and jobs program', issue:'Demobilized young men with no work are the most combustible group on the coast.', usd:15, syp:4, pc:0, rev:0.4, unrest:-14, cap:1, repair:0.1 },
   hama:    { title:'Al-Ghab plain irrigation', issue:'Broken canals leave the country\u2019s best farmland half-planted.', usd:35, syp:3, pc:0, rev:0.5, wheat:15, unrest:-8, cap:3, repair:0.3 },
   homs:    { title:'Refinery repair and phosphate rail link', issue:'Phosphate travels by truck on bad roads and the refinery runs at a fraction of capacity.', usd:80, syp:4, pc:0, rev:1.0, phosphate:25, unrest:-8, cap:4, repair:0.6 },
   rif:     { title:'Eastern Ghouta housing and rubble recycling', issue:'Whole districts are rubble. Families return to half-standing buildings.', usd:40, syp:8, pc:0, rev:0.3, unrest:-18, cap:2, repair:1.2, trust:2 },
   damascus:{ title:'Water network and spring pumping', issue:'Summer water cuts in the capital are the fastest route to street anger.', usd:30, syp:3, pc:0, rev:0.2, unrest:-10, cap:1, repair:0.2, trust:3 },
-  quneitra:{ title:'Returnee villages and mine clearance', issue:'The most mined land in the country, with the fewest people left to farm it.', usd:10, syp:1.5, pc:0, rev:0.1, mines:-25, unrest:-10, cap:0.5, repair:0.1 },
+  quneitra:{ title:'Returnee villages and farm restart', issue:'Emptied villages with nobody left to farm them, and no work for anyone who comes back.', usd:10, syp:1.5, pc:0, rev:0.1, jobs:-12, unrest:-10, cap:0.5, repair:0.1 },
   daraa:   { title:'Nassib crossing trade zone', issue:'The Jordan crossing is open but trucks face bribes, queues, and nowhere to store goods.', usd:25, syp:2, pc:0, rev:0.6, transit:20, unrest:-10, cap:2, repair:0.2 },
   suwayda: { title:'Local solar grid and water wells', issue:'Residents trust nothing that comes from the capital. Power they control locally is different.', usd:20, syp:2, pc:8, rev:0.1, power:8, unrest:-15, cap:1, repair:0.1 },
   raqqa:   { title:'Euphrates dam turbines and canals', issue:'Turbines on the river are half-dead. Fixing them lights the north and waters the fields.', usd:45, syp:3, pc:0, rev:0.4, mw:250, wheat:10, unrest:-10, cap:3, repair:0.4 },
@@ -500,7 +506,7 @@ const DECREES = [
   { id:'fighters', name:'Fighter integration program', desc:'Salaries, training and a uniform for ex-faction fighters.', pc:25, syp:6, usd:0, fx:'Unrest drops 4 everywhere, compliance +2. Adds 40,000 to payroll.' },
   { id:'dialogue', name:'National dialogue conference', desc:'A televised constitutional dialogue with every community at the table.', pc:35, syp:1, usd:0, fx:'Trust +8, unrest drops 5 everywhere.' },
   { id:'stats', name:'Independent statistics office', desc:'Honest numbers.', pc:10, syp:0, usd:5, fx:'Exact numbers on your dashboard.' },
-  { id:'demining', name:'National demining authority', desc:'Trained teams sweeping farmland province by province.', pc:15, syp:0, usd:0, fx:'Mines -4 points a turn everywhere. Costs $10M a turn.', ongoing:true },
+  { id:'vocational', name:'Vocational training and apprenticeships', desc:'Trade schools and paid apprenticeships in every province.', pc:15, syp:0, usd:0, fx:'Unemployment falls everywhere, every month. Costs $20M a year.', ongoing:true },
 ];
 const DECREE_BY = Object.fromEntries(DECREES.map(d => [d.id, d]));
 
@@ -537,13 +543,45 @@ const relax = (r, dt) => 1 - Math.pow(1 - r, dt);   // per-half-year relaxation 
 
 // ---------- trade & resources data ----------
 const INVEST = {
-  oilwells:{ usd:60, months:12, max:3, req:s => eastAnger(s) < 70 },
-  refinery:{ usd:50, months:12, max:3 },
-  gasfield:{ usd:80, months:18, max:3 },
-  offshore:{ usd:150, months:36, gamble:true },
-  phosphate:{ usd:50, months:12, max:3 },
-  farm:{ usd:30, months:12, max:3 },
+  // extraction: dollars, but few jobs
+  oilwells:{ usd:60, months:8, max:3, jobs:2, req:s => eastAnger(s) < 70 },
+  refinery:{ usd:50, months:8, max:3, jobs:3 },
+  gasfield:{ usd:80, months:12, max:3, jobs:2 },
+  offshore:{ usd:150, months:24, gamble:true, jobs:1 },
+  phosphate:{ usd:50, months:8, max:3, jobs:3 },
+  farm:{ usd:30, months:8, max:3, jobs:5 },
+  // industry: fewer dollars per dollar spent, but this is what employs a country
+  textiles:{ usd:35, months:6, max:3, jobs:11, sector:true },
+  food:{ usd:30, months:6, max:3, jobs:9, sector:true },
+  pharma:{ usd:45, months:9, max:3, jobs:7, sector:true },
+  cement:{ usd:55, months:9, max:3, jobs:6, sector:true },
+  telecom:{ usd:70, months:9, max:3, jobs:5, sector:true },
+  tourism:{ usd:40, months:12, max:3, jobs:10, sector:true, req:s => natUnrest(s) < 48 },
 };
+// Where each sector's jobs land, and what it earns abroad per half-year, per level.
+const IND = {
+  textiles:{ exp:15, prov:['aleppo','idlib','hama'] },
+  food:{ exp:9, prov:['hama','hasakeh','daraa'], wheatCut:9 },
+  pharma:{ exp:12, prov:['damascus','rif','aleppo'] },
+  cement:{ exp:5, prov:['homs','hama'], reconBoost:0.16 },
+  telecom:{ exp:4, prov:['damascus','aleppo'], comp:4, capGain:0.3 },
+  tourism:{ exp:0, prov:['damascus','latakia','homs'] },   // earns through visitors, not ports
+};
+const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
+// Jobs a province gets from the sectors: full weight where they are built, a share elsewhere.
+function indJobsAt(s, id){
+  let j = 0;
+  Object.keys(IND).forEach(k => { const n = indLvl(s, k); if (n) j += INVEST[k].jobs * n * (IND[k].prov.includes(id) ? 1 : 0.3); });
+  ['oilwells','refinery','gasfield','phosphate','farm','offshore'].forEach(k => { const n = (s.invests && s.invests[k]) || 0; if (n) j += INVEST[k].jobs * n * 0.4; });
+  return j;
+}
+function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].jobless * p.pop; w += p.pop; }); return tot / w; }
+// Visitors only come to a calm, lit country — and it pays in dollars with no ship involved.
+function tourismIncome(s){
+  const n = indLvl(s, 'tourism'); if (!n) return 0;
+  return 18 * n * clamp(1.25 - natUnrest(s) / 55, 0, 1.1) * clamp(nationalHours(s) / 14, 0.3, 1);
+}
+function industryExports(s){ let e = 0; Object.keys(IND).forEach(k => e += IND[k].exp * indLvl(s, k)); return e; }
 const PARTNERS = {
   turkey:{ flag:'🇹🇷', pc:15, sov:1, ok:s => s.provs.aleppo.u < 65 && s.provs.idlib.u < 65 },
   jordan:{ flag:'🇯🇴', pc:10, sov:0, ok:s => s.provs.daraa.u < 65 },
@@ -554,22 +592,23 @@ const PARTNERS = {
   china:{ flag:'🇨🇳', pc:10, sov:5, ok:() => true },
   russia:{ flag:'🌾', pc:8, sov:5, ok:() => true },
 };
-const PORT_UPGRADE = { usd:60, months:12 };
+const PORT_UPGRADE = { usd:60, months:8 };
 const eastAnger = s => (s.provs.deir.u + s.provs.hasakeh.u + s.provs.raqqa.u) / 3;
 const dealOn = (s, id) => s.deals[id] && s.deals[id].on;
 
 function newGame(seed, diff = 'learner', mission = null){
   const easy = diff === 'learner' || !!mission;
   const provs = {};
-  PROVS.forEach(p => provs[p.id] = { id:p.id, u:p.u, dmg:p.dmg, dmg0:p.dmg, mines:p.mines, mod:0, power:0, project:false });
+  PROVS.forEach(p => provs[p.id] = { id:p.id, u:p.u, dmg:p.dmg, dmg0:p.dmg, jobless:clamp(p.jobless + (easy ? 0 : 9), 0, 95), jobsMod:0, mod:0, power:0, project:false });
   return {
-    v:5, diff, seed: seed ?? Math.floor(Math.random()*1e9), t:0,
+    v:6, diff, seed: seed ?? Math.floor(Math.random()*1e9), t:0,
     treasury: easy ? 70 : 40, reserves: easy ? 750 : 400, m2:190, official:110, parallel:125, infl:25,
     wage:3000, head:1.30, debt:6100, coupons:0,
     pc: easy ? 70 : 50, trust:42, corr:58, sov:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
     grant:0, repaired:0,
     policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
     res:{ oilCap:60, refinery:25, gas:7, phos:1, farm:1, offshore:null },
+    ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0 }, bar:0,
     ports:{ latakia:{ lvl:1, op:'state' }, tartus:{ lvl:1, op:'state' } },
     deals:{}, invests:{}, decrees:{}, facilities:{}, flags:{}, provs,
     pipe:[], history:[], log:[], event:null, recentEvents:[], over:null, last:null, cycles:[], scoreHist:[],
@@ -593,7 +632,7 @@ function natUnrest(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p
 function tierOf(u){ return u < 35 ? 'calm' : u < 55 ? 'tense' : u < 75 ? 'riot' : 'revolt'; }
 const built = (s, id) => s.provs[id].project === true;
 const projLeak = (s, id) => s.provs[id].leak || 0;
-function projMonths(id, mode){ return (clamp(Math.ceil(PROJECTS[id].usd / 30), 1, 3) + (mode === 'tender' ? 1 : 0)) * 6; }
+function projMonths(id, mode){ return (clamp(Math.ceil(PROJECTS[id].usd / 30), 1, 3) + (mode === 'tender' ? 1 : 0)) * 4; }
 function projLeakRate(s, mode){ return mode === 'tender' ? s.corr / 900 : 0.12 + s.corr / 400; }
 
 // ---------- oil & trade derived numbers (per half-year) ----------
@@ -638,7 +677,7 @@ function step(state, dt = MONTH, policyOverride){
     while (st.paid < f.tranches.length && endT >= st.signed + f.tranches[st.paid][0] * 6) {
       const amt = f.tranches[st.paid][1]; st.paid++;
       if (f.ring) { s.grant += amt; notes.push(['grant', amt]); }
-      else if (f.grid) { s.pipe.push({ due:endT + 12, kind:'mw', mw:amt * 5 }); notes.push(['wbGrid', amt * 5]); }
+      else if (f.grid) { s.pipe.push({ due:endT + 8, kind:'mw', mw:amt * 5 }); notes.push(['wbGrid', amt * 5]); }
       else { s.reserves += amt; L.usd.push(['loan_' + id, amt]); }
     }
   });
@@ -659,7 +698,7 @@ function step(state, dt = MONTH, policyOverride){
   addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx);
   if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
-  addS('running', -3 * Math.pow(pIdx, 0.7));
+  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
   if (P.recon) addS('recon', -P.recon);
   if (s.decrees.integrity) addS('integrity', -0.5);
   if (state.treasury < 0) addS('interest', state.treasury * 0.04);
@@ -677,6 +716,7 @@ function step(state, dt = MONTH, policyOverride){
     oilExport: oil.exp * 1.8 * euMult,
     farm: 10 * s.res.farm * euMult * clamp(1.3 - (s.provs.hama.u + s.provs.idlib.u + s.provs.hasakeh.u) / 300, 0.4, 1),
     exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * (dealOn(s, 'turkey') ? 1.15 : 1) : 0,
+    industry: industryExports(s) * euMult * (dealOn(s, 'turkey') ? 1.15 : 1),
   };
   const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
   const fit = wantTotal > capE ? capE / wantTotal : 1;
@@ -689,11 +729,12 @@ function step(state, dt = MONTH, policyOverride){
     + (built(s,'latakia') ? 15 * (1 - projLeak(s,'latakia')) : 0) + (built(s,'daraa') ? 20 * (1 - projLeak(s,'daraa')) : 0)
     + (dealOn(s, 'jordan') ? 20 : 0) + (dealOn(s, 'lebanon') ? 12 : 0)));
   addU('overflight', 8);
+  { const tr = tourismIncome(s); if (tr > 0.5) addU('tourism', tr); }
   if (dealOn(s, 'gulf')) addU('fdi', 40);
   if (dealOn(s, 'eu')) addU('euGrant', 30);
   if (s.cap > 20) addU('imports', -(s.cap - 20) * 1.4);
   // --- dollars: buying food and fuel ---
-  let wheatCut = 0; ['hama','hasakeh','raqqa'].forEach(k => { if (built(s, k)) wheatCut += PROJECTS[k].wheat * (1 - projLeak(s, k)); });
+  let wheatCut = indLvl(s, 'food') * IND.food.wheatCut; ['hama','hasakeh','raqqa'].forEach(k => { if (built(s, k)) wheatCut += PROJECTS[k].wheat * (1 - projLeak(s, k)); });
   const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil ? 2.1 : 1;
   const ez = s.diff === 'learner' ? 0.88 : 1;
   const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) - wheatCut);
@@ -704,13 +745,13 @@ function step(state, dt = MONTH, policyOverride){
   addU('debt', -(s.debt * 0.006 + s.coupons));
   if (P.capex) addU('grid', -P.capex);
   if (P.intervene) addU('intervene', -P.intervene);
-  if (s.decrees.demining) addU('demining', -10);
+  if (s.decrees.vocational) addU('vocational', -10);
   const outflowRate = L.usd.filter(x => x[1] < 0).reduce((a, x) => a - x[1], 0) / dt;
 
   // --- grid: new stations arrive 12 months later ---
   const gridEff = s.corr > 60 ? 0.7 : 1;
-  if (P.capex) s.pipe.push({ due:endT + 12, kind:'mw', mw:P.capex * 6 * gridEff * dt }); else s.mw -= 25 * dt;
-  s.demand *= Math.pow(1.004, dt);
+  if (P.capex) s.pipe.push({ due:endT + 8, kind:'mw', mw:P.capex * 6 * gridEff * dt }); else s.mw -= 25 * dt;
+  s.demand *= Math.pow(1.004 + s.bar * 0.004, dt);   // a working economy wants more electricity every year
 
   // --- currency (rates per half-year, applied for dt) ---
   const cover = s.reserves / Math.max(1, outflowRate / 6);
@@ -725,42 +766,56 @@ function step(state, dt = MONTH, policyOverride){
 
   // --- society ---
   const rw = realWage(s), hrs = nationalHours(s), nu = natUnrest(s);
-  s.expWage = 25 + Math.max(0, s.cap - 20) * 0.6;
+  // THE BAR. Every good year raises what counts as good enough, and it never drops back.
+  // Nobody thanks you in 2040 for the electricity that made you a hero in 2029.
+  const barFrom = s.diff === 'realistic' ? 38 : 44, barOver = s.diff === 'realistic' ? 36 : 40;
+  s.bar = clamp(Math.max(s.bar || 0, ((s.score || 40) - barFrom) / barOver), 0, 1);
+  s.expWage = 25 + Math.max(0, s.cap - 20) * 0.6 + s.bar * 32;
   const tp = { base:45, decrees:(s.trustMod || 0), bread:{ full:6, partial:0, removed:-10 }[P.bread], fuel:{ full:4, partial:0, market:-6 }[P.fuel],
     pay:clamp((rw - s.expWage) * 0.6, -15, 15), power:(hrs - 6) * 1.2, prices:clamp(-(s.infl - 20) * 0.4, -15, 5),
-    security:{ light:2, balanced:0, heavy:-6 }[P.security], tax:(P.tax === 'aggressive' ? -3 : 0), anger:-(nu - 45) * 0.5, debt:(s.treasury < -30 ? -5 : 0) };
+    security:{ light:2, balanced:0, heavy:-6 }[P.security], tax:(P.tax === 'aggressive' ? -3 : 0), anger:-(nu - 45) * 0.5, debt:(s.treasury < -30 ? -5 : 0),
+    jobs:-(joblessNat(s) - 55) * 0.16, bar:-s.bar * 12 };
   s.trustTarget = clamp(Object.values(tp).reduce((a, b) => a + b, 0), 0, 100);
-  s.trust = clamp(s.trust + (s.trustTarget - s.trust) * relax(0.25, dt), 0, 100);
+  s.trust = clamp(s.trust + (s.trustTarget - s.trust) * relax(0.38, dt), 0, 100);
   let dPC = 4 + (s.trust - 45) / 10 - (nu > 60 ? 3 : 0) + (P.security === 'heavy' ? 2 : 0) - (s.decrees.integrity ? 1 : 0);
   s.pc = clamp(s.pc + dPC * dt, 0, 200);
   const cT = 56 + clamp((25 - rw) * 0.8, -12, 20) + (P.crackdown ? -4 : 0) + (s.decrees.integrity ? -20 : 0) + (s.decrees.digitax ? -5 : 0) + (P.tax === 'aggressive' && rw < 25 ? 3 : 0);
-  s.corr = clamp(s.corr + (cT - s.corr) * relax(0.15, dt), 5, 100);
-  const compT = 38 + s.trust * 0.35 - s.corr * 0.3 + { lax:-4, standard:0, aggressive:8 }[P.tax] + (s.decrees.digitax ? 12 : 0) + (s.decrees.braingain ? 3 : 0);
-  s.comp = clamp(s.comp + (compT - s.comp) * relax(0.25, dt), 5, 95);
+  s.corr = clamp(s.corr + (cT - s.corr) * relax(0.22, dt), 5, 100);
+  const compT = 38 + s.trust * 0.35 - s.corr * 0.3 + { lax:-4, standard:0, aggressive:8 }[P.tax] + (s.decrees.digitax ? 12 : 0) + (s.decrees.braingain ? 3 : 0) + indLvl(s, 'telecom') * IND.telecom.comp;
+  s.comp = clamp(s.comp + (compT - s.comp) * relax(0.35, dt), 5, 95);
   const revolts = PROVS.filter(p => tierOf(s.provs[p.id].u) === 'revolt').length;
-  let gain = { 0:-0.8, 20:0.5, 40:1 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (s.decrees.braingain ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0);
+  let gain = { 0:-0.8, 20:0.5, 40:1 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (s.decrees.braingain ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
+    + indLvl(s, 'telecom') * IND.telecom.capGain + clamp((38 - joblessNat(s)) * 0.04, -0.8, 1.2);
   if (gain > 0 && s.corr > 60) gain *= 0.5;
   if (gain > 0) gain *= Math.max(0.15, 1 - s.cap / 110);
   s.cap = clamp(s.cap + (gain - revolts * 1.5 - (nu > 60 ? 1 : 0)) * dt, 5, 100);
 
   // --- provinces ---
-  const reconB = P.recon * dt / s.parallel;
+  const reconB = P.recon * dt / s.parallel * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
   const privB = (s.trust > 40 ? (s.trust - 40) * s.cap * 0.0004 : 0) * dt;
   const totalDmg = PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) || 1;
-  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, prices:0, local:0, neighbors:0 };
+  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, prices:0, local:0, neighbors:0 };
   let wsum = 0, maxContagion = 0;
   PROVS.forEach(p => {
     const pv = s.provs[p.id], blackout = 24 - provHours(s, p.id);
     const parts = { trust:(50 - s.trust) * 0.4, pay:clamp((s.expWage - rw) * 0.5, -10, 15), power:blackout * 0.8 - 10,
       subsidies:{ full:-4, partial:0, removed:9 }[P.bread] + { full:-2, partial:0, market:5 }[P.fuel], security:{ light:5, balanced:0, heavy:-7 }[P.security],
-      damage:Math.min(12, pv.dmg / p.pop * 0.8) + pv.mines * 0.06, prices:(s.infl - 20) * 0.15, local:pv.mod };
+      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5 };
     const tgt = clamp(p.base + Object.values(parts).reduce((a, b) => a + b, 0), 12, 100);
     let contagion = 0; p.nb.forEach(n => contagion += Math.max(0, s.provs[n].u - 60) * 0.06);
     maxContagion = Math.max(maxContagion, contagion);
-    newU[p.id] = clamp(pv.u + (tgt - pv.u) * relax(0.3, dt) + contagion * dt, 0, 100);
-    Object.keys(parts).forEach(k => ap[k] += parts[k] * p.pop); ap.neighbors += contagion * p.pop / 0.3; wsum += p.pop;
+    newU[p.id] = clamp(pv.u + (tgt - pv.u) * relax(0.44, dt) + contagion * dt, 0, 100);
+    Object.keys(parts).forEach(k => ap[k] += parts[k] * p.pop); ap.neighbors += contagion * p.pop / 0.44; wsum += p.pop;
     const rep = Math.min(pv.dmg, (reconB + privB) * pv.dmg / totalDmg); pv.dmg -= rep; s.repaired += rep;
-    pv.mines = Math.max(0, pv.mines - (0.5 + (s.decrees.demining ? 4 : 0)) * dt);
+    // Work comes from factories, a calm street and the lights staying on — and goes when any of them fail.
+    const jt = clamp(p.jobless + (pv.jobsMod || 0)
+      - indJobsAt(s, p.id)
+      - Math.max(0, s.cap - 20) * 0.38
+      - (s.decrees.vocational ? 9 : 0)
+      - (built(s, p.id) ? 7 : 0)
+      + Math.max(0, 12 - provHours(s, p.id)) * 0.55
+      + Math.max(0, pv.u - 55) * 0.35, 4, 95);
+    pv.jobless = clamp(pv.jobless + (jt - pv.jobless) * relax(0.30, dt), 0, 100);
   });
   Object.keys(ap).forEach(k => ap[k] /= wsum);
   PROVS.forEach(p => s.provs[p.id].u = newU[p.id]);
@@ -779,7 +834,7 @@ function finishProject(s, item, notes){
   pv.project = true; pv.leak = item.leak;
   pv.u += x.unrest * k; pv.mod += x.unrest * 0.4 * k;
   if (x.power) pv.power += x.power * k;
-  if (x.mines) pv.mines = Math.max(0, pv.mines + x.mines * k);
+  if (x.jobs) pv.jobsMod = (pv.jobsMod || 0) + x.jobs * k;
   if (x.mw) s.mw += x.mw * k;
   if (x.trust) s.trust += x.trust * k;
   const rep = Math.min(pv.dmg, x.repair * k); pv.dmg -= rep; s.repaired += rep;
@@ -788,6 +843,7 @@ function finishProject(s, item, notes){
 }
 function finishInvest(s, item, notes){
   const r = s.res;
+  if (IND[item.id]){ s.ind[item.id] = (s.ind[item.id] || 0) + 1; notes.push(['investDone', item.id]); return; }
   switch(item.id){
     case 'oilwells': r.oilCap += 25; break;
     case 'refinery': r.refinery += 20; break;
@@ -834,7 +890,7 @@ const ACT = {
     const f = FAC_BY[id]; if (s.facilities[id] || s.pc < f.pc || (f.signReq && !f.signReq(s))) return false;
     s.pc -= f.pc; s.facilities[id] = { signed:s.t, paid:0, frozen:false }; s.sov -= f.sov; s.debt += f.debt; if (f.coupon) s.coupons += f.coupon;
     const first = f.tranches[0][1]; s.facilities[id].paid = 1;
-    if (f.ring) s.grant += first; else if (f.grid) s.pipe.push({ due:s.t + 12, kind:'mw', mw:first * 5 }); else s.reserves += first;
+    if (f.ring) s.grant += first; else if (f.grid) s.pipe.push({ due:s.t + 8, kind:'mw', mw:first * 5 }); else s.reserves += first;
     s.log.push([s.t, 'facSign', id]); return true;
   },
   wage(s, pct){ s.wage *= 1 + pct / 100; s.trust += pct / 10; s.log.push([s.t, 'wage', pct]); return true; },
@@ -863,7 +919,7 @@ const ACT = {
     const x = PARTNERS[id]; if (s.deals[id] || s.pc < x.pc || (x.usd && s.reserves < x.usd) || (x.signReq && !x.signReq(s))) return false;
     s.pc -= x.pc; if (x.usd) s.reserves -= x.usd; s.sov -= x.sov;
     s.deals[id] = { signed:s.t, on:x.ok(s) };
-    if (id === 'china'){ ['latakia','tartus'].forEach(k => { if (s.ports[k].lvl < 3) s.pipe.push({ due:s.t + 12, kind:'port', id:k }); }); }
+    if (id === 'china'){ ['latakia','tartus'].forEach(k => { if (s.ports[k].lvl < 3) s.pipe.push({ due:s.t + 8, kind:'port', id:k }); }); }
     s.log.push([s.t, 'dealSign', id]); return true;
   },
 };
@@ -897,9 +953,12 @@ function checkFail(s){
 
 function legacy(s){
   const nu = natUnrest(s);
+  // Two of the six are graded against what people now expect, not against 2027. Money in the
+  // bank and an honest ministry are facts; whether life feels good is always a comparison.
+  const bar = s.bar || 0;
   const comp = {
-    Stability: clamp(100 - nu, 0, 100),
-    Livelihoods: clamp(realWage(s) / 150 * 100, 0, 100),
+    Stability: clamp(100 - nu - bar * 8, 0, 100),
+    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100, 0, 100),
     Reconstruction: clamp(s.repaired / 108 * 100 * 2.5, 0, 100),
     Institutions: clamp(100 - s.corr, 0, 100),
     Solvency: clamp(s.reserves / 1500 * 60 + (1 - s.debt / 15000) * 40, 0, 100),
@@ -1008,7 +1067,7 @@ const EVENTS = [
 ];
 
 function drawEvent(s){
-  if (s.t < 2 || rnd(s) > (s.diff === 'learner' ? 0.1 : 0.13)) return null;
+  if (s.t < 2 || rnd(s) > (s.diff === 'learner' ? 0.1 : 0.13) * (1 + (s.bar || 0) * 0.9)) return null;
   const pool = EVENTS.filter(e => (!e.when || e.when(s)) && !s.recentEvents.includes(e.id) && !(e.once && (s.flags['ev_' + e.id])));
   if (!pool.length) return null;
   const e = pool[Math.floor(rnd(s) * pool.length)];
@@ -1043,7 +1102,7 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, realWage, nationalHours, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
 
 const MAP = {"W":800,"H":734.0,"paths":{"quneitra":"M14.4,586.1L20.7,589.7L18.8,594.0L20.0,598.2L22.1,595.8L28.9,597.1L27.6,610.5L30.9,614.9L26.9,629.8L31.7,640.6L25.3,639.5L26.3,646.2L4.1,670.8L13.3,658.6L15.2,648.7L19.8,641.5L16.3,634.8L15.1,618.9L10.6,617.0L12.8,605.6L10.1,603.9L9.6,597.0L5.4,593.5L9.5,587.6L4.9,584.4L10.4,580.7L11.7,573.8L17.6,570.2L17.6,573.8L12.8,580.0L14.4,586.1Z","homs":"M80.3,395.8L70.4,386.2L64.7,395.1L46.7,394.7L47.5,389.3L55.7,374.4L66.1,363.5L67.8,356.1L70.9,355.0L70.5,358.8L74.2,362.5L77.5,359.5L83.7,362.2L92.8,347.4L95.8,347.8L95.2,351.3L100.6,354.9L138.3,343.7L143.5,346.6L150.2,360.9L166.3,351.1L170.9,353.0L176.1,348.6L184.1,353.7L188.6,345.7L193.2,345.6L195.1,342.7L208.3,342.4L213.3,345.8L214.9,332.9L222.6,328.0L242.1,323.1L251.9,327.7L255.9,338.7L272.8,355.3L276.3,352.1L280.6,339.5L303.0,326.4L302.8,317.9L309.8,303.3L310.0,284.5L356.0,286.0L423.1,304.0L435.2,313.8L446.6,334.9L447.4,349.8L535.0,476.4L311.7,614.2L262.7,574.1L231.4,556.1L223.3,544.9L219.2,534.5L192.0,509.5L184.2,495.4L175.7,493.9L161.8,485.5L137.9,453.6L128.3,457.3L113.1,454.8L105.8,457.6L100.9,448.4L103.2,443.0L95.6,435.2L96.4,425.0L87.3,418.9L85.4,414.5L73.6,414.7L71.7,411.6L79.4,405.8L80.0,399.6L85.7,399.4L86.2,394.8L80.3,395.8Z","tartus":"M46.7,394.7L29.6,391.8L17.3,351.6L21.3,337.3L19.8,324.5L28.7,311.5L25.0,302.2L36.3,308.3L57.4,305.3L63.7,307.8L64.2,333.5L60.8,337.0L49.7,340.2L50.6,344.1L64.5,345.4L70.9,355.0L66.9,356.9L66.1,363.5L55.7,374.4L47.5,389.3L46.7,394.7Z","rif":"M80.3,480.4L90.4,479.1L92.0,474.0L105.8,457.6L113.1,454.8L128.3,457.3L137.9,453.6L161.8,485.5L175.7,493.9L184.2,495.4L192.0,509.5L219.2,534.5L223.3,544.9L231.4,556.1L262.7,574.1L311.7,614.2L213.0,678.8L187.6,653.5L184.4,641.3L175.6,640.7L169.4,637.1L162.8,626.5L148.8,622.0L141.4,607.9L132.3,600.5L101.9,605.0L101.3,600.3L94.7,590.2L84.2,597.1L79.1,604.4L67.0,598.3L61.5,590.8L58.9,600.3L37.0,607.3L28.6,603.4L28.1,596.6L22.1,595.8L20.0,598.2L18.8,594.0L20.7,589.7L14.4,586.1L13.4,578.0L17.6,573.8L17.6,570.2L23.6,565.7L25.2,556.1L35.6,552.5L37.9,547.5L23.8,539.6L27.1,529.5L39.3,513.8L49.9,508.8L53.2,511.9L61.1,508.5L76.2,512.8L77.5,507.8L70.7,505.7L65.4,500.1L80.3,480.4ZM70.2,550.8L73.5,551.1L75.5,553.7L75.6,558.1L74.5,561.3L71.7,564.1L71.3,565.9L69.0,565.5L61.7,561.8L59.0,563.6L58.4,562.1L60.9,559.4L58.1,558.0L56.2,558.2L55.3,555.6L59.9,552.9L63.5,552.8L70.2,550.8Z","hasakeh":"M780.0,0.0L781.5,5.4L789.8,5.8L796.3,12.5L795.0,22.5L800.0,38.5L732.7,106.2L680.8,118.4L667.7,142.1L662.9,185.2L675.7,214.9L677.6,224.4L677.5,249.1L671.5,259.6L634.4,257.1L607.4,248.8L502.3,146.5L488.0,120.7L469.5,112.0L458.7,112.4L450.9,103.3L447.1,92.6L486.0,85.3L511.8,75.9L537.0,64.5L563.9,47.0L577.4,43.8L599.4,32.9L622.0,29.6L658.6,38.1L692.1,36.5L755.8,21.9L780.0,0.0Z","raqqa":"M416.3,97.4L447.1,92.6L450.9,103.3L458.7,112.4L468.9,111.9L480.5,116.6L488.0,120.7L490.7,126.1L471.1,213.9L469.8,224.5L475.1,227.6L423.1,304.0L356.0,286.0L310.0,284.5L277.1,249.9L280.0,227.8L295.4,199.5L283.9,186.1L281.2,173.4L292.2,158.0L324.8,151.3L345.1,137.9L351.1,128.3L354.2,112.3L353.7,100.6L344.8,104.4L342.6,99.3L343.1,97.0L350.7,95.1L350.1,85.1L360.9,92.4L397.8,91.3L416.3,97.4Z","aleppo":"M300.7,61.0L337.4,71.9L350.1,85.1L351.7,91.6L350.2,95.7L342.6,97.2L344.0,103.9L352.3,100.1L354.4,102.5L351.8,125.8L344.0,139.1L324.8,151.3L292.2,158.0L281.2,173.4L283.9,186.1L295.4,199.5L280.0,227.8L276.3,247.8L302.0,276.7L240.5,275.3L222.7,265.6L195.1,266.7L169.0,253.9L164.6,248.4L160.2,236.0L165.1,231.8L165.3,228.0L153.6,220.2L140.1,198.5L139.2,189.5L126.2,182.7L120.6,175.5L133.2,162.6L134.1,158.0L125.4,145.4L111.3,149.3L103.9,146.5L104.6,139.3L99.7,134.3L97.4,126.3L101.2,116.1L105.8,84.6L110.6,76.3L110.2,72.8L149.2,83.6L155.7,90.5L155.2,100.0L159.9,103.2L166.0,98.7L182.6,97.6L207.1,101.2L232.1,86.8L252.0,82.7L288.5,64.5L300.7,61.0Z","idlib":"M104.6,162.1L113.8,159.3L111.3,149.3L124.8,145.3L134.1,158.0L133.2,162.6L120.6,175.5L126.2,182.7L139.2,189.5L140.1,198.5L152.6,218.8L165.6,228.6L160.2,236.0L164.6,248.4L169.0,253.9L179.5,259.7L171.6,271.4L166.0,274.7L162.7,281.7L164.6,284.3L170.1,281.3L170.4,289.8L163.5,293.8L155.0,293.5L155.2,280.8L153.2,278.1L146.3,286.9L142.0,288.0L132.9,279.4L111.2,283.1L97.8,280.7L91.8,275.2L84.5,276.5L80.5,267.2L82.8,236.3L75.1,235.1L72.4,231.1L65.2,231.5L63.9,229.8L67.8,226.6L66.9,224.0L51.4,224.1L54.3,205.4L56.9,201.1L65.6,200.1L66.6,194.9L69.0,193.9L76.3,194.9L76.4,169.6L78.4,164.1L76.7,162.1L86.8,164.8L93.2,160.7L104.6,162.1Z","latakia":"M39.4,213.7L51.9,220.1L52.7,224.8L67.9,225.4L61.9,231.5L61.0,237.4L57.2,241.9L60.2,252.3L57.5,278.2L63.7,307.8L57.4,305.3L36.3,308.3L25.0,302.2L23.1,298.3L24.7,293.4L23.5,279.3L11.4,266.0L5.7,266.6L6.6,261.2L0.0,255.2L6.6,250.8L5.7,242.7L9.2,240.7L14.1,231.0L13.5,224.8L9.0,216.1L17.7,215.7L22.6,206.1L30.9,204.7L33.7,213.2L39.4,213.7Z","suwayda":"M213.0,678.8L131.8,733.5L116.2,733.0L111.8,729.6L95.4,727.6L96.7,709.7L92.8,703.8L94.2,699.2L88.3,695.4L81.6,695.4L81.4,688.1L87.4,682.2L76.0,676.2L77.0,658.4L73.8,649.0L74.3,641.6L84.6,633.4L98.6,633.1L97.4,625.5L92.3,625.1L90.1,616.3L90.3,609.8L93.9,606.1L132.3,600.5L141.4,607.9L148.8,622.0L162.8,626.5L169.4,637.1L175.6,640.7L184.4,641.3L187.6,653.5L213.0,678.8Z","daraa":"M26.5,678.7L5.6,670.3L26.3,646.2L25.3,639.5L31.7,640.6L26.9,629.8L30.9,614.9L27.6,610.5L28.6,603.4L36.3,607.4L50.9,603.6L58.9,600.3L61.5,590.8L67.0,598.3L79.1,604.4L84.2,597.1L95.1,590.6L101.3,600.3L101.9,605.0L91.2,608.4L90.1,616.3L92.3,625.1L97.3,625.3L98.8,632.8L83.7,633.8L74.5,641.2L73.7,648.2L77.0,658.4L76.0,676.2L87.4,682.2L81.4,688.1L81.4,695.1L88.3,695.4L94.2,699.2L92.8,703.8L96.7,709.7L95.4,727.6L78.1,723.3L54.6,702.6L41.2,704.1L34.0,690.8L33.7,683.9L27.9,683.6L26.5,678.7Z","deir":"M671.5,259.6L665.8,268.1L657.4,313.8L659.0,370.8L633.0,424.2L626.7,430.4L597.2,438.4L535.0,476.4L447.4,349.8L447.0,336.2L439.0,318.6L423.1,304.0L475.1,227.6L469.8,224.5L471.1,213.9L490.7,126.1L502.3,146.5L607.4,248.8L634.4,257.1L671.5,259.6Z","hama":"M179.5,259.7L196.0,266.9L222.7,265.6L235.1,273.7L250.7,276.8L302.0,276.7L310.0,284.5L309.2,305.8L302.8,317.9L302.5,327.1L280.6,339.5L276.3,352.1L272.4,355.4L255.9,338.7L251.9,327.7L242.5,323.1L222.6,328.0L214.9,332.9L213.3,345.8L208.3,342.4L195.1,342.7L193.2,345.6L188.6,345.7L184.1,353.7L176.1,348.6L170.9,353.0L166.3,351.1L150.2,360.9L143.5,346.6L139.5,343.8L100.6,354.9L95.2,351.3L95.8,347.8L92.8,347.4L87.4,353.9L84.7,361.9L77.5,359.5L74.2,362.5L64.5,345.4L50.6,344.1L49.7,340.2L61.3,336.8L65.1,330.1L63.4,302.1L57.5,278.2L60.2,252.3L57.3,241.3L63.9,229.8L82.8,236.3L80.5,267.2L84.5,276.5L91.8,275.2L97.8,280.7L117.3,283.4L132.9,279.4L142.0,288.0L146.3,286.9L153.2,278.1L155.2,280.8L154.6,293.2L163.5,293.8L170.6,289.4L169.8,281.0L162.8,283.4L165.4,275.7L171.6,271.4L179.5,259.7Z","damascus":"M70.2,550.8L73.5,551.1L75.5,553.7L75.6,558.1L74.5,561.3L71.7,564.1L71.3,565.9L69.0,565.5L61.7,561.8L59.0,563.6L58.4,562.1L60.9,559.4L58.1,558.0L56.2,558.2L55.3,555.6L59.9,552.9L63.5,552.8L70.2,550.8Z"},"cent":{"quneitra":[21.6,620.2],"homs":[308.9,449.8],"tartus":[42.3,348.9],"rif":[134.4,566.1],"hasakeh":[583.3,129.0],"raqqa":[383.7,196.0],"aleppo":[205.5,168.7],"idlib":[102.7,219.4],"latakia":[31.0,256.8],"suwayda":[138.4,666.0],"daraa":[45.7,658.9],"deir":[545.1,295.4],"hama":[186.2,298.1],"damascus":[67.6,558.8]}};
 
@@ -1059,9 +1118,9 @@ const STR = {
 en:{
   title:'Transition', subtitle:'Rebuild Syria, 2027 to 2047', harvest:'Harvest', winter:'Winter', season:'season', nextSeason:'next season', leftToSpend:'{0} left to spend', about:'about',
   tabPolicy:'Policies', tabDecrees:'Decrees', tabMoney:'Money', tabProvince:'Province', tabPeople:'People', tabChains:'Supply', tabCharts:'Charts', tabBudget:'Budget', tabNews:'News',
-  mapTitle:'Syria', layerAnger:'Anger', layerPower:'Electricity', layerDamage:'Damage', layerMines:'Mines',
+  mapTitle:'Syria', layerAnger:'Anger', layerPower:'Electricity', layerDamage:'Damage', layerJobs:'Work',
   tierCalm:'Calm', tierTense:'Uneasy', tierRiot:'Angry', tierRevolt:'Revolt', revoltAt:'At 75+ a province revolts.',
-  legDark:'Dark', legLight:'Lights on', legPowerTxt:'Hours of electricity each day.', legLittle:'Little', legHeavy:'Heavy', legDamageTxt:'War damage not yet rebuilt.', legClear:'Clear', legMined:'Mined', legMinesTxt:'Land with landmines and unexploded bombs.',
+  legDark:'Dark', legLight:'Lights on', legPowerTxt:'Hours of electricity each day.', legLittle:'Little', legHeavy:'Heavy', legDamageTxt:'War damage not yet rebuilt.', legWorking:'Most have work', legNoWork:'Most have none', legJobsTxt:'Share of working-age people with no steady work.',
   legBuilt:'project built', legBuilding:'being built', legCapital:'capital', zoom:'Zoom on the capital', damascusCity:'Damascus city',
   countries:{ TURKEY:'TURKEY', IRAQ:'IRAQ', JORDAN:'JORDAN', LEBANON:'LEBANON', sea1:'Mediterranean', sea2:'Sea' },
   endSeason:'End season', choices:'{0} choices', choice:'1 choice', menu:'Menu', playAgain:'Play again', showMe:'Show me',
@@ -1075,7 +1134,7 @@ en:{
   buyTitle:'Buy influence', buyText:'Short on influence? Trade money for it.', giftTitle:'Cash gift to families', reliefTitle:'Import cheap food and supplies',
   abroadTitle:'Money from abroad', abroadText:'Loans and grants bring dollars, but foreign lenders get a say, so independence drops.', grantOnHand:'Grant money for projects: {0}.',
   people:'About {0} million people', rifNote:'The towns and farmland around the capital (Rif Dimashq). ', damNote:'The capital city itself, surrounded by Rural Damascus. ',
-  anger:'Anger', electricity:'Electricity', destroyed:'Still destroyed', landmines:'Landmines', hDay:'h/day',
+  anger:'Anger', electricity:'Electricity', destroyed:'Still destroyed', jobless:'Without work', hDay:'h/day',
   bigProject:'Big project', problem:'Problem:', ifBuilt:'If you build it:', buildFast:'Fast contractor', buildTender:'Open tender', building:'Building, ready in {0}', buildingEnd:'Building, finishes at the end of this season', builtTag:'✅ Built',
   fastTxt:'Ready in {0}. About ${1}M will disappear to corruption.', tenderTxt:'Ready in {0}. Honest bidding, only about ${1}M lost.',
   seasonsN:'{0} seasons', seasons1:'1 season', seasons0:'the end of this season', leaked:'${0}M was lost to corruption', needsUsdProj:'Needs ${0}M dollars', tapAnother:'Tap another province on the map to see it.',
@@ -1110,9 +1169,9 @@ en:{
 ar:{
   title:'المرحلة الانتقالية', subtitle:'أعِد بناء سوريا، من 2027 إلى 2047', harvest:'الحصاد', winter:'الشتاء', season:'الموسم', nextSeason:'الموسم القادم', leftToSpend:'بقي {0} للإنفاق', about:'حوالي',
   tabPolicy:'السياسات', tabDecrees:'المراسيم', tabMoney:'المال', tabProvince:'المحافظة', tabPeople:'الناس', tabChains:'الإمداد', tabCharts:'الرسوم', tabBudget:'الميزانية', tabNews:'الأخبار',
-  mapTitle:'سوريا', layerAnger:'الغضب', layerPower:'الكهرباء', layerDamage:'الدمار', layerMines:'الألغام',
+  mapTitle:'سوريا', layerAnger:'الغضب', layerPower:'الكهرباء', layerDamage:'الدمار', layerJobs:'العمل',
   tierCalm:'هادئة', tierTense:'متوترة', tierRiot:'غاضبة', tierRevolt:'تمرّد', revoltAt:'عند 75 أو أكثر تتمرّد المحافظة.',
-  legDark:'ظلام', legLight:'كهرباء', legPowerTxt:'ساعات الكهرباء في اليوم.', legLittle:'قليل', legHeavy:'كبير', legDamageTxt:'دمار الحرب الذي لم يُعَد بناؤه.', legClear:'نظيفة', legMined:'ملغومة', legMinesTxt:'أراضٍ فيها ألغام وقذائف لم تنفجر.',
+  legDark:'ظلام', legLight:'كهرباء', legPowerTxt:'ساعات الكهرباء في اليوم.', legLittle:'قليل', legHeavy:'كبير', legDamageTxt:'دمار الحرب الذي لم يُعَد بناؤه.', legWorking:'أكثرهم يعملون', legNoWork:'أكثرهم بلا عمل', legJobsTxt:'نسبة من هم في سن العمل بلا عمل ثابت.',
   legBuilt:'مشروع منجز', legBuilding:'قيد البناء', legCapital:'العاصمة', zoom:'تكبير العاصمة', damascusCity:'مدينة دمشق',
   countries:{ TURKEY:'تركيا', IRAQ:'العراق', JORDAN:'الأردن', LEBANON:'لبنان', sea1:'البحر', sea2:'المتوسط' },
   endSeason:'أنهِ الموسم', choices:'{0} قرارات', choice:'قرار واحد', menu:'القائمة', playAgain:'العب مجدداً', showMe:'أرِني',
@@ -1126,7 +1185,7 @@ ar:{
   buyTitle:'شراء النفوذ', buyText:'نفوذك قليل؟ بادِل المال به.', giftTitle:'منحة نقدية للعائلات', reliefTitle:'استيراد غذاء ومواد رخيصة',
   abroadTitle:'أموال من الخارج', abroadText:'القروض والمنح تجلب الدولارات، لكن المُقرضين الأجانب يصبح لهم رأي، فينخفض الاستقلال.', grantOnHand:'أموال المنح للمشاريع: {0}.',
   people:'حوالي {0} مليون نسمة', rifNote:'البلدات والأراضي الزراعية المحيطة بالعاصمة. ', damNote:'العاصمة نفسها، ويحيط بها ريف دمشق. ',
-  anger:'الغضب', electricity:'الكهرباء', destroyed:'ما زال مدمّراً', landmines:'الألغام', hDay:'ساعة/يوم',
+  anger:'الغضب', electricity:'الكهرباء', destroyed:'ما زال مدمّراً', jobless:'بلا عمل', hDay:'ساعة/يوم',
   bigProject:'مشروع كبير', problem:'المشكلة:', ifBuilt:'إذا بنيته:', buildFast:'متعهّد سريع', buildTender:'مناقصة علنية', building:'قيد البناء، يجهز خلال {0}', buildingEnd:'قيد البناء، يكتمل مع نهاية هذا الموسم', builtTag:'✅ منجز',
   fastTxt:'يجهز خلال {0}. سيضيع حوالي {1} مليون دولار بسبب الفساد.', tenderTxt:'يجهز خلال {0}. منافسة نزيهة، يضيع حوالي {1} مليون دولار فقط.',
   seasonsN:'{0} مواسم', seasons1:'موسم واحد', seasons0:'نهاية هذا الموسم', leaked:'ضاع {0} مليون دولار بسبب الفساد', needsUsdProj:'يحتاج {0} مليون دولار', tapAnother:'اضغط على محافظة أخرى في الخريطة لرؤيتها.',
@@ -1174,6 +1233,8 @@ const GLOSS = {
     ar:{ name:'ثقة الناس', short:'الثقة', what:'مدى إيمان الناس بالحكومة، من 0 إلى 100.', why:'الثقة العالية تجلب الاستثمار والنفوذ. الثقة المنخفضة تجلب الغضب.', fix:'الكهرباء، رواتب لائقة، أسعار مستقرة، وقرارات عادلة في الأزمات.' } },
   anger:{ icon:'🔥', en:{ name:'Anger', short:'Anger', what:'How angry people are, averaged across all provinces.', why:'At 75 a province revolts. Four in revolt at once ends your presidency.', fix:'Build projects, improve electricity and salaries, and choose carefully in crises.' },
     ar:{ name:'الغضب', short:'الغضب', what:'مدى غضب الناس، بالمتوسط في كل المحافظات.', why:'عند 75 تتمرّد المحافظة. أربع محافظات متمرّدة معاً تنهي رئاستك.', fix:'ابنِ المشاريع، حسّن الكهرباء والرواتب، واختر بحكمة في الأزمات.' } },
+  jobs:{ icon:'💼', en:{ name:'People without work', short:'No work', what:'Out of every 100 people old enough to work, how many have no steady job.', why:'Work is the difference between a country that holds together and one that does not. People with no income get angry, leave, or take a gun from whoever offers one.', fix:'Build factories in the Trade panel — textiles, food, medicine, cement, phone networks, tourism. Keep the lights on so workshops can run, and keep provinces calm so business comes back.' },
+    ar:{ name:'الناس بلا عمل', short:'بلا عمل', what:'من كل 100 شخص في سن العمل، كم واحداً بلا عمل ثابت.', why:'العمل هو الفرق بين بلد متماسك وبلد ينهار. من لا دخل له يغضب، أو يهاجر، أو يحمل سلاح من يدفع له.', fix:'ابنِ المصانع من لوحة التجارة: النسيج والغذاء والدواء والإسمنت وشبكات الهاتف والسياحة. أبقِ الكهرباء لتعمل الورشات، وأبقِ المحافظات هادئة ليعود الاستثمار.' } },
   power:{ icon:'💡', en:{ name:'Electricity', short:'Power', what:'Average hours of electricity people get each day.', why:'Blackouts make people angry and stop factories.', fix:'Invest in power stations (Policies tab). New power arrives two seasons later.' },
     ar:{ name:'الكهرباء', short:'الكهرباء', what:'متوسط ساعات الكهرباء التي يحصل عليها الناس يومياً.', why:'انقطاع الكهرباء يغضب الناس ويوقف المصانع.', fix:'استثمر في محطات الكهرباء (تبويب السياسات). الكهرباء الجديدة تصل بعد موسمين.' } },
 };
@@ -1241,19 +1302,19 @@ const DEC_TXT = {
   fighters:{ en:['Jobs for ex-fighters','Salaries, training and a uniform in the army and police.','Anger drops everywhere. Adds 40,000 people to the payroll.'], ar:['وظائف للمقاتلين السابقين','رواتب وتدريب وزيّ رسمي في الجيش والشرطة.','الغضب ينخفض في كل مكان. يضيف 40 ألف شخص إلى الرواتب.'] },
   dialogue:{ en:['National dialogue conference','Every community at one table to talk about the future.','Trust +8, anger drops everywhere.'], ar:['مؤتمر الحوار الوطني','كل المكوّنات على طاولة واحدة للحديث عن المستقبل.','الثقة +8، والغضب ينخفض في كل مكان.'] },
   stats:{ en:['Independent statistics office','Honest numbers instead of guesses.','Your dashboard and map show exact numbers instead of estimates.'], ar:['مكتب إحصاء مستقل','أرقام صادقة بدل التخمين.','لوحتك وخريطتك تُظهران أرقاماً دقيقة بدل التقديرات.'] },
-  demining:{ en:['National demining authority','Teams clearing landmines from farmland.','Mines drop every season everywhere. Costs $10M a season.'], ar:['الهيئة الوطنية لنزع الألغام','فرق تنظّف الأراضي الزراعية من الألغام.','الألغام تنخفض كل موسم في كل مكان. تكلّف 10 مليون$ كل موسم.'] },
+  vocational:{ en:['Trade schools and apprenticeships','Paid training in every province, so a young person has something to sell besides their time.','Unemployment falls everywhere, every month. Costs $20M a year.'], ar:['المعاهد المهنية والتدريب','تدريب مدفوع في كل محافظة، ليملك الشاب مهنة لا وقتاً فارغاً فقط.','البطالة تنخفض كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.'] },
 };
 
 const PROJ_TXT = {
   aleppo:{ en:['Power for the industrial zone','Factories run on private generators or not at all. Owners are moving to Turkey and Egypt.'], ar:['كهرباء المنطقة الصناعية','المصانع تعمل على المولّدات الخاصة أو لا تعمل. أصحابها ينتقلون إلى تركيا ومصر.'] },
-  idlib:{ en:['Olive oil co-op and orchard demining','Unexploded bombs sit in the olive groves, and farmers sell oil at a loss.'], ar:['تعاونية زيت الزيتون ونزع ألغام البساتين','قذائف غير منفجرة في بساتين الزيتون، والمزارعون يبيعون الزيت بخسارة.'] },
+  idlib:{ en:['Olive oil co-op and pressing plants','Farmers sell their oil at a loss to middlemen, and the presses that used to employ the valley are shut.'], ar:['تعاونية زيت الزيتون ومعاصره','المزارعون يبيعون زيتهم بخسارة للوسطاء، والمعاصر التي كانت تشغّل الوادي متوقفة.'] },
   latakia:{ en:['Fix the container port','Cranes are decades old and ships wait days. Trade goes elsewhere.'], ar:['تأهيل مرفأ الحاويات','الرافعات قديمة جداً والسفن تنتظر أياماً. التجارة تذهب إلى مكان آخر.'] },
   tartus:{ en:['Fishing, cold storage and jobs','Young men without work are the most dangerous problem on the coast.'], ar:['الصيد والتبريد وفرص العمل','الشباب العاطلون عن العمل أخطر مشكلة في الساحل.'] },
   hama:{ en:['Al-Ghab plain irrigation','Broken canals leave the best farmland half-empty.'], ar:['ري سهل الغاب','القنوات المكسورة تترك أفضل الأراضي الزراعية نصف فارغة.'] },
   homs:{ en:['Refinery and phosphate railway','Phosphate goes by truck on bad roads, and the refinery barely works.'], ar:['المصفاة وسكة الفوسفات','الفوسفات يُنقل بالشاحنات على طرق سيئة، والمصفاة بالكاد تعمل.'] },
   rif:{ en:['Eastern Ghouta housing and rubble recycling','Whole neighborhoods are rubble. Families return to half-standing buildings.'], ar:['مساكن الغوطة الشرقية وتدوير الركام','أحياء كاملة ركام. العائلات تعود إلى أبنية نصف قائمة.'] },
   damascus:{ en:['Water network and spring pumps','Summer water cuts in the capital are the fastest route to street anger.'], ar:['شبكة المياه ومضخات النبع','انقطاع المياه صيفاً في العاصمة أسرع طريق لغضب الشارع.'] },
-  quneitra:{ en:['Returnee villages and mine clearance','The most mined land in Syria, with few people left to farm it.'], ar:['قرى العائدين ونزع الألغام','أكثر أرض ملغومة في سوريا، وقلّة بقوا ليزرعوها.'] },
+  quneitra:{ en:['Returnee villages and farm restart','Emptied villages, and no work waiting for anyone who comes back.'], ar:['قرى العائدين وإحياء المزارع','قرى فرغت من أهلها، ولا عمل ينتظر من يعود.'] },
   daraa:{ en:['Nassib border trade zone','The Jordan crossing is open, but trucks face bribes, queues and no storage.'], ar:['منطقة نصيب التجارية','معبر الأردن مفتوح، لكن الشاحنات تواجه الرشاوى والطوابير ولا مستودعات.'] },
   suwayda:{ en:['Local solar power and water wells','People trust nothing from the capital. Power they control locally is different.'], ar:['طاقة شمسية محلية وآبار مياه','الناس لا يثقون بشيء يأتي من العاصمة. الكهرباء التي يديرونها محلياً مختلفة.'] },
   raqqa:{ en:['Euphrates dam turbines and canals','The river’s turbines are half-dead. Fixing them lights the north and waters the fields.'], ar:['توربينات سد الفرات والقنوات','توربينات النهر نصف معطّلة. إصلاحها يضيء الشمال ويروي الحقول.'] },
@@ -1378,11 +1439,11 @@ const PERSONA_LINES = {
   en:{ salary:'Salary', side:'Tutoring on the side', brother:'Money from her brother in Germany', crop:'Selling the wheat crop', labor:'Day labor on building sites', shop:'Shop profits',
     food:'Food', bread:'Bread', generator:'Generator (blackouts)', transport:'Transport', rent:'Rent', diesel:'Diesel for the water pump', seeds:'Seeds and fertilizer', bribes:'Bribes and “fees”', stock:'Spare parts (imported)',
     s_ok:'The family is getting by and saving a little each month.', s_tight:'Every month is tight. One emergency and the family is in debt.', s_bad:'The family can’t cover the basics. Skipping meals and borrowing.', s_leave:'The family is talking about leaving Syria.',
-    why_power:'The generator bill is eating everything.', why_pay:'The salary buys less every month.', why_bread:'Bread got expensive.', why_drought:'The drought ruined the harvest.', why_mines:'Part of the land still has mines.', why_home:'Paying rent because the family home is still rubble.', why_homeback:'Got the family home back through the property portal.', why_bribes:'Officials keep asking for “fees”.', why_fx:'Imported parts get pricier as the dollar rises.' },
+    why_power:'The generator bill is eating everything.', why_pay:'The salary buys less every month.', why_bread:'Bread got expensive.', why_drought:'The drought ruined the harvest.', why_nojobs:'There is no steady work in the province.', why_home:'Paying rent because the family home is still rubble.', why_homeback:'Got the family home back through the property portal.', why_bribes:'Officials keep asking for “fees”.', why_fx:'Imported parts get pricier as the dollar rises.' },
   ar:{ salary:'الراتب', side:'دروس خصوصية', brother:'حوالة من أخيها في ألمانيا', crop:'بيع محصول القمح', labor:'عمل يومي في ورشات البناء', shop:'أرباح المحل',
     food:'الطعام', bread:'الخبز', generator:'المولّدة (التقنين)', transport:'المواصلات', rent:'الإيجار', diesel:'مازوت مضخة المياه', seeds:'البذار والسماد', bribes:'رشاوى و«رسوم»', stock:'قطع غيار (مستوردة)',
     s_ok:'الأمور ماشية. العائلة تدّخر قليلاً كل شهر.', s_tight:'كل شهر صعب. أي طارئ يُغرق العائلة في الدين.', s_bad:'العائلة لا تغطي الأساسيات، تستغني عن وجبات وتستدين.', s_leave:'العائلة تفكّر في مغادرة سوريا.',
-    why_power:'فاتورة المولّدة تأكل كل شيء.', why_pay:'الراتب يشتري أقل كل شهر.', why_bread:'الخبز صار غالياً.', why_drought:'الجفاف دمّر المحصول.', why_mines:'جزء من الأرض ما زال ملغوماً.', why_home:'تدفع العائلة إيجاراً لأن بيتها ما زال ركاماً.', why_homeback:'استعادت العائلة بيتها عبر منصة الملكيات.', why_bribes:'الموظفون يطلبون «رسوماً» باستمرار.', why_fx:'قطع الغيار المستوردة تغلو مع ارتفاع الدولار.' },
+    why_power:'فاتورة المولّدة تأكل كل شيء.', why_pay:'الراتب يشتري أقل كل شهر.', why_bread:'الخبز صار غالياً.', why_drought:'الجفاف دمّر المحصول.', why_nojobs:'لا عمل ثابت في المحافظة.', why_home:'تدفع العائلة إيجاراً لأن بيتها ما زال ركاماً.', why_homeback:'استعادت العائلة بيتها عبر منصة الملكيات.', why_bribes:'الموظفون يطلبون «رسوماً» باستمرار.', why_fx:'قطع الغيار المستوردة تغلو مع ارتفاع الدولار.' },
 };
 
 const CHAIN_TXT = {
@@ -1454,14 +1515,14 @@ const ADV = {
 const WHY = {
   en:{ fxUp:'Dollar +{0}%', fxDown:'Dollar {0}%', payDown:'Salary lost ${0}', payUp:'Salary gained ${0}', trustDown:'Trust −{0}', trustUp:'Trust +{0}', angerUp:'Anger +{0}', angerDown:'Anger −{0}',
     print:'You printed {0}bn lira', reserves:'Few dollars left in the bank', reservesGood:'Plenty of dollars in the bank', deficit:'Government cash below zero', lowTrust:'People don’t trust the government', highTrust:'People trust the government', intervene:'You sold dollars to protect the lira', shock:'A crisis shook the lira', base:'Normal price rises',
-    t_bread:'Bread policy', t_fuel:'Fuel policy', t_pay:'Salaries vs what people expect', t_power:'Electricity', t_prices:'Prices', t_security:'Police on the streets', t_tax:'Tough tax collection', t_anger:'Angry provinces', t_debt:'Government cash deep below zero', t_decrees:'Your decrees',
-    a_trust:'Low trust', a_pay:'Low salaries', a_power:'Blackouts', a_subsidies:'Subsidy cuts', a_security:'Security level', a_damage:'War damage and mines', a_prices:'Rising prices', a_local:'Local grievances', a_neighbors:'Anger spreading from neighbors', b_trust:'People trust you', b_pay:'Better salaries', b_power:'Better electricity', b_subsidies:'Subsidies', b_security:'Police on the streets', b_damage:'Rebuilding', b_prices:'Stable prices', b_local:'Local deals and projects', b_neighbors:'Calm neighbors',
+    t_bread:'Bread policy', t_fuel:'Fuel policy', t_pay:'Salaries vs what people expect', t_power:'Electricity', t_prices:'Prices', t_security:'Police on the streets', t_tax:'Tough tax collection', t_anger:'Angry provinces', t_jobs:'Work', t_bar:'People expect more than they used to', t_debt:'Government cash deep below zero', t_decrees:'Your decrees',
+    a_trust:'Low trust', a_pay:'Low salaries', a_power:'Blackouts', a_subsidies:'Subsidy cuts', a_security:'Security level', a_damage:'War damage', a_jobs:'People with no work', a_bar:'People expect more than they used to', a_prices:'Rising prices', a_local:'Local grievances', a_neighbors:'Anger spreading from neighbors', b_trust:'People trust you', b_pay:'Better salaries', b_power:'Better electricity', b_subsidies:'Subsidies', b_security:'Police on the streets', b_damage:'Rebuilding', b_jobs:'Factories are hiring', b_bar:'Expectations', b_prices:'Stable prices', b_local:'Local deals and projects', b_neighbors:'Calm neighbors',
     cashDown:'Government cash −{0}bn', cashUp:'Government cash +{0}bn', usdDown:'Dollars −${0}M', usdUp:'Dollars +${0}M', biggestCost:'Biggest cost: {0}', biggestIncome:'Biggest income: {0}',
     powerUp:'Electricity +{0}h', gridArrived:'New power stations came online', noneYet:'Nothing dramatic this season. Small changes add up, though.' },
   ar:{ fxUp:'الدولار +{0}%', fxDown:'الدولار {0}%', payDown:'الراتب خسر {0}$', payUp:'الراتب ربح {0}$', trustDown:'الثقة −{0}', trustUp:'الثقة +{0}', angerUp:'الغضب +{0}', angerDown:'الغضب −{0}',
     print:'طبعتَ {0} مليار ليرة', reserves:'دولارات قليلة في المصرف', reservesGood:'دولارات كثيرة في المصرف', deficit:'نقد الحكومة تحت الصفر', lowTrust:'الناس لا يثقون بالحكومة', highTrust:'الناس يثقون بالحكومة', intervene:'بعتَ دولارات لحماية الليرة', shock:'أزمة هزّت الليرة', base:'ارتفاع الأسعار الطبيعي',
-    t_bread:'سياسة الخبز', t_fuel:'سياسة الوقود', t_pay:'الرواتب مقارنة بتوقعات الناس', t_power:'الكهرباء', t_prices:'الأسعار', t_security:'الانتشار الأمني', t_tax:'الجباية الصارمة', t_anger:'المحافظات الغاضبة', t_debt:'نقد الحكومة تحت الصفر بكثير', t_decrees:'مراسيمك',
-    a_trust:'ثقة منخفضة', a_pay:'رواتب منخفضة', a_power:'التقنين', a_subsidies:'خفض الدعم', a_security:'مستوى الأمن', a_damage:'دمار الحرب والألغام', a_prices:'ارتفاع الأسعار', a_local:'مظالم محلية', a_neighbors:'الغضب ينتقل من الجيران', b_trust:'الناس يثقون بك', b_pay:'رواتب أفضل', b_power:'كهرباء أفضل', b_subsidies:'الدعم', b_security:'الانتشار الأمني', b_damage:'إعادة الإعمار', b_prices:'استقرار الأسعار', b_local:'اتفاقات ومشاريع محلية', b_neighbors:'جيران هادئون',
+    t_bread:'سياسة الخبز', t_fuel:'سياسة الوقود', t_pay:'الرواتب مقارنة بتوقعات الناس', t_power:'الكهرباء', t_prices:'الأسعار', t_security:'الانتشار الأمني', t_tax:'الجباية الصارمة', t_anger:'المحافظات الغاضبة', t_jobs:'العمل', t_bar:'الناس صاروا يتوقعون أكثر', t_debt:'نقد الحكومة تحت الصفر بكثير', t_decrees:'مراسيمك',
+    a_trust:'ثقة منخفضة', a_pay:'رواتب منخفضة', a_power:'التقنين', a_subsidies:'خفض الدعم', a_security:'مستوى الأمن', a_damage:'دمار الحرب', a_jobs:'ناس بلا عمل', a_bar:'الناس صاروا يتوقعون أكثر', a_prices:'ارتفاع الأسعار', a_local:'مظالم محلية', a_neighbors:'الغضب ينتقل من الجيران', b_trust:'الناس يثقون بك', b_pay:'رواتب أفضل', b_power:'كهرباء أفضل', b_subsidies:'الدعم', b_security:'الانتشار الأمني', b_damage:'إعادة الإعمار', b_jobs:'المصانع توظّف', b_bar:'التوقعات', b_prices:'استقرار الأسعار', b_local:'اتفاقات ومشاريع محلية', b_neighbors:'جيران هادئون',
     cashDown:'نقد الحكومة −{0} مليار', cashUp:'نقد الحكومة +{0} مليار', usdDown:'الدولارات −{0} مليون$', usdUp:'الدولارات +{0} مليون$', biggestCost:'أكبر مصروف: {0}', biggestIncome:'أكبر دخل: {0}',
     powerUp:'الكهرباء +{0} ساعة', gridArrived:'دخلت محطات جديدة الخدمة', noneYet:'لا شيء دراماتيكي هذا الموسم، لكن التغييرات الصغيرة تتراكم.' },
 };
@@ -1493,7 +1554,7 @@ Object.assign(STR.en, {
   milestoneTitle:'{0} years in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going', newYear:'{0} begins. Score {1} ({2} over the year).',
   whyNow:'What’s driving things right now',
   // trade drawer
-  dTrade:'Trade', tradeSub:'Oil, gas, mines, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
+  dTrade:'Trade', tradeSub:'Oil, gas, factories, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
   subWhy:'Why?',
   oilTitle:'Oil', oilProd:'{0} thousand barrels a day', oilAccess:'Fields you control: {0}%. Security in the east: {1}%.',
   oilUseQ:'What do we do with our oil?', oilUse:{ 0:'Sell abroad', 0.5:'Half and half', 1:'Use at home' },
@@ -1501,6 +1562,12 @@ Object.assign(STR.en, {
   gasTitle:'Gas', gasProd:'{0} million m³ a day', gasHint:'Gas runs power plants. Every bit you produce is fuel you don’t have to import.',
   phosTitle:'Phosphate', phosHint:'Fertilizer rock from the Homs desert, sold abroad.', farmTitle:'Olive oil and cotton', farmHint:'Farm exports. Hurt by anger in farming provinces.',
   investTitle:'Invest for the future', investSub:'Pay now, earn later. Money spent here can’t be used in an emergency.',
+  extractTitle:'Dig it up and sell it', extractSub:'Oil, gas and rock earn dollars fast, but a barrel employs almost nobody.',
+  sectorTitle:'Build an economy', sectorSub:'Factories earn less per dollar than oil does. They also give people work, and work is what holds a country together.',
+  jobsChip:'{0} jobs', jobsMade:'Puts people back to work', needsCalm:'Needs the country calmer (anger below 48)',
+  barTitle:'The bar keeps rising', barLow:'People still remember the war. Anything works.', barMid:'People have stopped comparing today to the war.',
+  barHigh:'People compare you to normal countries now, not to 2027.', barNow:'The bar: {0}%',
+  barHelp:'Every good year raises what counts as good enough, and it never drops back. Wages that felt generous become normal, calm becomes expected, and crises hit a country that has more to lose. Winning early makes the rest harder — that is the job.',
   payback:'Pays for itself in about {0}', paybackNever:'Won’t pay back right now', running:'Under way, ready {0}', maxed:'Fully built', gamble:'50/50 gamble',
   investBtn:'Invest', needsCalmEast:'Needs the east calmer (anger below 70)',
   portsTitle:'Export capacity', portsSub:'Ports and border crossings limit how much you can sell abroad.', portsUse:'Exports want {0} a year. Ports and crossings can move {1}.',
@@ -1525,7 +1592,7 @@ Object.assign(STR.ar, {
   inSixMonths:'خلال 6 أشهر', perYear:'سنوياً',
   milestoneTitle:'{0} سنوات في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع', newYear:'بدأ عام {0}. النقاط {1} ({2} خلال العام).',
   whyNow:'ما الذي يحرّك الأمور الآن',
-  dTrade:'التجارة', tradeSub:'النفط والغاز والمناجم والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
+  dTrade:'التجارة', tradeSub:'النفط والغاز والمصانع والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
   subWhy:'لماذا؟',
   oilTitle:'النفط', oilProd:'{0} ألف برميل يومياً', oilAccess:'الحقول تحت سيطرتك: {0}%. الأمن في الشرق: {1}%.',
   oilUseQ:'ماذا نفعل بنفطنا؟', oilUse:{ 0:'نبيعه للخارج', 0.5:'نصف ونصف', 1:'نستخدمه محلياً' },
@@ -1533,6 +1600,12 @@ Object.assign(STR.ar, {
   gasTitle:'الغاز', gasProd:'{0} مليون م³ يومياً', gasHint:'الغاز يشغّل محطات الكهرباء. كل ما تنتجه وقود لا تحتاج استيراده.',
   phosTitle:'الفوسفات', phosHint:'صخور الأسمدة من بادية حمص، تُباع للخارج.', farmTitle:'زيت الزيتون والقطن', farmHint:'صادرات زراعية، يضرّها الغضب في المحافظات الزراعية.',
   investTitle:'استثمر للمستقبل', investSub:'ادفع الآن واكسب لاحقاً. المال المستثمر هنا لا يمكن استخدامه في الطوارئ.',
+  extractTitle:'استخرج وبِع', extractSub:'النفط والغاز والصخور تجلب الدولار بسرعة، لكن البرميل لا يوظّف أحداً تقريباً.',
+  sectorTitle:'ابنِ اقتصاداً', sectorSub:'المصانع تكسب أقل من النفط مقابل كل دولار، لكنها تعطي الناس عملاً، والعمل هو ما يمسك البلد.',
+  jobsChip:'{0} فرصة عمل', jobsMade:'يعيد الناس إلى العمل', needsCalm:'يحتاج بلداً أهدأ (الغضب أقل من 48)',
+  barTitle:'السقف يرتفع', barLow:'الناس ما زالوا يتذكّرون الحرب. أي تحسّن يكفي.', barMid:'الناس لم يعودوا يقارنون يومهم بأيام الحرب.',
+  barHigh:'الناس يقارنونك الآن بالدول الطبيعية، لا بعام 2027.', barNow:'السقف: {0}%',
+  barHelp:'كل عام جيد يرفع ما يُعتبر «جيداً بما يكفي»، ولا يعود إلى الوراء أبداً. الراتب الذي بدا سخياً يصير عادياً، والهدوء يصير متوقعاً، والأزمات تضرب بلداً صار لديه ما يخسره. النجاح المبكر يجعل ما بعده أصعب، وهذه هي المهمة.',
   payback:'يسترد كلفته خلال {0} تقريباً', paybackNever:'لن يسترد كلفته حالياً', running:'جارٍ العمل، يجهز {0}', maxed:'مكتمل', gamble:'مقامرة 50/50',
   investBtn:'استثمر', needsCalmEast:'يحتاج شرقاً أهدأ (غضب أقل من 70)',
   portsTitle:'قدرة التصدير', portsSub:'الموانئ والمعابر الحدودية تحدّد كم يمكنك أن تبيع للخارج.', portsUse:'الصادرات تحتاج {0} سنوياً. الموانئ والمعابر تنقل {1}.',
@@ -1561,7 +1634,7 @@ DEC_TXT.integrity.en[2] = 'Corruption falls every month. Costs a little influenc
 DEC_TXT.tribal.en[2] = 'Opens more eastern oil fields to you. Anger drops in Deir ez-Zor and Raqqa. Independence −3.'; DEC_TXT.tribal.ar[2] = 'يفتح لك حقول نفط شرقية أكثر. الغضب ينخفض في دير الزور والرقة. الاستقلال −3.';
 DEC_TXT.northeast.en[2] = 'Opens the northeast oil fields. Anger drops in Hasakeh and Raqqa. Independence +5.'; DEC_TXT.northeast.ar[2] = 'يفتح حقول نفط الشمال الشرقي. الغضب ينخفض في الحسكة والرقة. الاستقلال +5.';
 DEC_TXT.braingain.en[2] = 'The economy grows a little faster every month, and more people pay tax.'; DEC_TXT.braingain.ar[2] = 'الاقتصاد ينمو أسرع قليلاً كل شهر، ويدفع ضرائب أكثر من الناس.';
-DEC_TXT.demining.en[2] = 'Mines drop every month everywhere. Costs $20M a year.'; DEC_TXT.demining.ar[2] = 'الألغام تنخفض كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
+DEC_TXT.vocational.en[2] = 'Unemployment falls a little every month, everywhere. Costs $20M a year.'; DEC_TXT.vocational.ar[2] = 'البطالة تنخفض قليلاً كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
 FAC_TXT.wb.en[1] = 'Money that goes straight into power stations. It arrives as electricity 12 months later.'; FAC_TXT.wb.ar[1] = 'أموال تذهب مباشرة إلى محطات الكهرباء، وتصل كهرباءً بعد 12 شهراً.';
 NOTE.en.wbGrid = 'World Bank money is building {0} MW of power (ready in 12 months).'; NOTE.ar.wbGrid = 'أموال البنك الدولي تبني {0} ميغاواط (جاهزة بعد 12 شهراً).';
 Object.assign(NOTE.en, { portDone:'{0} port reached level {1}.', dealOn:'Deal with {0} is active again.', dealOff:'Deal with {0} paused: a condition broke.', dealSign:'Signed a deal with {0}.',
@@ -1570,8 +1643,8 @@ Object.assign(NOTE.en, { portDone:'{0} port reached level {1}.', dealOn:'Deal wi
 Object.assign(NOTE.ar, { portDone:'وصل ميناء {0} إلى المستوى {1}.', dealOn:'عاد الاتفاق مع {0} للعمل.', dealOff:'توقف الاتفاق مع {0}: اختلّ أحد الشروط.', dealSign:'وُقّع اتفاق مع {0}.',
   investStart:'بدأ الاستثمار: {0}. يجهز خلال {1}.', investDone:'اكتمل الاستثمار: {0}.', offshoreHit:'الحفر البحري وجد غازاً! +10 مليون م³ يومياً.', offshoreDry:'البئر البحرية جافة. ضاعت الـ150 مليون$.',
   portStart:'تطوير ميناء {0}. يجهز خلال 12 شهراً.', portConcession:'سُلّم ميناء {0} لمشغّل أجنبي. +100 مليون$.', projStartShort:'بدأ البناء في {0}.' });
-Object.assign(LEDGER.en, { oilExport:'Oil sold abroad', farm:'Olive oil and cotton exports', fdi:'Gulf investment', euGrant:'EU grants', homeEnergy:'Own oil and gas (imports saved)', powerImport:'Electricity from Iraq', phos:'Phosphate exports' });
-Object.assign(LEDGER.ar, { oilExport:'نفط يُباع للخارج', farm:'صادرات الزيتون والقطن', fdi:'استثمار خليجي', euGrant:'منح أوروبية', homeEnergy:'نفطنا وغازنا (استيراد موفَّر)', powerImport:'كهرباء من العراق', phos:'صادرات الفوسفات' });
+Object.assign(LEDGER.en, { industry:'Factory exports', tourism:'Visitors', vocational:'Trade schools', oilExport:'Oil sold abroad', farm:'Olive oil and cotton exports', fdi:'Gulf investment', euGrant:'EU grants', homeEnergy:'Own oil and gas (imports saved)', powerImport:'Electricity from Iraq', phos:'Phosphate exports' });
+Object.assign(LEDGER.ar, { industry:'صادرات المصانع', tourism:'الزوّار', vocational:'المعاهد المهنية', oilExport:'نفط يُباع للخارج', farm:'صادرات الزيتون والقطن', fdi:'استثمار خليجي', euGrant:'منح أوروبية', homeEnergy:'نفطنا وغازنا (استيراد موفَّر)', powerImport:'كهرباء من العراق', phos:'صادرات الفوسفات' });
 Object.assign(ADV.en, { usd:'Dollars will run out in about {0} months. That’s game over.', payAct:'A 10% raise in the Money panel. It costs cash every month after.', gridAct:'Put $40M or $80M a year into power stations. It pays off in a year.', calmEcon:'The money looks okay right now.', calmEconAct:'Look at Trade: oil, ports and deals can bring in dollars.',
   clog:'Our ports are jammed. We’re losing export money.', clogAct:'Upgrade Latakia or Tartus, or sign a border trade deal.' });
 Object.assign(ADV.ar, { usd:'ستنفد الدولارات خلال {0} أشهر تقريباً. عندها تنتهي اللعبة.', payAct:'زيادة 10% من لوحة المال. تكلّف نقداً كل شهر بعدها.', gridAct:'خصّص 40 أو 80 مليون$ سنوياً للمحطات. تُثمر خلال سنة.', calmEcon:'الوضع المالي مقبول الآن.', calmEconAct:'انظر إلى التجارة: النفط والموانئ والاتفاقات تجلب الدولار.',
@@ -1616,6 +1689,20 @@ const INV_TXT = {
   phosphate:{ icon:'⛏️', en:['Expand phosphate mines','Mining exports +35%.'], ar:['توسيع مناجم الفوسفات','صادرات التعدين +35%.'] },
   farm:{ icon:'🫒', en:['Olive oil and cotton program','Seeds, presses and buyers abroad. Farm exports grow.'], ar:['برنامج الزيتون والقطن','بذار ومعاصر ومشترون في الخارج. تنمو الصادرات الزراعية.'] },
 };
+Object.assign(INV_TXT, {
+  textiles:{ icon:'🧵', en:['Textile mills and garment workshops','Syria used to clothe the region. Cheap to restart, and it hires more people per dollar than anything else you can build.'],
+    ar:['مصانع النسيج وورشات الألبسة','كانت سوريا تكسو المنطقة. إعادة تشغيلها رخيصة، وتوظّف عدداً من الناس أكبر من أي شيء آخر مقابل كل دولار.'] },
+  food:{ icon:'🥫', en:['Food processing and canning','Turn the harvest into something that keeps. Jobs in the farming provinces, and a smaller wheat bill every year.'],
+    ar:['تصنيع الأغذية والتعليب','حوّل المحصول إلى شيء يُخزَّن. وظائف في محافظات الزراعة، وفاتورة قمح أقل كل عام.'] },
+  pharma:{ icon:'💊', en:['Medicine factories','Syria made most of its own medicine before the war. Skilled work, steady exports, and hospitals that stop begging.'],
+    ar:['معامل الأدوية','كانت سوريا تصنع معظم دوائها قبل الحرب. عمل يحتاج مهارة، وصادرات ثابتة، ومشافٍ تكفّ عن الاستجداء.'] },
+  cement:{ icon:'🧱', en:['Cement and building materials','Every lira you spend on rebuilding goes further when the cement is made here instead of imported.'],
+    ar:['الإسمنت ومواد البناء','كل ليرة تنفقها على الإعمار تمتدّ أكثر عندما يُصنع الإسمنت هنا بدل استيراده.'] },
+  telecom:{ icon:'📡', en:['Phone and internet network','Expensive, and it earns little directly. But taxes get collected, businesses find customers, and the whole economy speeds up.'],
+    ar:['شبكة الهاتف والإنترنت','مكلفة، ولا تكسب كثيراً بنفسها. لكن الضرائب تُجبى، والتجار يجدون زبائن، ويتسارع الاقتصاد كله.'] },
+  tourism:{ icon:'🏛️', en:['Hotels and the old cities','Damascus, Palmyra, the coast. Visitors pay in dollars and need no ship, but nobody comes to a country that is angry or dark.'],
+    ar:['الفنادق والمدن القديمة','دمشق وتدمر والساحل. الزوّار يدفعون بالدولار ولا يحتاجون سفينة، لكن لا أحد يزور بلداً غاضباً أو مظلماً.'] },
+});
 const PORT_NAME = { en:{ latakia:'Latakia', tartus:'Tartus' }, ar:{ latakia:'اللاذقية', tartus:'طرطوس' } };
 const PART_TXT = {
   turkey:{ en:['Turkey','Northern trade corridor','Open the northern crossings for factory and farm exports.','Export room +$60M/yr, factory exports +15%.','Aleppo and Idlib anger below 65'],
@@ -1950,7 +2037,7 @@ function sfx(name){
 document.addEventListener('pointerdown', sfxInit, { once:false, passive:true });
 
 // ===== Transition: UI v3 (part A) =====
-const KEY = 'transition-syria-v5';
+const KEY = 'transition-syria-v6';
 let S, D, LANG = 'en';
 const UI = { tab:'policy', right:'province', sel:'damascus', layer:'unrest', active:'campaign', queue:[] };
 let STORE = { active:'campaign', campaign:null, mission:null };
@@ -2033,8 +2120,8 @@ function effChips(e){
 
 // ---------- dashboard ----------
 function health(key, v){
-  const r = { cash:[0, 15], usd:[250, 500], fx:[250, 160], pay:[15, 22], pc:[10, 30], trust:[25, 45], anger:[65, 50], power:[4, 8] }[key];
-  if (key === 'fx' || key === 'anger') return v > r[0] ? 'bad' : v > r[1] ? 'warn' : 'ok';
+  const r = { cash:[0, 15], usd:[250, 500], fx:[250, 160], pay:[15, 22], pc:[10, 30], trust:[25, 45], anger:[65, 50], power:[4, 8], jobs:[52, 38] }[key];
+  if (key === 'fx' || key === 'anger' || key === 'jobs') return v > r[0] ? 'bad' : v > r[1] ? 'warn' : 'ok';
   return v < r[0] ? 'bad' : v < r[1] ? 'warn' : 'ok';
 }
 function metric(key, val, now, next, goodUp, dtxt, sub){
@@ -2142,7 +2229,7 @@ function layerOf(id){
     case 'unrest': return { fill:TIER_COL[tierOf(pv.u)], val:S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5) };
     case 'power': { const h = provHours(S, id); return { fill:mix('#3a3f55', '#f2c94c', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
     case 'damage': return { fill:mix('#6f9d8f', '#8e2f36', pv.dmg / 20), val:(AR() ? '' : '$') + pv.dmg.toFixed(pv.dmg < 10 ? 1 : 0) + (AR() ? ' مليار$' : 'B') };
-    case 'mines': return { fill:mix('#6f9d8f', '#c8612f', pv.mines / 55), val:Math.round(pv.mines) + '%' };
+    case 'jobs': return { fill:mix('#6f9d8f', '#c8612f', (pv.jobless - 15) / 60), val:Math.round(pv.jobless) + '%' };
   }
 }
 function provBadge(id){ const pv = S.provs[id]; return (pv.project === true ? '✅' : pv.project === 'building' ? '🏗️' : D.projects.includes(id) ? '🚧' : '') + (tierOf(pv.u) === 'revolt' ? '⚠️' : ''); }
@@ -2179,9 +2266,9 @@ function renderMap(){
   const legend = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('') + `<span>${t('revoltAt')}</span>`
     : UI.layer === 'power' ? `<span><i style="background:#3a3f55"></i>${t('legDark')}</span><span><i style="background:#f2c94c"></i>${t('legLight')}</span><span>${t('legPowerTxt')}</span>`
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span><span>${t('legDamageTxt')}</span>`
-    : `<span><i style="background:#6f9d8f"></i>${t('legClear')}</span><span><i style="background:#c8612f"></i>${t('legMined')}</span><span>${t('legMinesTxt')}</span>`;
+    : `<span><i style="background:#6f9d8f"></i>${t('legWorking')}</span><span><i style="background:#c8612f"></i>${t('legNoWork')}</span><span>${t('legJobsTxt')}</span>`;
   return `<div class="maphead"><h2>${t('mapTitle')}</h2><div class="layers" role="group">
-      ${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['mines','💣','layerMines']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}
+      ${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}
     </div></div>
     <svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g>${paths}</g>${selPath}${labels}${inset}${star}</svg>
     <div class="legend">${legend}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span><span>⭐ ${t('legCapital')}</span>${S.flags.stats ? '' : `<span class="muted">~ ${t('noStats')}</span>`}</div>`;
@@ -2195,7 +2282,7 @@ function renderProvince(){
   let why = ''; if (!pv.project && !on){ if (x.pc > pcLeft()) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > usdAvail) why = fill(t('needsUsdProj'), [x.usd]); }
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div class="row spread"><span>${icon} ${k}</span><b>${v}</b></div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const good = [], A = AR();
-  if (x.unrest) good.push(fill(CHIP[LANG].prov, [PN(id), sign(x.unrest)])); if (x.power) good.push(A ? `+${x.power} ساعات كهرباء` : `+${x.power} hours of electricity`); if (x.mines) good.push(A ? 'نزع الألغام' : 'clears landmines');
+  if (x.unrest) good.push(fill(CHIP[LANG].prov, [PN(id), sign(x.unrest)])); if (x.power) good.push(A ? `+${x.power} ساعات كهرباء` : `+${x.power} hours of electricity`); if (x.jobs) good.push(A ? 'يخلق فرص عمل' : 'creates jobs');
   if (x.rev) good.push(A ? `يكسب ${bn(x.rev)} كل موسم` : `earns ${bn(x.rev)} cash every season`); if (x.transit) good.push(A ? `+${usdM(x.transit)} تجارة كل موسم` : `+${usdM(x.transit)} trade money every season`);
   if (x.phosphate) good.push(A ? `+${usdM(x.phosphate)} تعدين كل موسم` : `+${usdM(x.phosphate)} mining money every season`); if (x.oil) good.push(A ? `+${usdM(x.oil)} نفط كل موسم` : `+${usdM(x.oil)} oil money every season`);
   if (x.wheat) good.push(A ? `استيراد قمح أقل بـ${usdM(x.wheat)} كل موسم` : `${usdM(x.wheat)} less wheat to import every season`); if (x.mw) good.push(A ? 'كهرباء أكثر لكل البلاد' : 'more power for the whole country');
@@ -2216,7 +2303,7 @@ function renderProvince(){
     ${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)) + ' / 100', pv.u, TIER_COL[tier])}
     ${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
     ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}
-    ${meter('💣', t('landmines'), Math.round(pv.mines) + '%', pv.mines, '#c8612f')}
+    ${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}
     <div class="card project${on ? ' on' : ''}${pv.project === true ? ' done' : ''}"><div class="ptag">🏗️ ${t('bigProject')}</div>
       <h4>${esc(tx[0])}</h4><p><b>${t('problem')}</b> ${esc(tx[1])}</p><p><b>${t('ifBuilt')}</b> ${esc(good.join(AR() ? '، ' : ', '))}.</p>
       <div class="row" style="margin-bottom:8px"><span class="chip cost">🏦 ${usdM(x.usd)}</span><span class="chip cost">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip cost">⭐ ${x.pc}</span>` : ''}</div>
@@ -2236,10 +2323,10 @@ function personas(s){
     const why = gen > 14 ? 'why_power' : rw < 22 ? 'why_pay' : breadC > 10 ? 'why_bread' : null; out.rana = { inc, exp, why }; }
   // Abu Khaled
   { const drought = s.flags.droughtUntil && s.turn <= s.flags.droughtUntil;
-    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.mines / 150) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100);
+    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.jobless / 260) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100);
     const diesel = { full:8, partial:14, market:22 }[P.fuel];
     const inc = [['crop', crop]], exp = [['diesel', diesel], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]];
-    const why = drought ? 'why_drought' : diesel > 15 ? 'why_power' : s.provs.hasakeh.mines > 15 ? 'why_mines' : null; out.khaled = { inc, exp, why: why === 'why_power' ? null : why }; }
+    const why = drought ? 'why_drought' : diesel > 15 ? 'why_power' : s.provs.hasakeh.jobless > 45 ? 'why_nojobs' : null; out.khaled = { inc, exp, why: why === 'why_power' ? null : why }; }
   // Hiba
   { const pv = s.provs.rif, homeBack = !!s.decrees.restitution;
     const inc = [['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250)]];
@@ -2453,13 +2540,13 @@ function renderMapSvg(){
   return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${labels}${inset}${star}</svg>`;
 }
 function renderLayers(){
-  return `<div class="layers" role="group">${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['mines','💣','layerMines']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
+  return `<div class="layers" role="group">${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
 }
 function renderLegend(){
   const items = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('')
     : UI.layer === 'power' ? `<span><i style="background:#3a3f55"></i>${t('legDark')}</span><span><i style="background:#f2c94c"></i>${t('legLight')}</span>`
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span>`
-    : `<span><i style="background:#6f9d8f"></i>${t('legClear')}</span><span><i style="background:#c8612f"></i>${t('legMined')}</span>`;
+    : `<span><i style="background:#6f9d8f"></i>${t('legWorking')}</span><span><i style="background:#c8612f"></i>${t('legNoWork')}</span>`;
   return `<div class="legend">${items}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span></div>`;
 }
 
@@ -2471,7 +2558,7 @@ function renderProvince(){
   let why = ''; if (!pv.project && !on){ if (x.pc > pcLeft()) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > usdAvail) why = fill(t('needsUsdProj'), [x.usd]); }
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div>${icon} ${k}</div><div class="mv">${v}</div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const A = AR(), good = [];
-  if (x.unrest) good.push([`🔥 ${sign(x.unrest)}`, true]); if (x.power) good.push([`💡 +${x.power}${A ? 'س' : 'h'}`, true]); if (x.mines) good.push([A ? '💣 نزع ألغام' : '💣 clears mines', true]);
+  if (x.unrest) good.push([`🔥 ${sign(x.unrest)}`, true]); if (x.power) good.push([`💡 +${x.power}${A ? 'س' : 'h'}`, true]); if (x.jobs) good.push([A ? '💼 فرص عمل' : '💼 jobs', true]);
   if (x.rev) good.push([`💵 +${bn(x.rev)}`, true]); if (x.transit) good.push([`🏦 +${usdM(x.transit)}`, true]); if (x.phosphate) good.push([`🏦 +${usdM(x.phosphate)}`, true]); if (x.oil) good.push([`🛢️ +${usdM(x.oil)}`, true]);
   if (x.wheat) good.push([`🌾 ${MINUS}${usdM(x.wheat)}`, true]); if (x.mw) good.push([`⚡ +${x.mw} MW`, true]); if (x.cap) good.push([A ? '🏭 اقتصاد أكبر' : '🏭 bigger economy', true]); if (x.trust) good.push([`🤝 +${x.trust}`, true]);
   const mode = D.projMode[id] || 'tender';
@@ -2489,7 +2576,7 @@ function renderProvince(){
       <button class="close" data-act="closeProv" aria-label="${t('close')}">✕</button></div>
     <div class="body"><p class="muted" style="margin:0 0 10px;font-size:13px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
       <div class="meters">${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
-        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💣', t('landmines'), Math.round(pv.mines) + '%', pv.mines, '#c8612f')}</div>
+        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}</div>
       <div class="quest${pv.project === true ? ' done' : ''}"><div class="qt">🏗️ ${t('bigProject')}</div><h4>${esc(tx[0])}</h4>
         <p><b>${t('problem')}</b> ${esc(tx[1])}</p><div class="reward">${good.map(([g]) => `<span class="chip up">${esc(g)}</span>`).join('')}</div>
         <div class="row" style="margin-bottom:8px"><span class="chip">🏦 ${usdM(x.usd)}</span><span class="chip">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip">⭐ ${x.pc}</span>` : ''}</div>
@@ -2832,7 +2919,7 @@ function showMissionEnd(){
 
 
 // ===== Transition: UI v5 (continuous time + trade). Overrides earlier render functions. =====
-const SPEEDS = [0, 6000, 3500, 1800];
+const SPEEDS = [0, 9500, 5600, 3000];
 UI.speed = 0; UI.flash = {}; UI.effect = null; UI.toasts = []; UI.sub = { money:'actions', progress:'why', trade:'resources' }; UI.pdown = false; UI.hover = false; UI.dirty = false;
 let TIMER = null, TOAST_ID = 0;
 D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:0 };
@@ -2856,12 +2943,12 @@ const seasonsTxt = n => monthsTxt(n);
 const gradeOf = v => v >= 75 ? 'A' : v >= 62 ? 'B' : v >= 50 ? 'C' : v >= 38 ? 'D' : 'F';
 
 // ---------- saves ----------
-function snap(s){ return { t:s.t, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score,
+function snap(s){ return { t:s.t, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score, jobs:joblessNat(s), bar:s.bar || 0,
   print:s.policy.print, capex:s.policy.capex, corr:s.corr, cap:s.cap, mw:s.mw, debt:s.debt, privB:(s.last && s.last.privB) || 0, contagion:(s.last && s.last.maxContagion) || 0 }; }
 function persist(){ STORE[UI.active] = { S }; STORE.active = UI.active; try { localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e){} }
 function restore(){
   try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!o) return false; STORE = o; UI.active = o.active || 'campaign';
-    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 5) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
+    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
 }
 function begin(diff, mission){
   setSpeed(0);
@@ -2869,9 +2956,9 @@ function begin(diff, mission){
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
   UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
 }
-function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:5, S, active:UI.active })))); }
+function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
 function loadCode(code){
-  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 5) return false;
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 6) return false;
     UI.active = o.active || 'campaign'; S = o.S; syncD(); setSpeed(0); persist(); return true; } catch(e){ return false; }
 }
 function pcLeft(){ return S.pc; }
@@ -2921,9 +3008,9 @@ const EFX_KEYS = [
   ['score', s => s.score, 0.2, true, v => sign(v, 1)],
 ];
 function withEffects(title, fn){
-  const before = clone(S), pB = step(before, 1);
+  const before = clone(S), pB = step(before, 0.5);
   const ok = fn(); if (!ok) return false;
-  const pA = step(S, 1), now = [], later = [];
+  const pA = step(S, 0.5), now = [], later = [];
   EFX_KEYS.forEach(([k, get, thr, goodUp, fmt]) => {
     const dn = get(S) - get(before), dl = (get(pA) - get(pB)) - dn;
     if (Math.abs(dn) >= thr) now.push([k, dn, (dn > 0) === goodUp, fmt(dn)]);
@@ -2942,7 +3029,7 @@ function renderEffect(){
   const A = AR();
   el.innerHTML = `<div class="effect" role="status"><button class="close" data-act="closeEffect" aria-label="${t('close')}">✕</button><div class="et">✅ ${esc(e.title)}</div>
     ${e.now.length ? `<div class="erow"><span class="el">${A ? 'الآن' : 'Right now'}</span><span class="chips">${e.now.map(effChip).join('')}</span></div>` : ''}
-    <div class="erow"><span class="el">${A ? 'خلال 6 أشهر' : 'Over 6 months'}</span><span class="chips">${e.later.length ? e.later.map(effChip).join('') : `<span class="chip">${A ? 'تأثير صغير أو بطيء' : 'Small or slow effect'}</span>`}</span></div></div>`;
+    <div class="erow"><span class="el">${A ? 'خلال 3 أشهر' : 'Over 3 months'}</span><span class="chips">${e.later.length ? e.later.map(effChip).join('') : `<span class="chip">${A ? 'تأثير صغير أو بطيء' : 'Small or slow effect'}</span>`}</span></div></div>`;
 }
 
 // ---------- toasts ----------
@@ -2990,10 +3077,10 @@ function personas(s){
   { const gen = (24 - h('aleppo')) * 1.1, bro = s.flags.unified || s.flags.remitBoost ? 45 : 32;
     out.rana = { inc:[['salary', rw], ['side', 12], ['brother', bro]], exp:[['food', 36 * (1 + infl / 200)], ['bread', breadC], ['generator', gen], ['transport', trans], ['rent', 18]], why: gen > 14 ? 'why_power' : rw < 22 ? 'why_pay' : breadC > 10 ? 'why_bread' : null }; }
   { const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil;
-    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.mines / 150) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100) * (s.res.farm > 1 ? 1 + (s.res.farm - 1) * 0.1 : 1);
-    out.khaled = { inc:[['crop', crop]], exp:[['diesel', { full:8, partial:14, market:22 }[P.fuel]], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]], why: drought ? 'why_drought' : s.provs.hasakeh.mines > 15 ? 'why_mines' : null }; }
+    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.jobless / 260) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100) * (s.res.farm > 1 ? 1 + (s.res.farm - 1) * 0.1 : 1);
+    out.khaled = { inc:[['crop', crop]], exp:[['diesel', { full:8, partial:14, market:22 }[P.fuel]], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]], why: drought ? 'why_drought' : s.provs.hasakeh.jobless > 45 ? 'why_nojobs' : null }; }
   { const pv = s.provs.rif, back = !!s.decrees.restitution;
-    out.hiba = { inc:[['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250)]], exp:[['rent', back ? 0 : 18 + 22 * (pv.dmg / pv.dmg0)], ['food', 28 * (1 + infl / 200)], ['bread', breadC], ['generator', (24 - h('rif')) * 0.8], ['transport', trans]], why: back ? 'why_homeback' : 'why_home' }; }
+    out.hiba = { inc:[['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250) * clamp(1.3 - pv.jobless / 90, 0.45, 1.15)]], exp:[['rent', back ? 0 : 18 + 22 * (pv.dmg / pv.dmg0)], ['food', 28 * (1 + infl / 200)], ['bread', breadC], ['generator', (24 - h('rif')) * 0.8], ['transport', trans]], why: pv.jobless > 48 ? 'why_nojobs' : back ? 'why_homeback' : 'why_home' }; }
   { const hd = h('damascus'), bribe = s.corr * 0.35;
     out.samer = { inc:[['shop', 75 * (1 + (s.cap - 20) / 100) * clamp(hd / 12, 0.45, 1.4) * (P.tax === 'aggressive' ? 0.9 : 1)]], exp:[['generator', (24 - hd) * 1.8], ['bribes', bribe], ['stock', 20 * (1 + infl / 100)], ['rent', 28], ['food', 30 * (1 + infl / 200)]], why: (24 - hd) * 1.8 > 25 ? 'why_power' : bribe > 18 ? 'why_bribes' : infl > 10 ? 'why_fx' : null }; }
   Object.values(out).forEach(o => { o.i = o.inc.reduce((a, x) => a + x[1], 0); o.e = o.exp.reduce((a, x) => a + x[1], 0); o.net = o.i - o.e; const r = o.i / o.e;
@@ -3052,7 +3139,7 @@ function detectCycles(){
 
 // ---------- HUD ----------
 function renderHUD(P){
-  const rw = realWage(S), nu = natUnrest(S), st = S.flags.stats, pw = nationalHours(S);
+  const rw = realWage(S), nu = natUnrest(S), st = S.flags.stats, pw = nationalHours(S), jb = joblessNat(S);
   const total = S.mission ? S.mission.end - S.mission.start : 60, done = S.mission ? S.t - S.mission.start : S.t % 60;
   const C = 2 * Math.PI * 22, frac = clamp(done / total, 0, 1);
   const ring = `<div class="ring"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22" fill="var(--board-2)" stroke="var(--board-2)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="ic">${seasonNow(S) === 'H1' ? '🌾' : '❄️'}</span></div>`;
@@ -3070,6 +3157,7 @@ function renderHUD(P){
     <div class="tray" role="group">
       ${res('trust', st ? Math.round(S.trust) : fog(S.trust, 5), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
       ${res('anger', st ? Math.round(nu) : fog(nu, 5), nu, natUnrest(P), false, sign(natUnrest(P) - nu, 1))}
+      ${res('jobs', (st ? Math.round(jb) : fog(jb, 5)) + '%', jb, joblessNat(P), false, sign(joblessNat(P) - jb, 1))}
       ${res('power', pw.toFixed(1) + (AR() ? 'س' : 'h'), pw, nationalHours(P), true, sign(nationalHours(P) - pw, 1))}
     </div>
     <span class="spacer"></span>
@@ -3105,7 +3193,7 @@ function renderProvince(){
   let why = ''; if (!pv.project){ if (x.pc > S.pc) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > S.reserves + S.grant) why = fill(t('needsUsdProj'), [x.usd]); }
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div>${icon} ${k}</div><div class="mv">${v}</div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const A = AR(), good = [];
-  if (x.unrest) good.push(`🔥 ${sign(x.unrest)}`); if (x.power) good.push(`💡 +${x.power}${A ? 'س' : 'h'}`); if (x.mines) good.push(A ? '💣 نزع ألغام' : '💣 clears mines');
+  if (x.unrest) good.push(`🔥 ${sign(x.unrest)}`); if (x.power) good.push(`💡 +${x.power}${A ? 'س' : 'h'}`); if (x.jobs) good.push(A ? `💼 ${-x.jobs} فرصة عمل` : `💼 ${-x.jobs} jobs`);
   if (x.rev) good.push(`💵 +${bn(x.rev * 2)}/${A ? 'سنة' : 'yr'}`); if (x.transit) good.push(`🏦 +${usdM(x.transit * 2)}/${A ? 'سنة' : 'yr'}`); if (x.phosphate) good.push(`⛏️ +${usdM(x.phosphate * 2)}/${A ? 'سنة' : 'yr'}`); if (x.oil) good.push(`🛢️ +${usdM(x.oil * 2)}/${A ? 'سنة' : 'yr'}`);
   if (x.wheat) good.push(`🌾 ${MINUS}${usdM(x.wheat * 2)}/${A ? 'سنة' : 'yr'}`); if (x.mw) good.push(`⚡ +${x.mw} MW`); if (x.cap) good.push(A ? '🏭 اقتصاد أكبر' : '🏭 bigger economy'); if (x.trust) good.push(`🤝 +${x.trust}`);
   const mF = projMonths(id, 'fast'), mT = projMonths(id, 'tender'), lF = Math.round(x.usd * projLeakRate(S, 'fast')), lT = Math.round(x.usd * projLeakRate(S, 'tender'));
@@ -3120,7 +3208,7 @@ function renderProvince(){
   return `<aside class="pcard"><div class="head"><div><h2>${esc(PN(id))}</h2><span class="tierpill" style="background:${TIER_COL[tier]}">${tierName(tier)}</span></div><button class="close" data-act="closeProv" aria-label="${t('close')}">✕</button></div>
     <div class="body"><p class="muted" style="margin:0 0 10px;font-size:13px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
       <div class="meters">${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
-        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💣', t('landmines'), Math.round(pv.mines) + '%', pv.mines, '#c8612f')}</div>
+        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}</div>
       <div class="quest${pv.project === true ? ' done' : ''}"><div class="qt">🏗️ ${t('bigProject')}</div><h4>${esc(tx[0])}</h4><p><b>${t('problem')}</b> ${esc(tx[1])}</p>
         <div class="reward">${good.map(g => `<span class="chip up">${esc(g)}</span>`).join('')}</div>
         <div class="row" style="margin-bottom:8px"><span class="chip">🏦 ${usdM(x.usd)}</span><span class="chip">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip">⭐ ${x.pc}</span>` : ''}</div>
@@ -3181,7 +3269,10 @@ function investValue(id){
     case 'offshore': return 30;
     case 'phosphate': return 35 * 0.35 * (1 - S.provs.homs.u / 150) * 2 * (dealOn(S, 'china') ? 0.7 : 1);
     case 'farm': return 20 * (dealOn(S, 'eu') ? 1.25 : 1);
+    case 'tourism': { const n = (S.ind && S.ind.tourism) || 0; const cur = tourismIncome(S);
+      return cur > 0 ? cur / Math.max(1, n) * 2 : 18 * clamp(1.25 - natUnrest(S) / 55, 0, 1.1) * clamp(nationalHours(S) / 14, 0.3, 1) * 2; }
   }
+  if (IND[id]) return IND[id].exp * 2 * (dealOn(S, 'eu') ? 1.25 : 1) + (IND[id].wheatCut || 0) * 2;
   return 0;
 }
 function renderTradeResources(){
@@ -3196,17 +3287,22 @@ function renderTradeResources(){
     <div class="rcard"><div class="rh"><span class="ri">🔥</span><div><h3>${t('gasTitle')}</h3><div class="rv">${fill(t('gasProd'), [r.gas.toFixed(0)])}</div></div></div>${bar(r.gas, 30, '#35b6a3')}<p class="small">${t('gasHint')}</p></div>
     <div class="rcard"><div class="rh"><span class="ri">⛏️</span><div><h3>${t('phosTitle')}</h3><div class="rv">×${r.phos.toFixed(2)}</div></div></div>${bar(r.phos, 2.1, '#8c5cc7')}<p class="small">${t('phosHint')}</p></div>
     <div class="rcard"><div class="rh"><span class="ri">🫒</span><div><h3>${t('farmTitle')}</h3><div class="rv">${'●'.repeat(r.farm)}${'○'.repeat(Math.max(0, 4 - r.farm))}</div></div></div><p class="small">${t('farmHint')}</p></div></div>`;
-  h += `<h3 class="bh">💡 ${t('investTitle')}</h3><p class="small muted">${t('investSub')}</p>` + Object.keys(INVEST).map(id => {
+  // one card, used by both groups below
+  const investCard = id => {
     const x = INVEST[id], tx = L2(INV_TXT[id]), running = S.pipe.find(p => p.kind === 'invest' && p.id === id), count = S.invests[id] || 0;
     const maxed = (x.max && count >= x.max) || (id === 'offshore' && r.offshore && r.offshore !== 'drilling');
     const v = investValue(id), pb = v > 0.5 ? x.usd / v + x.months / 12 : null;
-    let why = ''; if (!running && !maxed){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = t('needsCalmEast'); }
+    let why = ''; if (!running && !maxed){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
+    const built = count ? `<span class="chip up">${'●'.repeat(count)}${'○'.repeat(Math.max(0, (x.max || 3) - count))}</span>` : '';
     const status = running ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(running.due - S.t)])}</span>` : maxed ? `<span class="chip up">${id === 'offshore' ? (r.offshore === 'found' ? '✅ ' + (A ? 'وُجد غاز' : 'Gas found') : '❌ ' + (A ? 'بئر جافة' : 'Dry well')) : t('maxed')}</span>`
       : `<button class="btn primary" data-act="invest" data-id="${id}" ${why ? 'disabled' : ''}>${t('investBtn')}</button>`;
     return `<div class="dcard inv"><span class="gem">🏦 ${usdM(x.usd)}</span><h4>${INV_TXT[id].icon} ${esc(tx[0])}</h4><p class="kid">${esc(tx[1])}</p>
-      <div class="row spread"><div class="row"><span class="chip">⏳ ${monthsTxt(x.months)}</span>${x.gamble ? `<span class="chip down">🎲 ${t('gamble')}</span>` : ''}${pb ? `<span class="chip up">${fill(t('payback'), [monthsTxt(Math.round(pb * 12 / 6) * 6)])}</span>` : `<span class="chip">${t('paybackNever')}</span>`}</div>${status}</div>
+      <div class="row spread"><div class="row"><span class="chip">⏳ ${monthsTxt(x.months)}</span>${x.jobs ? `<span class="chip up">💼 ${fill(t('jobsChip'), ['+' + x.jobs])}</span>` : ''}${x.gamble ? `<span class="chip down">🎲 ${t('gamble')}</span>` : ''}${pb ? `<span class="chip up">${fill(t('payback'), [monthsTxt(Math.round(pb * 12 / 6) * 6)])}</span>` : `<span class="chip">${t('paybackNever')}</span>`}${built}</div>${status}</div>
       ${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
-  }).join('');
+  };
+  const SECTORS = Object.keys(INVEST).filter(k => INVEST[k].sector), DIG = Object.keys(INVEST).filter(k => !INVEST[k].sector);
+  h += `<h3 class="bh">🏭 ${t('sectorTitle')}</h3><p class="small muted">${t('sectorSub')}</p>` + SECTORS.map(investCard).join('');
+  h += `<h3 class="bh">⛏️ ${t('extractTitle')}</h3><p class="small muted">${t('extractSub')}</p>` + DIG.map(investCard).join('');
   return h;
 }
 function renderTradePorts(){
@@ -3233,9 +3329,18 @@ function renderTradePartners(){
       <div class="row spread" style="margin-top:8px"><span></span>${status}</div>${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   }).join('');
 }
+// The bar is the one force the player cannot see on the map, so it gets said out loud.
+function renderBarCard(){
+  const b = clamp(S.bar || 0, 0, 1), pct = Math.round(b * 100);
+  const line = b < 0.25 ? t('barLow') : b < 0.6 ? t('barMid') : t('barHigh');
+  const col = b < 0.25 ? 'var(--calm)' : b < 0.6 ? 'var(--tense)' : 'var(--riot)';
+  return `<div class="rcard"><div class="rh"><span class="ri" aria-hidden="true">📈</span><div><h3>${t('barTitle')}</h3><div class="rv">${fill(t('barNow'), [pct])}</div></div></div>
+    <div class="bar big"><i style="width:${pct}%;background:${col}"></i></div>
+    <p class="small">${esc(line)}</p><p class="small muted">${esc(t('barHelp'))}</p></div>`;
+}
 function renderWhyPanel(){
   const chs = whyLive();
-  return `<h3 class="bh" style="margin-top:0">🔗 ${t('whyNow')}</h3>` + renderWhy(chs);
+  return renderBarCard() + `<h3 class="bh">🔗 ${t('whyNow')}</h3>` + renderWhy(chs);
 }
 function drawerBody(id){
   switch(id){
@@ -3266,6 +3371,7 @@ function renderProgressCharts(){
   if (!pipe.length && mwSoon <= 1) h += `<p class="muted" style="font-size:13px">${t('comingNone')}</p>`;
   h += `<h3 class="bh">📈 ${t('subCharts')}</h3>` + (S.history.length < 3 ? `<p class="muted" style="font-size:13px">${t('chartsEmpty')}</p>` :
     spark('score', '🏆 ' + t('score'), v => v.toFixed(0), true, '#d89412') + spark('trust', '🤝 ' + G('trust'), v => v.toFixed(0), true, '#35b6a3') + spark('anger', '🔥 ' + G('anger'), v => v.toFixed(0), false, '#f08a3c') +
+    spark('jobs', '💼 ' + G('jobs'), v => v.toFixed(0) + '%', false, '#c8612f') +
     spark('usd', '🏦 ' + G('usd'), usdM, true, '#4c86d6') + spark('cash', '💵 ' + G('cash'), bn, true, '#3f9a4a') + spark('fx', '💱 ' + G('fx'), v => v.toFixed(0), false, '#b07a10') + spark('pay', '👷 ' + G('pay'), usd, true, '#8c5cc7') + spark('power', '💡 ' + G('power'), v => v.toFixed(1), true, '#e2b93b'));
   return h;
 }

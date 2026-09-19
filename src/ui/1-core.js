@@ -1,5 +1,5 @@
 // ===== Transition: UI v3 (part A) =====
-const KEY = 'transition-syria-v5';
+const KEY = 'transition-syria-v6';
 let S, D, LANG = 'en';
 const UI = { tab:'policy', right:'province', sel:'damascus', layer:'unrest', active:'campaign', queue:[] };
 let STORE = { active:'campaign', campaign:null, mission:null };
@@ -82,8 +82,8 @@ function effChips(e){
 
 // ---------- dashboard ----------
 function health(key, v){
-  const r = { cash:[0, 15], usd:[250, 500], fx:[250, 160], pay:[15, 22], pc:[10, 30], trust:[25, 45], anger:[65, 50], power:[4, 8] }[key];
-  if (key === 'fx' || key === 'anger') return v > r[0] ? 'bad' : v > r[1] ? 'warn' : 'ok';
+  const r = { cash:[0, 15], usd:[250, 500], fx:[250, 160], pay:[15, 22], pc:[10, 30], trust:[25, 45], anger:[65, 50], power:[4, 8], jobs:[52, 38] }[key];
+  if (key === 'fx' || key === 'anger' || key === 'jobs') return v > r[0] ? 'bad' : v > r[1] ? 'warn' : 'ok';
   return v < r[0] ? 'bad' : v < r[1] ? 'warn' : 'ok';
 }
 function metric(key, val, now, next, goodUp, dtxt, sub){

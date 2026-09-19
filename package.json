@@ -1,6 +1,6 @@
 {
   "name": "transition-syria",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "private": true,
   "description": "Transition: Rebuild Syria. A bilingual (English/Arabic) country-management game about systems thinking, with a shared scoreboard for playing alongside friends.",
   "scripts": {
@@ -10,7 +10,8 @@
     "mp": "node tools/mp-test.js",
     "serve": "node worker/server.js 8787",
     "check": "node build.js && node tools/sim.js && node tools/missions.js && node tools/mp-test.js",
-    "browser": "node build.js && node tools/mp-browser.mjs"
+    "browser": "node build.js && node tools/mp-browser.mjs",
+    "econ": "node build.js && node tools/econ-check.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

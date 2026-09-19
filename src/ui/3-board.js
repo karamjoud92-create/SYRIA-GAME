@@ -95,13 +95,13 @@ function renderMapSvg(){
   return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${labels}${inset}${star}</svg>`;
 }
 function renderLayers(){
-  return `<div class="layers" role="group">${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['mines','💣','layerMines']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
+  return `<div class="layers" role="group">${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
 }
 function renderLegend(){
   const items = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('')
     : UI.layer === 'power' ? `<span><i style="background:#3a3f55"></i>${t('legDark')}</span><span><i style="background:#f2c94c"></i>${t('legLight')}</span>`
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span>`
-    : `<span><i style="background:#6f9d8f"></i>${t('legClear')}</span><span><i style="background:#c8612f"></i>${t('legMined')}</span>`;
+    : `<span><i style="background:#6f9d8f"></i>${t('legWorking')}</span><span><i style="background:#c8612f"></i>${t('legNoWork')}</span>`;
   return `<div class="legend">${items}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span></div>`;
 }
 
@@ -113,7 +113,7 @@ function renderProvince(){
   let why = ''; if (!pv.project && !on){ if (x.pc > pcLeft()) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > usdAvail) why = fill(t('needsUsdProj'), [x.usd]); }
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div>${icon} ${k}</div><div class="mv">${v}</div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const A = AR(), good = [];
-  if (x.unrest) good.push([`🔥 ${sign(x.unrest)}`, true]); if (x.power) good.push([`💡 +${x.power}${A ? 'س' : 'h'}`, true]); if (x.mines) good.push([A ? '💣 نزع ألغام' : '💣 clears mines', true]);
+  if (x.unrest) good.push([`🔥 ${sign(x.unrest)}`, true]); if (x.power) good.push([`💡 +${x.power}${A ? 'س' : 'h'}`, true]); if (x.jobs) good.push([A ? '💼 فرص عمل' : '💼 jobs', true]);
   if (x.rev) good.push([`💵 +${bn(x.rev)}`, true]); if (x.transit) good.push([`🏦 +${usdM(x.transit)}`, true]); if (x.phosphate) good.push([`🏦 +${usdM(x.phosphate)}`, true]); if (x.oil) good.push([`🛢️ +${usdM(x.oil)}`, true]);
   if (x.wheat) good.push([`🌾 ${MINUS}${usdM(x.wheat)}`, true]); if (x.mw) good.push([`⚡ +${x.mw} MW`, true]); if (x.cap) good.push([A ? '🏭 اقتصاد أكبر' : '🏭 bigger economy', true]); if (x.trust) good.push([`🤝 +${x.trust}`, true]);
   const mode = D.projMode[id] || 'tender';
@@ -131,7 +131,7 @@ function renderProvince(){
       <button class="close" data-act="closeProv" aria-label="${t('close')}">✕</button></div>
     <div class="body"><p class="muted" style="margin:0 0 10px;font-size:13px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
       <div class="meters">${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
-        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💣', t('landmines'), Math.round(pv.mines) + '%', pv.mines, '#c8612f')}</div>
+        ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}</div>
       <div class="quest${pv.project === true ? ' done' : ''}"><div class="qt">🏗️ ${t('bigProject')}</div><h4>${esc(tx[0])}</h4>
         <p><b>${t('problem')}</b> ${esc(tx[1])}</p><div class="reward">${good.map(([g]) => `<span class="chip up">${esc(g)}</span>`).join('')}</div>
         <div class="row" style="margin-bottom:8px"><span class="chip">🏦 ${usdM(x.usd)}</span><span class="chip">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip">⭐ ${x.pc}</span>` : ''}</div>

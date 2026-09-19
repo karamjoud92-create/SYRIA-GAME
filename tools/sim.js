@@ -22,4 +22,12 @@ const trader=(s,m)=>{ smart(s,m);
   if (s.reserves>400){ for(const id of ['oilwells','refinery','gasfield','phosphate','farm']) E.ACT.invest(s,id); E.ACT.portUpgrade(s,'latakia'); E.ACT.portUpgrade(s,'tartus'); }
   for (const id of ['jordan','turkey','iraq','gulf','eu','lebanon']) E.ACT.deal(s,id);
 };
-for (const d of ['learner','realistic']){ run('passive',passive,7,d); run('smart',smart,7,d); run('trader',trader,7,d); run('trader2',trader,11,d); }
+// builds an economy out of factories and people rather than out of holes in the ground
+const builder=(s,m)=>{ smart(s,m);
+  if (s.reserves>260){ for(const id of ['textiles','food','pharma','cement','telecom','tourism']) E.ACT.invest(s,id); }
+  if (s.reserves>700){ for(const id of ['refinery','farm','oilwells']) E.ACT.invest(s,id); E.ACT.portUpgrade(s,'latakia'); E.ACT.portUpgrade(s,'tartus'); }
+  for (const id of ['jordan','turkey','iraq','gulf','eu']) E.ACT.deal(s,id);
+};
+for (const d of ['learner','realistic']){ run('passive',passive,7,d); run('smart',smart,7,d); run('trader',trader,7,d); run('trader2',trader,11,d); run('builder',builder,7,d); run('builder2',builder,11,d); }
+// does the bar actually bite? same strategy, reported at 5 / 10 / 20 years
+for (const yrs of [5,10,20]) run('builder@'+yrs+'y',builder,7,'learner',yrs*12);

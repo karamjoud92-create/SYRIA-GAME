@@ -8,7 +8,7 @@ function layerOf(id){
     case 'unrest': return { fill:TIER_COL[tierOf(pv.u)], val:S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5) };
     case 'power': { const h = provHours(S, id); return { fill:mix('#3a3f55', '#f2c94c', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
     case 'damage': return { fill:mix('#6f9d8f', '#8e2f36', pv.dmg / 20), val:(AR() ? '' : '$') + pv.dmg.toFixed(pv.dmg < 10 ? 1 : 0) + (AR() ? ' مليار$' : 'B') };
-    case 'mines': return { fill:mix('#6f9d8f', '#c8612f', pv.mines / 55), val:Math.round(pv.mines) + '%' };
+    case 'jobs': return { fill:mix('#6f9d8f', '#c8612f', (pv.jobless - 15) / 60), val:Math.round(pv.jobless) + '%' };
   }
 }
 function provBadge(id){ const pv = S.provs[id]; return (pv.project === true ? '✅' : pv.project === 'building' ? '🏗️' : D.projects.includes(id) ? '🚧' : '') + (tierOf(pv.u) === 'revolt' ? '⚠️' : ''); }
@@ -45,9 +45,9 @@ function renderMap(){
   const legend = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('') + `<span>${t('revoltAt')}</span>`
     : UI.layer === 'power' ? `<span><i style="background:#3a3f55"></i>${t('legDark')}</span><span><i style="background:#f2c94c"></i>${t('legLight')}</span><span>${t('legPowerTxt')}</span>`
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span><span>${t('legDamageTxt')}</span>`
-    : `<span><i style="background:#6f9d8f"></i>${t('legClear')}</span><span><i style="background:#c8612f"></i>${t('legMined')}</span><span>${t('legMinesTxt')}</span>`;
+    : `<span><i style="background:#6f9d8f"></i>${t('legWorking')}</span><span><i style="background:#c8612f"></i>${t('legNoWork')}</span><span>${t('legJobsTxt')}</span>`;
   return `<div class="maphead"><h2>${t('mapTitle')}</h2><div class="layers" role="group">
-      ${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['mines','💣','layerMines']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}
+      ${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}
     </div></div>
     <svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g>${paths}</g>${selPath}${labels}${inset}${star}</svg>
     <div class="legend">${legend}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span><span>⭐ ${t('legCapital')}</span>${S.flags.stats ? '' : `<span class="muted">~ ${t('noStats')}</span>`}</div>`;
@@ -61,7 +61,7 @@ function renderProvince(){
   let why = ''; if (!pv.project && !on){ if (x.pc > pcLeft()) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > usdAvail) why = fill(t('needsUsdProj'), [x.usd]); }
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div class="row spread"><span>${icon} ${k}</span><b>${v}</b></div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const good = [], A = AR();
-  if (x.unrest) good.push(fill(CHIP[LANG].prov, [PN(id), sign(x.unrest)])); if (x.power) good.push(A ? `+${x.power} ساعات كهرباء` : `+${x.power} hours of electricity`); if (x.mines) good.push(A ? 'نزع الألغام' : 'clears landmines');
+  if (x.unrest) good.push(fill(CHIP[LANG].prov, [PN(id), sign(x.unrest)])); if (x.power) good.push(A ? `+${x.power} ساعات كهرباء` : `+${x.power} hours of electricity`); if (x.jobs) good.push(A ? 'يخلق فرص عمل' : 'creates jobs');
   if (x.rev) good.push(A ? `يكسب ${bn(x.rev)} كل موسم` : `earns ${bn(x.rev)} cash every season`); if (x.transit) good.push(A ? `+${usdM(x.transit)} تجارة كل موسم` : `+${usdM(x.transit)} trade money every season`);
   if (x.phosphate) good.push(A ? `+${usdM(x.phosphate)} تعدين كل موسم` : `+${usdM(x.phosphate)} mining money every season`); if (x.oil) good.push(A ? `+${usdM(x.oil)} نفط كل موسم` : `+${usdM(x.oil)} oil money every season`);
   if (x.wheat) good.push(A ? `استيراد قمح أقل بـ${usdM(x.wheat)} كل موسم` : `${usdM(x.wheat)} less wheat to import every season`); if (x.mw) good.push(A ? 'كهرباء أكثر لكل البلاد' : 'more power for the whole country');
@@ -82,7 +82,7 @@ function renderProvince(){
     ${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)) + ' / 100', pv.u, TIER_COL[tier])}
     ${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
     ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}
-    ${meter('💣', t('landmines'), Math.round(pv.mines) + '%', pv.mines, '#c8612f')}
+    ${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}
     <div class="card project${on ? ' on' : ''}${pv.project === true ? ' done' : ''}"><div class="ptag">🏗️ ${t('bigProject')}</div>
       <h4>${esc(tx[0])}</h4><p><b>${t('problem')}</b> ${esc(tx[1])}</p><p><b>${t('ifBuilt')}</b> ${esc(good.join(AR() ? '، ' : ', '))}.</p>
       <div class="row" style="margin-bottom:8px"><span class="chip cost">🏦 ${usdM(x.usd)}</span><span class="chip cost">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip cost">⭐ ${x.pc}</span>` : ''}</div>
@@ -102,10 +102,10 @@ function personas(s){
     const why = gen > 14 ? 'why_power' : rw < 22 ? 'why_pay' : breadC > 10 ? 'why_bread' : null; out.rana = { inc, exp, why }; }
   // Abu Khaled
   { const drought = s.flags.droughtUntil && s.turn <= s.flags.droughtUntil;
-    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.mines / 150) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100);
+    const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.jobless / 260) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100);
     const diesel = { full:8, partial:14, market:22 }[P.fuel];
     const inc = [['crop', crop]], exp = [['diesel', diesel], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]];
-    const why = drought ? 'why_drought' : diesel > 15 ? 'why_power' : s.provs.hasakeh.mines > 15 ? 'why_mines' : null; out.khaled = { inc, exp, why: why === 'why_power' ? null : why }; }
+    const why = drought ? 'why_drought' : diesel > 15 ? 'why_power' : s.provs.hasakeh.jobless > 45 ? 'why_nojobs' : null; out.khaled = { inc, exp, why: why === 'why_power' ? null : why }; }
   // Hiba
   { const pv = s.provs.rif, homeBack = !!s.decrees.restitution;
     const inc = [['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250)]];

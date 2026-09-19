@@ -20,7 +20,7 @@ Object.assign(STR.en, {
   milestoneTitle:'{0} years in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going', newYear:'{0} begins. Score {1} ({2} over the year).',
   whyNow:'What’s driving things right now',
   // trade drawer
-  dTrade:'Trade', tradeSub:'Oil, gas, mines, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
+  dTrade:'Trade', tradeSub:'Oil, gas, factories, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
   subWhy:'Why?',
   oilTitle:'Oil', oilProd:'{0} thousand barrels a day', oilAccess:'Fields you control: {0}%. Security in the east: {1}%.',
   oilUseQ:'What do we do with our oil?', oilUse:{ 0:'Sell abroad', 0.5:'Half and half', 1:'Use at home' },
@@ -28,6 +28,12 @@ Object.assign(STR.en, {
   gasTitle:'Gas', gasProd:'{0} million m³ a day', gasHint:'Gas runs power plants. Every bit you produce is fuel you don’t have to import.',
   phosTitle:'Phosphate', phosHint:'Fertilizer rock from the Homs desert, sold abroad.', farmTitle:'Olive oil and cotton', farmHint:'Farm exports. Hurt by anger in farming provinces.',
   investTitle:'Invest for the future', investSub:'Pay now, earn later. Money spent here can’t be used in an emergency.',
+  extractTitle:'Dig it up and sell it', extractSub:'Oil, gas and rock earn dollars fast, but a barrel employs almost nobody.',
+  sectorTitle:'Build an economy', sectorSub:'Factories earn less per dollar than oil does. They also give people work, and work is what holds a country together.',
+  jobsChip:'{0} jobs', jobsMade:'Puts people back to work', needsCalm:'Needs the country calmer (anger below 48)',
+  barTitle:'The bar keeps rising', barLow:'People still remember the war. Anything works.', barMid:'People have stopped comparing today to the war.',
+  barHigh:'People compare you to normal countries now, not to 2027.', barNow:'The bar: {0}%',
+  barHelp:'Every good year raises what counts as good enough, and it never drops back. Wages that felt generous become normal, calm becomes expected, and crises hit a country that has more to lose. Winning early makes the rest harder — that is the job.',
   payback:'Pays for itself in about {0}', paybackNever:'Won’t pay back right now', running:'Under way, ready {0}', maxed:'Fully built', gamble:'50/50 gamble',
   investBtn:'Invest', needsCalmEast:'Needs the east calmer (anger below 70)',
   portsTitle:'Export capacity', portsSub:'Ports and border crossings limit how much you can sell abroad.', portsUse:'Exports want {0} a year. Ports and crossings can move {1}.',
@@ -52,7 +58,7 @@ Object.assign(STR.ar, {
   inSixMonths:'خلال 6 أشهر', perYear:'سنوياً',
   milestoneTitle:'{0} سنوات في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع', newYear:'بدأ عام {0}. النقاط {1} ({2} خلال العام).',
   whyNow:'ما الذي يحرّك الأمور الآن',
-  dTrade:'التجارة', tradeSub:'النفط والغاز والمناجم والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
+  dTrade:'التجارة', tradeSub:'النفط والغاز والمصانع والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
   subWhy:'لماذا؟',
   oilTitle:'النفط', oilProd:'{0} ألف برميل يومياً', oilAccess:'الحقول تحت سيطرتك: {0}%. الأمن في الشرق: {1}%.',
   oilUseQ:'ماذا نفعل بنفطنا؟', oilUse:{ 0:'نبيعه للخارج', 0.5:'نصف ونصف', 1:'نستخدمه محلياً' },
@@ -60,6 +66,12 @@ Object.assign(STR.ar, {
   gasTitle:'الغاز', gasProd:'{0} مليون م³ يومياً', gasHint:'الغاز يشغّل محطات الكهرباء. كل ما تنتجه وقود لا تحتاج استيراده.',
   phosTitle:'الفوسفات', phosHint:'صخور الأسمدة من بادية حمص، تُباع للخارج.', farmTitle:'زيت الزيتون والقطن', farmHint:'صادرات زراعية، يضرّها الغضب في المحافظات الزراعية.',
   investTitle:'استثمر للمستقبل', investSub:'ادفع الآن واكسب لاحقاً. المال المستثمر هنا لا يمكن استخدامه في الطوارئ.',
+  extractTitle:'استخرج وبِع', extractSub:'النفط والغاز والصخور تجلب الدولار بسرعة، لكن البرميل لا يوظّف أحداً تقريباً.',
+  sectorTitle:'ابنِ اقتصاداً', sectorSub:'المصانع تكسب أقل من النفط مقابل كل دولار، لكنها تعطي الناس عملاً، والعمل هو ما يمسك البلد.',
+  jobsChip:'{0} فرصة عمل', jobsMade:'يعيد الناس إلى العمل', needsCalm:'يحتاج بلداً أهدأ (الغضب أقل من 48)',
+  barTitle:'السقف يرتفع', barLow:'الناس ما زالوا يتذكّرون الحرب. أي تحسّن يكفي.', barMid:'الناس لم يعودوا يقارنون يومهم بأيام الحرب.',
+  barHigh:'الناس يقارنونك الآن بالدول الطبيعية، لا بعام 2027.', barNow:'السقف: {0}%',
+  barHelp:'كل عام جيد يرفع ما يُعتبر «جيداً بما يكفي»، ولا يعود إلى الوراء أبداً. الراتب الذي بدا سخياً يصير عادياً، والهدوء يصير متوقعاً، والأزمات تضرب بلداً صار لديه ما يخسره. النجاح المبكر يجعل ما بعده أصعب، وهذه هي المهمة.',
   payback:'يسترد كلفته خلال {0} تقريباً', paybackNever:'لن يسترد كلفته حالياً', running:'جارٍ العمل، يجهز {0}', maxed:'مكتمل', gamble:'مقامرة 50/50',
   investBtn:'استثمر', needsCalmEast:'يحتاج شرقاً أهدأ (غضب أقل من 70)',
   portsTitle:'قدرة التصدير', portsSub:'الموانئ والمعابر الحدودية تحدّد كم يمكنك أن تبيع للخارج.', portsUse:'الصادرات تحتاج {0} سنوياً. الموانئ والمعابر تنقل {1}.',
@@ -88,7 +100,7 @@ DEC_TXT.integrity.en[2] = 'Corruption falls every month. Costs a little influenc
 DEC_TXT.tribal.en[2] = 'Opens more eastern oil fields to you. Anger drops in Deir ez-Zor and Raqqa. Independence −3.'; DEC_TXT.tribal.ar[2] = 'يفتح لك حقول نفط شرقية أكثر. الغضب ينخفض في دير الزور والرقة. الاستقلال −3.';
 DEC_TXT.northeast.en[2] = 'Opens the northeast oil fields. Anger drops in Hasakeh and Raqqa. Independence +5.'; DEC_TXT.northeast.ar[2] = 'يفتح حقول نفط الشمال الشرقي. الغضب ينخفض في الحسكة والرقة. الاستقلال +5.';
 DEC_TXT.braingain.en[2] = 'The economy grows a little faster every month, and more people pay tax.'; DEC_TXT.braingain.ar[2] = 'الاقتصاد ينمو أسرع قليلاً كل شهر، ويدفع ضرائب أكثر من الناس.';
-DEC_TXT.demining.en[2] = 'Mines drop every month everywhere. Costs $20M a year.'; DEC_TXT.demining.ar[2] = 'الألغام تنخفض كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
+DEC_TXT.vocational.en[2] = 'Unemployment falls a little every month, everywhere. Costs $20M a year.'; DEC_TXT.vocational.ar[2] = 'البطالة تنخفض قليلاً كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
 FAC_TXT.wb.en[1] = 'Money that goes straight into power stations. It arrives as electricity 12 months later.'; FAC_TXT.wb.ar[1] = 'أموال تذهب مباشرة إلى محطات الكهرباء، وتصل كهرباءً بعد 12 شهراً.';
 NOTE.en.wbGrid = 'World Bank money is building {0} MW of power (ready in 12 months).'; NOTE.ar.wbGrid = 'أموال البنك الدولي تبني {0} ميغاواط (جاهزة بعد 12 شهراً).';
 Object.assign(NOTE.en, { portDone:'{0} port reached level {1}.', dealOn:'Deal with {0} is active again.', dealOff:'Deal with {0} paused: a condition broke.', dealSign:'Signed a deal with {0}.',
@@ -97,8 +109,8 @@ Object.assign(NOTE.en, { portDone:'{0} port reached level {1}.', dealOn:'Deal wi
 Object.assign(NOTE.ar, { portDone:'وصل ميناء {0} إلى المستوى {1}.', dealOn:'عاد الاتفاق مع {0} للعمل.', dealOff:'توقف الاتفاق مع {0}: اختلّ أحد الشروط.', dealSign:'وُقّع اتفاق مع {0}.',
   investStart:'بدأ الاستثمار: {0}. يجهز خلال {1}.', investDone:'اكتمل الاستثمار: {0}.', offshoreHit:'الحفر البحري وجد غازاً! +10 مليون م³ يومياً.', offshoreDry:'البئر البحرية جافة. ضاعت الـ150 مليون$.',
   portStart:'تطوير ميناء {0}. يجهز خلال 12 شهراً.', portConcession:'سُلّم ميناء {0} لمشغّل أجنبي. +100 مليون$.', projStartShort:'بدأ البناء في {0}.' });
-Object.assign(LEDGER.en, { oilExport:'Oil sold abroad', farm:'Olive oil and cotton exports', fdi:'Gulf investment', euGrant:'EU grants', homeEnergy:'Own oil and gas (imports saved)', powerImport:'Electricity from Iraq', phos:'Phosphate exports' });
-Object.assign(LEDGER.ar, { oilExport:'نفط يُباع للخارج', farm:'صادرات الزيتون والقطن', fdi:'استثمار خليجي', euGrant:'منح أوروبية', homeEnergy:'نفطنا وغازنا (استيراد موفَّر)', powerImport:'كهرباء من العراق', phos:'صادرات الفوسفات' });
+Object.assign(LEDGER.en, { industry:'Factory exports', tourism:'Visitors', vocational:'Trade schools', oilExport:'Oil sold abroad', farm:'Olive oil and cotton exports', fdi:'Gulf investment', euGrant:'EU grants', homeEnergy:'Own oil and gas (imports saved)', powerImport:'Electricity from Iraq', phos:'Phosphate exports' });
+Object.assign(LEDGER.ar, { industry:'صادرات المصانع', tourism:'الزوّار', vocational:'المعاهد المهنية', oilExport:'نفط يُباع للخارج', farm:'صادرات الزيتون والقطن', fdi:'استثمار خليجي', euGrant:'منح أوروبية', homeEnergy:'نفطنا وغازنا (استيراد موفَّر)', powerImport:'كهرباء من العراق', phos:'صادرات الفوسفات' });
 Object.assign(ADV.en, { usd:'Dollars will run out in about {0} months. That’s game over.', payAct:'A 10% raise in the Money panel. It costs cash every month after.', gridAct:'Put $40M or $80M a year into power stations. It pays off in a year.', calmEcon:'The money looks okay right now.', calmEconAct:'Look at Trade: oil, ports and deals can bring in dollars.',
   clog:'Our ports are jammed. We’re losing export money.', clogAct:'Upgrade Latakia or Tartus, or sign a border trade deal.' });
 Object.assign(ADV.ar, { usd:'ستنفد الدولارات خلال {0} أشهر تقريباً. عندها تنتهي اللعبة.', payAct:'زيادة 10% من لوحة المال. تكلّف نقداً كل شهر بعدها.', gridAct:'خصّص 40 أو 80 مليون$ سنوياً للمحطات. تُثمر خلال سنة.', calmEcon:'الوضع المالي مقبول الآن.', calmEconAct:'انظر إلى التجارة: النفط والموانئ والاتفاقات تجلب الدولار.',
@@ -143,6 +155,20 @@ const INV_TXT = {
   phosphate:{ icon:'⛏️', en:['Expand phosphate mines','Mining exports +35%.'], ar:['توسيع مناجم الفوسفات','صادرات التعدين +35%.'] },
   farm:{ icon:'🫒', en:['Olive oil and cotton program','Seeds, presses and buyers abroad. Farm exports grow.'], ar:['برنامج الزيتون والقطن','بذار ومعاصر ومشترون في الخارج. تنمو الصادرات الزراعية.'] },
 };
+Object.assign(INV_TXT, {
+  textiles:{ icon:'🧵', en:['Textile mills and garment workshops','Syria used to clothe the region. Cheap to restart, and it hires more people per dollar than anything else you can build.'],
+    ar:['مصانع النسيج وورشات الألبسة','كانت سوريا تكسو المنطقة. إعادة تشغيلها رخيصة، وتوظّف عدداً من الناس أكبر من أي شيء آخر مقابل كل دولار.'] },
+  food:{ icon:'🥫', en:['Food processing and canning','Turn the harvest into something that keeps. Jobs in the farming provinces, and a smaller wheat bill every year.'],
+    ar:['تصنيع الأغذية والتعليب','حوّل المحصول إلى شيء يُخزَّن. وظائف في محافظات الزراعة، وفاتورة قمح أقل كل عام.'] },
+  pharma:{ icon:'💊', en:['Medicine factories','Syria made most of its own medicine before the war. Skilled work, steady exports, and hospitals that stop begging.'],
+    ar:['معامل الأدوية','كانت سوريا تصنع معظم دوائها قبل الحرب. عمل يحتاج مهارة، وصادرات ثابتة، ومشافٍ تكفّ عن الاستجداء.'] },
+  cement:{ icon:'🧱', en:['Cement and building materials','Every lira you spend on rebuilding goes further when the cement is made here instead of imported.'],
+    ar:['الإسمنت ومواد البناء','كل ليرة تنفقها على الإعمار تمتدّ أكثر عندما يُصنع الإسمنت هنا بدل استيراده.'] },
+  telecom:{ icon:'📡', en:['Phone and internet network','Expensive, and it earns little directly. But taxes get collected, businesses find customers, and the whole economy speeds up.'],
+    ar:['شبكة الهاتف والإنترنت','مكلفة، ولا تكسب كثيراً بنفسها. لكن الضرائب تُجبى، والتجار يجدون زبائن، ويتسارع الاقتصاد كله.'] },
+  tourism:{ icon:'🏛️', en:['Hotels and the old cities','Damascus, Palmyra, the coast. Visitors pay in dollars and need no ship, but nobody comes to a country that is angry or dark.'],
+    ar:['الفنادق والمدن القديمة','دمشق وتدمر والساحل. الزوّار يدفعون بالدولار ولا يحتاجون سفينة، لكن لا أحد يزور بلداً غاضباً أو مظلماً.'] },
+});
 const PORT_NAME = { en:{ latakia:'Latakia', tartus:'Tartus' }, ar:{ latakia:'اللاذقية', tartus:'طرطوس' } };
 const PART_TXT = {
   turkey:{ en:['Turkey','Northern trade corridor','Open the northern crossings for factory and farm exports.','Export room +$60M/yr, factory exports +15%.','Aleppo and Idlib anger below 65'],

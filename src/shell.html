@@ -354,6 +354,12 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 @media (prefers-reduced-motion: reduce){ .res .bub, .res .num, .effect, .mbarwrap i.run{ animation:none !important; } }
 @media (prefers-reduced-motion: reduce){ .modal, .drawer, .pcard, .node.l2, .startcue, .spop, .toast{ animation:none; } path.prov, .mapbox{ transition:none; } }
 
+/* Eight numbers no longer fit on one line on a laptop: let the two trays drop together. */
+@media (max-width: 1560px){
+  .hud{ flex-wrap:wrap; }
+  .hud .tray{ flex:1 1 auto; min-width:0; }
+  .hud .spacer{ order:-1; flex:1; }
+}
 /* ===== medium screens ===== */
 @media (max-width: 1250px){
   .res .lab .dl{ display:none; }
