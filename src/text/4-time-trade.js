@@ -1,0 +1,164 @@
+// ===== Text v5: continuous time + trade & resources (overrides earlier text) =====
+const MONTHS = {
+  en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  ar:['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'],
+};
+Object.assign(STR.en, {
+  policyIntro:'These rules keep running every month until you change them.',
+  raiseText:'Workers earn ${0} a month and expect about ${1}. A raise costs cash every month after.',
+  budgetIntro:'Money in (green) and money out (red) over the next 12 months, if nothing changes.',
+  comingNone:'Nothing under construction. Power stations, projects and investments take months to finish.',
+  chartsEmpty:'Charts appear after your first few months.', newsEmpty:'Your decisions and news will appear here.',
+  afterN:'after {0} as president', missionsTxt:'Four-year challenges. Each one teaches one system.', seasonsLeft:'{0} left', quiet:'A quiet month.',
+  choices:'Your choices', monthsN:'{0} months', months1:'1 month', yearsN:'{0} years', years1:'1 year', soon:'any day now', inTime:'in {0}',
+  building:'Building, ready in {0}', buildingEnd:'Building, almost done',
+  fastTxt:'Ready in {0}. About ${1}M will disappear to corruption.', tenderTxt:'Ready in {0}. Honest bidding, only about ${1}M lost.',
+  // time & score
+  pause:'Pause', play:'Play', fast:'Faster', fastest:'Fast', slow:'Slow', normal:'Normal', soundOn:'Turn sound on', soundOff:'Turn sound off', paused:'Paused', startPrompt:'Press ▶ to start the clock',
+  score:'Legacy score', scoreHelp:'Your score combines peace, living standards, rebuilding, honest government, money and independence. It changes every month based on your decisions.',
+  inSixMonths:'in 6 months', perYear:'a year',
+  milestoneTitle:'{0} years in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going', newYear:'{0} begins. Score {1} ({2} over the year).',
+  whyNow:'What’s driving things right now',
+  // trade drawer
+  dTrade:'Trade', tradeSub:'Oil, gas, mines, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
+  subWhy:'Why?',
+  oilTitle:'Oil', oilProd:'{0} thousand barrels a day', oilAccess:'Fields you control: {0}%. Security in the east: {1}%.',
+  oilUseQ:'What do we do with our oil?', oilUse:{ 0:'Sell abroad', 0.5:'Half and half', 1:'Use at home' },
+  oilUseHint:'Using oil at home saves more dollars than selling it, because imported fuel is expensive. But refineries can only handle {0} thousand barrels a day, and the rest must be sold.',
+  gasTitle:'Gas', gasProd:'{0} million m³ a day', gasHint:'Gas runs power plants. Every bit you produce is fuel you don’t have to import.',
+  phosTitle:'Phosphate', phosHint:'Fertilizer rock from the Homs desert, sold abroad.', farmTitle:'Olive oil and cotton', farmHint:'Farm exports. Hurt by anger in farming provinces.',
+  investTitle:'Invest for the future', investSub:'Pay now, earn later. Money spent here can’t be used in an emergency.',
+  payback:'Pays for itself in about {0}', paybackNever:'Won’t pay back right now', running:'Under way, ready {0}', maxed:'Fully built', gamble:'50/50 gamble',
+  investBtn:'Invest', needsCalmEast:'Needs the east calmer (anger below 70)',
+  portsTitle:'Export capacity', portsSub:'Ports and border crossings limit how much you can sell abroad.', portsUse:'Exports want {0} a year. Ports and crossings can move {1}.',
+  clogged:'Ports are jammed: {0} a year of exports can’t leave the country.', portLvl:'Level {0} of 3', portState:'Run by the state', portForeign:'Run by a foreign operator',
+  upgrade:'Upgrade', upgradeTxt:'{0} and 12 months. Moves more exports and earns more fees.', concession:'Hand to a foreign operator', concessionTxt:'+$100M now, and they upgrade it for free. They keep 15% of port fees. Independence −4.',
+  partnersSub:'Each deal has gains, costs and conditions. If a condition breaks, the deal pauses until you fix it.',
+  dealActive:'Active', dealPaused:'Paused: condition broken', dealSign:'Sign deal', needs:'Needs:',
+  // score / milestones reuse
+});
+Object.assign(STR.ar, {
+  policyIntro:'هذه القواعد تستمر كل شهر حتى تغيّرها.',
+  raiseText:'يكسب الموظف {0}$ في الشهر ويتوقع حوالي {1}$. الزيادة تكلّف مالاً كل شهر بعدها.',
+  budgetIntro:'المال الداخل (بالأخضر) والخارج (بالأحمر) خلال الأشهر الـ12 القادمة إذا لم يتغيّر شيء.',
+  comingNone:'لا شيء قيد البناء. المحطات والمشاريع والاستثمارات تحتاج أشهراً لتكتمل.',
+  chartsEmpty:'تظهر الرسوم بعد أشهرك الأولى.', newsEmpty:'قراراتك والأخبار تظهر هنا.',
+  afterN:'بعد {0} في الرئاسة', missionsTxt:'تحديات من أربع سنوات، كل واحد يعلّم نظاماً واحداً.', seasonsLeft:'بقي {0}', quiet:'شهر هادئ.',
+  choices:'قراراتك', monthsN:'{0} أشهر', months1:'شهر واحد', yearsN:'{0} سنوات', years1:'سنة واحدة', soon:'خلال أيام', inTime:'خلال {0}',
+  building:'قيد البناء، يجهز خلال {0}', buildingEnd:'قيد البناء، على وشك الانتهاء',
+  fastTxt:'يجهز خلال {0}. سيضيع حوالي {1} مليون دولار بسبب الفساد.', tenderTxt:'يجهز خلال {0}. منافسة نزيهة، يضيع حوالي {1} مليون دولار فقط.',
+  pause:'إيقاف مؤقت', play:'تشغيل', fast:'أسرع', fastest:'سريع', slow:'بطيء', normal:'عادي', soundOn:'تشغيل الصوت', soundOff:'إيقاف الصوت', paused:'متوقف', startPrompt:'اضغط ▶ لتبدأ الساعة',
+  score:'نقاط الإرث', scoreHelp:'نقاطك تجمع السلم ومستوى المعيشة وإعادة الإعمار ونزاهة الحكومة والمال والاستقلال. تتغيّر كل شهر حسب قراراتك.',
+  inSixMonths:'خلال 6 أشهر', perYear:'سنوياً',
+  milestoneTitle:'{0} سنوات في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع', newYear:'بدأ عام {0}. النقاط {1} ({2} خلال العام).',
+  whyNow:'ما الذي يحرّك الأمور الآن',
+  dTrade:'التجارة', tradeSub:'النفط والغاز والمناجم والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
+  subWhy:'لماذا؟',
+  oilTitle:'النفط', oilProd:'{0} ألف برميل يومياً', oilAccess:'الحقول تحت سيطرتك: {0}%. الأمن في الشرق: {1}%.',
+  oilUseQ:'ماذا نفعل بنفطنا؟', oilUse:{ 0:'نبيعه للخارج', 0.5:'نصف ونصف', 1:'نستخدمه محلياً' },
+  oilUseHint:'استخدام النفط محلياً يوفّر دولارات أكثر من بيعه لأن الوقود المستورد غالٍ. لكن المصافي تتسع لـ{0} ألف برميل يومياً فقط، والباقي يجب بيعه.',
+  gasTitle:'الغاز', gasProd:'{0} مليون م³ يومياً', gasHint:'الغاز يشغّل محطات الكهرباء. كل ما تنتجه وقود لا تحتاج استيراده.',
+  phosTitle:'الفوسفات', phosHint:'صخور الأسمدة من بادية حمص، تُباع للخارج.', farmTitle:'زيت الزيتون والقطن', farmHint:'صادرات زراعية، يضرّها الغضب في المحافظات الزراعية.',
+  investTitle:'استثمر للمستقبل', investSub:'ادفع الآن واكسب لاحقاً. المال المستثمر هنا لا يمكن استخدامه في الطوارئ.',
+  payback:'يسترد كلفته خلال {0} تقريباً', paybackNever:'لن يسترد كلفته حالياً', running:'جارٍ العمل، يجهز {0}', maxed:'مكتمل', gamble:'مقامرة 50/50',
+  investBtn:'استثمر', needsCalmEast:'يحتاج شرقاً أهدأ (غضب أقل من 70)',
+  portsTitle:'قدرة التصدير', portsSub:'الموانئ والمعابر الحدودية تحدّد كم يمكنك أن تبيع للخارج.', portsUse:'الصادرات تحتاج {0} سنوياً. الموانئ والمعابر تنقل {1}.',
+  clogged:'الموانئ مزدحمة: صادرات بقيمة {0} سنوياً لا تستطيع مغادرة البلاد.', portLvl:'المستوى {0} من 3', portState:'تديره الدولة', portForeign:'يديره مشغّل أجنبي',
+  upgrade:'طوّر', upgradeTxt:'{0} و12 شهراً. ينقل صادرات أكثر ويكسب رسوماً أكثر.', concession:'سلّمه لمشغّل أجنبي', concessionTxt:'+100 مليون$ الآن، ويطوّره مجاناً، لكنه يأخذ 15% من رسوم الميناء. الاستقلال −4.',
+  partnersSub:'لكل اتفاق مكاسب وتكاليف وشروط. إذا اختلّ شرط، يتوقف الاتفاق حتى تصلحه.',
+  dealActive:'فعّال', dealPaused:'متوقف: شرط مختلّ', dealSign:'وقّع الاتفاق', needs:'يحتاج:',
+});
+
+// time-based rewrites of earlier text
+GLOSS.pc.en.fix = 'It grows every month, faster when people trust you. Cash gifts can buy some.';
+GLOSS.pc.ar.fix = 'يزداد كل شهر، وأسرع عندما يثق بك الناس. المنح النقدية تشتري بعضه.';
+GLOSS.power.en.fix = 'Invest in power stations (Policies). New power arrives 12 months later. A growing economy needs more electricity.';
+GLOSS.power.ar.fix = 'استثمر في محطات الكهرباء (السياسات). الكهرباء الجديدة تصل بعد 12 شهراً. الاقتصاد النامي يحتاج كهرباء أكثر.';
+GLOSS.score = { icon:'🏆', en:{ name:'Legacy score', short:'Score', what:'One number for how well the country is doing, from 0 to 100.', why:'It’s how history will judge you. It changes every month.', fix:'Keep the peace, raise living standards, rebuild, fight corruption, keep money in the bank, and don’t give away too much independence.' },
+  ar:{ name:'نقاط الإرث', short:'النقاط', what:'رقم واحد يقيس حال البلاد، من 0 إلى 100.', why:'هكذا سيحكم عليك التاريخ. يتغيّر كل شهر.', fix:'حافظ على السلم، ارفع مستوى المعيشة، أعد الإعمار، حارب الفساد، احتفظ بالمال، ولا تتنازل عن استقلال كثير.' } };
+POL.capex.en = { name:'Build power stations', q:'How many dollars go into electricity? New power arrives 12 months later.', opts:{ 0:'$0', 20:'$40M/yr', 40:'$80M/yr' }, hint:{ 0:'Nothing. The grid slowly breaks down.', 20:'Steady progress. New power starts arriving in 12 months.', 40:'Fast progress. The best long-term move, but you wait a year to see it.' } };
+POL.capex.ar = { name:'بناء محطات الكهرباء', q:'كم دولاراً يذهب إلى الكهرباء؟ الكهرباء الجديدة تصل بعد 12 شهراً.', opts:{ 0:'0$', 20:'40 مليون$/سنة', 40:'80 مليون$/سنة' }, hint:{ 0:'لا شيء. الشبكة تتهالك ببطء.', 20:'تقدّم ثابت. الكهرباء الجديدة تبدأ بالوصول بعد 12 شهراً.', 40:'تقدّم سريع. أفضل خطوة للمستقبل، لكنك تنتظر سنة لترى النتيجة.' } };
+POL.recon.en.q = 'How much cash goes to rebuilding?'; POL.recon.en.opts = { 0:'None', 5:'10bn/yr', 10:'20bn/yr', 20:'40bn/yr' };
+POL.recon.ar.q = 'كم من النقد يذهب لإعادة الإعمار؟'; POL.recon.ar.opts = { 0:'لا شيء', 5:'10 مليار/سنة', 10:'20 مليار/سنة', 20:'40 مليار/سنة' };
+POL.print.en.opts = { 0:'None', 5:'10bn/yr', 15:'30bn/yr', 30:'60bn/yr' }; POL.print.ar.opts = { 0:'لا', 5:'10 مليار/سنة', 15:'30 مليار/سنة', 30:'60 مليار/سنة' };
+POL.intervene.en.opts = { 0:'None', 25:'$50M/yr', 50:'$100M/yr' }; POL.intervene.ar.opts = { 0:'لا', 25:'50 مليون$/سنة', 50:'100 مليون$/سنة' };
+POL.intervene.en.hint = { 0:'Let the market decide.', 25:'Sell $50M a year to hold the dollar price down.', 50:'Sell $100M a year. Works, but burns your dollars.' };
+POL.intervene.ar.hint = { 0:'دع السوق يقرّر.', 25:'بِع 50 مليون$ سنوياً لكبح سعر الدولار.', 50:'بِع 100 مليون$ سنوياً. ينجح لكنه يستنزف دولاراتك.' };
+DEC_TXT.integrity.en[2] = 'Corruption falls every month. Costs a little influence to keep alive.'; DEC_TXT.integrity.ar[2] = 'الفساد ينخفض كل شهر. تكلّف قليلاً من النفوذ لتستمر.';
+DEC_TXT.tribal.en[2] = 'Opens more eastern oil fields to you. Anger drops in Deir ez-Zor and Raqqa. Independence −3.'; DEC_TXT.tribal.ar[2] = 'يفتح لك حقول نفط شرقية أكثر. الغضب ينخفض في دير الزور والرقة. الاستقلال −3.';
+DEC_TXT.northeast.en[2] = 'Opens the northeast oil fields. Anger drops in Hasakeh and Raqqa. Independence +5.'; DEC_TXT.northeast.ar[2] = 'يفتح حقول نفط الشمال الشرقي. الغضب ينخفض في الحسكة والرقة. الاستقلال +5.';
+DEC_TXT.braingain.en[2] = 'The economy grows a little faster every month, and more people pay tax.'; DEC_TXT.braingain.ar[2] = 'الاقتصاد ينمو أسرع قليلاً كل شهر، ويدفع ضرائب أكثر من الناس.';
+DEC_TXT.demining.en[2] = 'Mines drop every month everywhere. Costs $20M a year.'; DEC_TXT.demining.ar[2] = 'الألغام تنخفض كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
+FAC_TXT.wb.en[1] = 'Money that goes straight into power stations. It arrives as electricity 12 months later.'; FAC_TXT.wb.ar[1] = 'أموال تذهب مباشرة إلى محطات الكهرباء، وتصل كهرباءً بعد 12 شهراً.';
+NOTE.en.wbGrid = 'World Bank money is building {0} MW of power (ready in 12 months).'; NOTE.ar.wbGrid = 'أموال البنك الدولي تبني {0} ميغاواط (جاهزة بعد 12 شهراً).';
+Object.assign(NOTE.en, { portDone:'{0} port reached level {1}.', dealOn:'Deal with {0} is active again.', dealOff:'Deal with {0} paused: a condition broke.', dealSign:'Signed a deal with {0}.',
+  investStart:'Investment started: {0}. Ready in {1}.', investDone:'Investment finished: {0}.', offshoreHit:'Offshore drilling struck gas! +10 million m³ a day.', offshoreDry:'Offshore well came up dry. The $150M is gone.',
+  portStart:'Upgrading {0} port. Ready in 12 months.', portConcession:'{0} port handed to a foreign operator. +$100M.', projStartShort:'Construction started in {0}.' });
+Object.assign(NOTE.ar, { portDone:'وصل ميناء {0} إلى المستوى {1}.', dealOn:'عاد الاتفاق مع {0} للعمل.', dealOff:'توقف الاتفاق مع {0}: اختلّ أحد الشروط.', dealSign:'وُقّع اتفاق مع {0}.',
+  investStart:'بدأ الاستثمار: {0}. يجهز خلال {1}.', investDone:'اكتمل الاستثمار: {0}.', offshoreHit:'الحفر البحري وجد غازاً! +10 مليون م³ يومياً.', offshoreDry:'البئر البحرية جافة. ضاعت الـ150 مليون$.',
+  portStart:'تطوير ميناء {0}. يجهز خلال 12 شهراً.', portConcession:'سُلّم ميناء {0} لمشغّل أجنبي. +100 مليون$.', projStartShort:'بدأ البناء في {0}.' });
+Object.assign(LEDGER.en, { oilExport:'Oil sold abroad', farm:'Olive oil and cotton exports', fdi:'Gulf investment', euGrant:'EU grants', homeEnergy:'Own oil and gas (imports saved)', powerImport:'Electricity from Iraq', phos:'Phosphate exports' });
+Object.assign(LEDGER.ar, { oilExport:'نفط يُباع للخارج', farm:'صادرات الزيتون والقطن', fdi:'استثمار خليجي', euGrant:'منح أوروبية', homeEnergy:'نفطنا وغازنا (استيراد موفَّر)', powerImport:'كهرباء من العراق', phos:'صادرات الفوسفات' });
+Object.assign(ADV.en, { usd:'Dollars will run out in about {0} months. That’s game over.', payAct:'A 10% raise in the Money panel. It costs cash every month after.', gridAct:'Put $40M or $80M a year into power stations. It pays off in a year.', calmEcon:'The money looks okay right now.', calmEconAct:'Look at Trade: oil, ports and deals can bring in dollars.',
+  clog:'Our ports are jammed. We’re losing export money.', clogAct:'Upgrade Latakia or Tartus, or sign a border trade deal.' });
+Object.assign(ADV.ar, { usd:'ستنفد الدولارات خلال {0} أشهر تقريباً. عندها تنتهي اللعبة.', payAct:'زيادة 10% من لوحة المال. تكلّف نقداً كل شهر بعدها.', gridAct:'خصّص 40 أو 80 مليون$ سنوياً للمحطات. تُثمر خلال سنة.', calmEcon:'الوضع المالي مقبول الآن.', calmEconAct:'انظر إلى التجارة: النفط والموانئ والاتفاقات تجلب الدولار.',
+  clog:'موانئنا مزدحمة، ونخسر أموال التصدير.', clogAct:'طوّر اللاذقية أو طرطوس، أو وقّع اتفاق تجارة حدودية.' });
+WHY.en.noneYet = 'Nothing dramatic right now. Small changes add up, though.'; WHY.ar.noneYet = 'لا شيء دراماتيكي الآن، لكن التغييرات الصغيرة تتراكم.';
+Object.assign(WHY.en, { clogged:'Ports jammed', lostExports:'Lost exports {0}/yr', oilSold:'Oil sold abroad', oilHome:'Oil used at home' });
+Object.assign(WHY.ar, { clogged:'الموانئ مزدحمة', lostExports:'صادرات ضائعة {0} سنوياً', oilSold:'النفط يُباع للخارج', oilHome:'النفط يُستخدم محلياً' });
+
+TUT.en = [
+  ['🏛️','You are the new president of Syria','The war is over. Cities are damaged, most people get four hours of electricity a day, and the money is almost worthless. Your job: rebuild the country, for as long as you can.'],
+  ['⏱️','Time keeps moving','Press ▶ and the months start ticking. Speed up or pause any time. Every choice you make takes effect right away, and your legacy score changes every month.'],
+  ['🗺️','The map shows each province','Colors show how angry people are. Tap a province to see its problems and its big project.'],
+  ['🚢','Trade can make or break you','Oil, gas, phosphate, farms, ports and deals with neighbors bring in dollars. But ports have limits, and every deal has a price.'],
+  ['🔗','Everything is connected','Printing money makes the dollar pricier, which shrinks salaries, which makes people angry. The “Why?” panel always shows you the chain.'],
+  ['⚠️','How you lose','You run out of dollars. Four provinces revolt at once. The army takes over. Or Suwayda and the east break away. Crises pause the clock so you can think.'],
+];
+TUT.ar = [
+  ['🏛️','أنت رئيس سوريا الجديد','انتهت الحرب. المدن مدمّرة، ومعظم الناس يحصلون على أربع ساعات كهرباء، والعملة شبه بلا قيمة. مهمتك: أن تعيد بناء البلاد لأطول مدة ممكنة.'],
+  ['⏱️','الوقت لا يتوقف','اضغط ▶ فتبدأ الأشهر بالمرور. سرّع أو أوقف متى شئت. كل قرار تتخذه ينفَّذ فوراً، ونقاط إرثك تتغيّر كل شهر.'],
+  ['🗺️','الخريطة تُظهر كل محافظة','الألوان تُظهر مدى غضب الناس. اضغط على محافظة لترى مشاكلها ومشروعها الكبير.'],
+  ['🚢','التجارة قد تنقذك أو تغرقك','النفط والغاز والفوسفات والمزارع والموانئ والاتفاقات مع الجيران تجلب الدولار. لكن للموانئ حدود، ولكل اتفاق ثمن.'],
+  ['🔗','كل شيء مترابط','طباعة النقود ترفع سعر الدولار، فتنكمش الرواتب، فيغضب الناس. لوحة «لماذا؟» تُظهر لك السلسلة دائماً.'],
+  ['⚠️','كيف تخسر','تنفد دولاراتك. أربع محافظات تتمرّد معاً. الجيش يستولي على الحكم. أو تنفصل السويداء والشرق. الأزمات توقف الساعة لتفكّر.'],
+];
+MISSION_TXT.winter.en[1] = 'The grid is failing. Reach 7 hours of electricity a day within 4 years, with no province in revolt.';
+MISSION_TXT.winter.ar[1] = 'الشبكة تنهار. اوصل إلى 7 ساعات كهرباء يومياً خلال 4 سنوات دون تمرّد أي محافظة.';
+MISSION_TXT.lira.en[1] = 'The last government printed money like crazy. A dollar costs 260 lira and prices rise 90% a year. Within 4 years, get the dollar under 340 and yearly price rises under 30%.';
+MISSION_TXT.lira.ar[1] = 'الحكومة السابقة طبعت النقود بجنون. الدولار بـ260 ليرة والأسعار ترتفع 90% سنوياً. خلال 4 سنوات، اجعل الدولار تحت 340 والتضخم تحت 30%.';
+MISSION_TXT.bread.en[1] = 'Drought has hit the northeast. Wheat imports cost double for 4 years. Finish with trust at 40+, at least $250M in the bank, and Hasakeh’s anger below 55.';
+MISSION_TXT.bread.ar[1] = 'ضرب الجفاف الشمال الشرقي. استيراد القمح يكلّف الضعف لأربع سنوات. أنهِ المهمة بثقة 40+ و250 مليون$ على الأقل وغضب الحسكة تحت 55.';
+MISSION_TXT.capital.en[1] = 'Rural Damascus is close to revolt and the city is restless. Within 4 years, get Rural Damascus under 50 and Damascus city under 45.';
+MISSION_TXT.capital.ar[1] = 'ريف دمشق على وشك التمرّد والمدينة متوترة. خلال 4 سنوات، اجعل غضب ريف دمشق تحت 50 ومدينة دمشق تحت 45.';
+MISSION_TXT.trade = { icon:'🚢', en:['Open for business','Syria earns about $120M a year from exports, transit and investment. Within 4 years, get it to $250M a year.','Lesson: selling abroad needs things to sell, ports to ship them, and partners to buy them.'],
+  ar:['البلد مفتوح للأعمال','تكسب سوريا حوالي 120 مليون$ سنوياً من الصادرات والعبور والاستثمار. خلال 4 سنوات، اوصل بها إلى 250 مليون$.','الدرس: البيع للخارج يحتاج بضاعة تبيعها، وموانئ تشحنها، وشركاء يشترونها.'] };
+
+// investments, ports, partners
+const INV_TXT = {
+  oilwells:{ icon:'🛢️', en:['Repair oil wells','+25 thousand barrels a day of capacity. Only helps if you control the fields and the east is calm.'], ar:['إصلاح آبار النفط','+25 ألف برميل يومياً من القدرة. يفيد فقط إذا سيطرت على الحقول وكان الشرق هادئاً.'] },
+  refinery:{ icon:'🏭', en:['Expand the refineries','Refine 20 thousand more barrels a day at home, so less oil has to be sold cheap.'], ar:['توسيع المصافي','تكرير 20 ألف برميل إضافية يومياً محلياً، فيقلّ النفط الذي يُباع رخيصاً.'] },
+  gasfield:{ icon:'🔥', en:['Develop a gas field','+3 million m³ a day of gas for power plants. Ready in 18 months.'], ar:['تطوير حقل غاز','+3 مليون م³ يومياً من الغاز لمحطات الكهرباء. يجهز خلال 18 شهراً.'] },
+  offshore:{ icon:'🌊', en:['Drill for offshore gas','A 50/50 bet. In 3 years you find a big gas field under the sea, or nothing.'], ar:['التنقيب عن الغاز البحري','مقامرة 50/50. خلال 3 سنوات تجد حقل غاز كبيراً تحت البحر، أو لا شيء.'] },
+  phosphate:{ icon:'⛏️', en:['Expand phosphate mines','Mining exports +35%.'], ar:['توسيع مناجم الفوسفات','صادرات التعدين +35%.'] },
+  farm:{ icon:'🫒', en:['Olive oil and cotton program','Seeds, presses and buyers abroad. Farm exports grow.'], ar:['برنامج الزيتون والقطن','بذار ومعاصر ومشترون في الخارج. تنمو الصادرات الزراعية.'] },
+};
+const PORT_NAME = { en:{ latakia:'Latakia', tartus:'Tartus' }, ar:{ latakia:'اللاذقية', tartus:'طرطوس' } };
+const PART_TXT = {
+  turkey:{ en:['Turkey','Northern trade corridor','Open the northern crossings for factory and farm exports.','Export room +$60M/yr, factory exports +15%.','Aleppo and Idlib anger below 65'],
+    ar:['تركيا','ممر التجارة الشمالي','فتح المعابر الشمالية لصادرات المصانع والمزارع.','قدرة تصدير +60 مليون$/سنة، صادرات المصانع +15%.','غضب حلب وإدلب أقل من 65'] },
+  jordan:{ en:['Jordan','Southern route to the Gulf','Trucks carry goods through Nassib to Gulf markets.','Transit +$40M/yr, export room +$50M/yr.','Daraa anger below 65'],
+    ar:['الأردن','الطريق الجنوبي إلى الخليج','شاحنات تنقل البضائع عبر نصيب إلى أسواق الخليج.','عبور +40 مليون$/سنة، قدرة تصدير +50 مليون$/سنة.','غضب درعا أقل من 65'] },
+  iraq:{ en:['Iraq','Oil and electricity link','Iraq sells you electricity and crude oil for your refineries.','+300 MW of power, fuel savings $20M/yr. Costs $30M/yr.','Deir ez-Zor anger below 65'],
+    ar:['العراق','ربط النفط والكهرباء','العراق يبيعك الكهرباء والنفط الخام لمصافيك.','+300 ميغاواط، توفير وقود 20 مليون$/سنة. يكلّف 30 مليون$/سنة.','غضب دير الزور أقل من 65'] },
+  lebanon:{ en:['Lebanon','Gas and power transit','Repair the Arab Gas Pipeline so gas and electricity can cross Syria to Lebanon.','Transit fees +$24M/yr. Pipeline repair costs $40M.','Homs anger below 70'],
+    ar:['لبنان','عبور الغاز والكهرباء','أصلِح خط الغاز العربي ليعبر الغاز والكهرباء سوريا إلى لبنان.','رسوم عبور +24 مليون$/سنة. إصلاح الخط يكلّف 40 مليون$.','غضب حمص أقل من 70'] },
+  gulf:{ en:['Gulf states','Investment partnership','Gulf funds invest in hotels, factories and farms.','+$80M/yr of investment, faster growth. Independence −2.','Corruption below 55'],
+    ar:['دول الخليج','شراكة استثمارية','صناديق خليجية تستثمر في الفنادق والمصانع والمزارع.','+80 مليون$/سنة استثمار، ونمو أسرع. الاستقلال −2.','فساد أقل من 55'] },
+  eu:{ en:['European Union','Market access and rebuilding','Syrian goods enter European markets, plus reconstruction grants.','Exports earn 25% more, +$60M/yr in grants.','Trust 45+ and corruption below 50'],
+    ar:['الاتحاد الأوروبي','دخول الأسواق وإعادة الإعمار','البضائع السورية تدخل الأسواق الأوروبية، مع منح لإعادة الإعمار.','الصادرات تكسب 25% أكثر، +60 مليون$/سنة منحاً.','ثقة 45+ وفساد أقل من 50'] },
+  china:{ en:['China','Ports-for-phosphate','A Chinese company upgrades both ports for free, and takes 30% of phosphate income in return.','Both ports +1 level in 12 months. Phosphate income −30%. Independence −5.','No conditions'],
+    ar:['الصين','الموانئ مقابل الفوسفات','شركة صينية تطوّر الميناءين مجاناً، وتأخذ مقابل ذلك 30% من دخل الفوسفات.','الميناءان +1 مستوى خلال 12 شهراً. دخل الفوسفات −30%. الاستقلال −5.','بلا شروط'] },
+  russia:{ en:['Russia','Wheat supply deal','Cheaper wheat, in exchange for a long lease on part of Tartus port.','Wheat imports cost 25% less. Independence −5.','No conditions'],
+    ar:['روسيا','اتفاق توريد القمح','قمح أرخص مقابل تأجير طويل لجزء من ميناء طرطوس.','استيراد القمح أرخص بـ25%. الاستقلال −5.','بلا شروط'] },
+};
