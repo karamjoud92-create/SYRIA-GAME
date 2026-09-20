@@ -47,6 +47,10 @@ Built in this session, in order:
    the genre themselves). The panels are all still there underneath for anyone who wants them.
 9. **The Guide.** A panel open from month 0 that says what to do next, ticks off six first steps as you do
    them, explains why the numbers just moved, and lists the cause-and-effect chains.
+10. **Independence is a real system.** It used to be a chip on a contract and a number the player saw once
+   every five years. It is now a dashboard chip from month 0 with its own glossary entry, a Score tab in
+   Progress that shows all six components any month, four live consequences below 40 (`grip()`), and a way
+   back: paying off the $6.1B of inherited debt buys it back at $100M a point, up to where you started.
 
 ## Decisions worth not undoing
 
@@ -72,6 +76,21 @@ Built in this session, in order:
   filtered; `npm run guide` fails if a suggestion ever names a locked panel again. When adding a new adviser
   line, ask what it points at and whether that is open yet.
 - **No fogged numbers.** `fog()` returns the exact value. If something should be hidden, hide it.
+- **A score component the player cannot see is not a mechanic.** Independence was one sixth of the score
+  with no readout, no glossary entry and no gameplay effect: signing every loan, deal and concession on
+  offer cost about 1.8 points across 20 years. Anything that feeds `legacy()` needs a live readout and a
+  consequence the player feels between milestones, or it is decoration.
+- **Teeth need a way back.** `grip()` would have been a trap without `ACT.repay`: a player who sold the
+  country early had no agency left. Buying independence back is capped at `s.sov0`, so it undoes a bargain
+  you regret without becoming a way for a rich late game to buy score.
+- **The grip threshold is 40, not 50.** At 50 the scripted strategies sat inside the penalty band purely
+  because the sim takes whichever crisis option comes first, and `builder` stopped beating `trader` on
+  Realistic. A little foreign help has to be free; only dependency is a spiral.
+- **The balance sim now picks crisis options deliberately.** It used to take the first affordable one —
+  arbitrary, and harmless only while sovereignty did nothing. It now avoids selling independence, and a
+  `seller` strategy was added that deliberately takes every foreign hand: it ends the richest in dollars
+  ($13.8B) and near the bottom in score (57 C / 45 D against builder's 74 B / 63 B). That row is the
+  regression test for the whole mechanic — if `seller` ever scores well, the teeth have fallen out.
 
 ## Open, and worth doing next
 
@@ -100,6 +119,7 @@ Built in this session, in order:
 npm run check     # build + balance sim + missions + scoreboard tests. Run after ANY engine change.
 npm run onboard   # browser: does the game still open up slowly, in both languages?
 npm run econ      # browser: sectors, factories, the work layer, the bar
+npm run indep     # browser: the independence chip, score panel, teeth and the buy-back
 npm run browser   # browser: two players in one room
 npm run serve     # a local score server on :8787 while working on the scoreboard
 ```

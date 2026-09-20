@@ -82,7 +82,7 @@ function effChips(e){
 
 // ---------- dashboard ----------
 function health(key, v){
-  const r = { cash:[0, 15], usd:[250, 500], fx:[250, 160], pay:[15, 22], pc:[10, 30], trust:[25, 45], anger:[65, 50], power:[4, 8], jobs:[52, 38] }[key];
+  const r = { cash:[0, 15], usd:[250, 500], fx:[250, 160], pay:[15, 22], pc:[10, 30], trust:[25, 45], anger:[65, 50], power:[4, 8], jobs:[52, 38], sov:[30, 45] }[key];
   if (key === 'fx' || key === 'anger' || key === 'jobs') return v > r[0] ? 'bad' : v > r[1] ? 'warn' : 'ok';
   return v < r[0] ? 'bad' : v < r[1] ? 'warn' : 'ok';
 }

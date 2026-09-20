@@ -20,6 +20,11 @@ en:{
   moneyIntro:'Salaries, buying support, and money from abroad.',
   choose:'Choose', chosen:'✓ Chosen', done:'✓ Done', sign:'Sign', needsInfluence:'Needs {0} influence', needsUsd:'Needs ${0}M', allPaid:'✓ All paid', paidOf:'{0}/{1} paid', frozen:'Frozen',
   independence:'Independence', debt:'debt',
+  subScore:'Score', subWhy:'Why', scoreParts:'What your score is made of', scoreAvg:'Each one is out of 100. Your score is the average of all six.',
+  vsBar:'measured against what people now expect', sovBite:'Foreign partners have a grip on the country. Pay off old debt to loosen it.',
+  repayTitle:'Pay off old debt', repayText:'Syria owes {0} from before the war. Every {1} you clear buys back one point of independence, up to where you started — and cuts the interest forever.',
+  repayNone:'Nothing left to pay off.', repayNeed:'Keep at least $300M in the bank.', repayDone:'Independence is back where you started.',
+  debtLeft:'Still owed', buysBack:'Independence +{0}', whatIsThis:'What is this?',
   raiseTitle:'Raise salaries', raiseText:'Workers earn ${0} a month and expect about ${1}. A raise costs cash every season after.', noRaise:'No raise',
   buyTitle:'Buy influence', buyText:'Short on influence? Trade money for it.', giftTitle:'Cash gift to families', reliefTitle:'Import cheap food and supplies',
   abroadTitle:'Money from abroad', abroadText:'Loans and grants bring dollars, but foreign lenders get a say, so independence drops.', grantOnHand:'Grant money for projects: {0}.',
@@ -71,6 +76,11 @@ ar:{
   moneyIntro:'الرواتب، وشراء الدعم، والأموال من الخارج.',
   choose:'اختر', chosen:'✓ تم الاختيار', done:'✓ نافذ', sign:'وقّع', needsInfluence:'يحتاج {0} نفوذ', needsUsd:'يحتاج {0} مليون دولار', allPaid:'✓ دُفع بالكامل', paidOf:'دُفع {0} من {1}', frozen:'مُجمَّد',
   independence:'الاستقلال', debt:'دَين',
+  subScore:'النتيجة', subWhy:'لماذا', scoreParts:'ممّ تتكوّن نتيجتك', scoreAvg:'كل واحد من 100. ونتيجتك هي متوسط الستة.',
+  vsBar:'مقاسة بما صار الناس يتوقعونه', sovBite:'الشركاء الأجانب يمسكون بالبلاد. سدّد الديون القديمة لتخفّف قبضتهم.',
+  repayTitle:'سداد الديون القديمة', repayText:'على سوريا {0} من ما قبل الحرب. كل {1} تسدّدها تعيد نقطة من الاستقلال، حتى النقطة التي بدأت منها — وتخفّض الفوائد إلى الأبد.',
+  repayNone:'لم يبقَ شيء لسداده.', repayNeed:'أبقِ 300 مليون دولار على الأقل في المصرف.', repayDone:'الاستقلال عاد إلى حيث بدأت.',
+  debtLeft:'المتبقّي', buysBack:'الاستقلال +{0}', whatIsThis:'ما هذا؟',
   raiseTitle:'زيادة الرواتب', raiseText:'يكسب الموظف {0}$ في الشهر ويتوقع حوالي {1}$. الزيادة تكلّف مالاً كل موسم بعدها.', noRaise:'بلا زيادة',
   buyTitle:'شراء النفوذ', buyText:'نفوذك قليل؟ بادِل المال به.', giftTitle:'منحة نقدية للعائلات', reliefTitle:'استيراد غذاء ومواد رخيصة',
   abroadTitle:'أموال من الخارج', abroadText:'القروض والمنح تجلب الدولارات، لكن المُقرضين الأجانب يصبح لهم رأي، فينخفض الاستقلال.', grantOnHand:'أموال المنح للمشاريع: {0}.',
@@ -129,6 +139,8 @@ const GLOSS = {
     ar:{ name:'الصحة', short:'الصحة', what:'مدى قدرة البلاد على إبقاء ناسها أحياء وقادرين على العمل، من 0 إلى 100.', why:'المريض لا يعمل، والعائلة التي تدمّرها فاتورة مشفى واحدة تفقد ثقتها بك.', fix:'ابنِ العيادات والمشافي من الناس ← المدارس والعيادات، وأبقِ الكهرباء — المشفى بلا كهرباء مجرد بناء.' } },
   jobs:{ icon:'💼', en:{ name:'People without work', short:'No work', what:'Out of every 100 people old enough to work, how many have no steady job.', why:'Work is the difference between a country that holds together and one that does not. People with no income get angry, leave, or take a gun from whoever offers one.', fix:'Build factories in the Trade panel — textiles, food, medicine, cement, phone networks, tourism. Keep the lights on so workshops can run, and keep provinces calm so business comes back.' },
     ar:{ name:'الناس بلا عمل', short:'بلا عمل', what:'من كل 100 شخص في سن العمل، كم واحداً بلا عمل ثابت.', why:'العمل هو الفرق بين بلد متماسك وبلد ينهار. من لا دخل له يغضب، أو يهاجر، أو يحمل سلاح من يدفع له.', fix:'ابنِ المصانع من لوحة التجارة: النسيج والغذاء والدواء والإسمنت وشبكات الهاتف والسياحة. أبقِ الكهرباء لتعمل الورشات، وأبقِ المحافظات هادئة ليعود الاستثمار.' } },
+  sov:{ icon:'🧭', en:{ name:'Independence', short:'Independence', what:'How many of the country’s decisions are still yours to make, from 0 to 100. Loans, foreign deals and concessions spend it. It never comes back on its own.', why:'It is one sixth of your score — and below 40 it starts to bite: the partners who own a piece of you take a cut of everything you sell, people stop believing you speak for them, and your decrees carry less weight.', fix:'Say no to help you do not need, and pay off old debt under Money — every $100M cleared buys back one point, up to where you started. As the country does better, more is expected of you here too.' },
+    ar:{ name:'الاستقلال', short:'الاستقلال', what:'كم من قرارات البلاد ما زال بيدك، من 0 إلى 100. القروض والاتفاقات الأجنبية والامتيازات تنفق منه. ولا يعود وحده.', why:'هو سدس نتيجتك — وتحت 40 يبدأ بالعضّ: الشركاء الذين يملكون حصة منك يأخذون نصيباً مما تبيع، والناس لا تعود تصدق أنك تتكلم باسمهم، ومراسيمك تفقد وزنها.', fix:'قل لا لمساعدة لا تحتاجها، وسدّد الديون القديمة من تبويب المال — كل 100 مليون دولار تسدّدها تعيد نقطة واحدة، حتى النقطة التي بدأت منها. وكلما تحسّنت البلاد، ارتفع المطلوب منك هنا أيضاً.' } },
   power:{ icon:'💡', en:{ name:'Electricity', short:'Power', what:'Average hours of electricity people get each day.', why:'Blackouts make people angry and stop factories.', fix:'Invest in power stations (Policies tab). New power arrives two seasons later.' },
     ar:{ name:'الكهرباء', short:'الكهرباء', what:'متوسط ساعات الكهرباء التي يحصل عليها الناس يومياً.', why:'انقطاع الكهرباء يغضب الناس ويوقف المصانع.', fix:'استثمر في محطات الكهرباء (تبويب السياسات). الكهرباء الجديدة تصل بعد موسمين.' } },
 };
@@ -157,9 +169,9 @@ const POL_VALUES = { bread:['full','partial','removed'], fuel:['full','partial',
 
 const LEDGER = {
   en:{ choices:'Your choices this season', oligarch:'Oligarch settlements', taxes:'Taxes', customs:'Border fees', projRev:'Project income', fuelSales:'Fuel sales', wages:'Salaries', bread:'Cheap bread', fuelSub:'Cheap fuel', security:'Police and army', running:'Running government', recon:'Rebuilding', integrity:'Integrity Commission', interest:'Interest on debt', printed:'Printed money',
-    remit:'Money sent home by Syrians abroad', phos:'Mining exports', transit:'Trade and ports', oil:'Oil', overflight:'Planes flying over', exports:'Factory exports', imports:'Imports for the economy', wheat:'Buying wheat', fuel:'Buying fuel', debt:'Paying old debts', grid:'Power stations', intervene:'Protecting the lira', demining:'Demining teams', loan_imf:'IMF loan', loan_bridge:'Bank loan' },
+    remit:'Money sent home by Syrians abroad', phos:'Mining exports', transit:'Trade and ports', oil:'Oil', overflight:'Planes flying over', exports:'Factory exports', imports:'Imports for the economy', wheat:'Buying wheat', fuel:'Buying fuel', debt:'Paying old debts', grid:'Power stations', intervene:'Protecting the lira', demining:'Demining teams', loan_imf:'IMF loan', loan_bridge:'Bank loan', foreignCut:'Taken by foreign partners' },
   ar:{ choices:'قراراتك هذا الموسم', oligarch:'تسويات الأثرياء', taxes:'الضرائب', customs:'رسوم الحدود', projRev:'دخل المشاريع', fuelSales:'مبيعات الوقود', wages:'الرواتب', bread:'دعم الخبز', fuelSub:'دعم الوقود', security:'الشرطة والجيش', running:'تشغيل الحكومة', recon:'إعادة الإعمار', integrity:'هيئة النزاهة', interest:'فوائد الدين', printed:'نقود مطبوعة',
-    remit:'حوالات السوريين في الخارج', phos:'صادرات التعدين', transit:'التجارة والموانئ', oil:'النفط', overflight:'عبور الطائرات', exports:'صادرات المصانع', imports:'مستوردات الاقتصاد', wheat:'شراء القمح', fuel:'شراء الوقود', debt:'سداد الديون القديمة', grid:'محطات الكهرباء', intervene:'حماية الليرة', demining:'فرق نزع الألغام', loan_imf:'قرض صندوق النقد', loan_bridge:'قرض مصرفي' },
+    remit:'حوالات السوريين في الخارج', phos:'صادرات التعدين', transit:'التجارة والموانئ', oil:'النفط', overflight:'عبور الطائرات', exports:'صادرات المصانع', imports:'مستوردات الاقتصاد', wheat:'شراء القمح', fuel:'شراء الوقود', debt:'سداد الديون القديمة', grid:'محطات الكهرباء', intervene:'حماية الليرة', demining:'فرق نزع الألغام', loan_imf:'قرض صندوق النقد', loan_bridge:'قرض مصرفي', foreignCut:'ما يأخذه الشركاء الأجانب' },
 };
 
 const TUT = {

@@ -24,6 +24,9 @@ fast: a player should be able to think, and should not have to wait two years to
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
+- `npm run indep`  → independence end to end: it is a dashboard number from month 0, it explains itself,
+  selling it costs trust, influence, export dollars and calm, the score panel shows all six parts, and
+  money buys it back — but never past where you started. Both languages.
 - Optional browser test: `npm i -D playwright && npx playwright install chromium`, then `node tools/smoke.mjs`.
 
 ## Architecture
@@ -50,6 +53,16 @@ fast: a player should be able to think, and should not have to wait two years to
     wages against expectations, unrest and trust). `classes()` splits it into poor / getting by / rich as a
     *result* of wages, work, health, schooling, inflation and corruption — never a dial. `poor` is one of the
     effects every decision previews, which is how a player sees what a policy does to people rather than ledgers.
+  - **`sov` — independence, and `grip(s)`.** `s.sov` is how many of the country's decisions are still
+    yours. It starts at 60 (`s.sov0`), only loans, foreign deals and concessions spend it, and nothing
+    gives it back on its own. `grip(s)` is `(40 - sov)/40` clamped to 0..1: **above 40 it is zero and
+    independence costs nothing but score.** Below 40 it bites four ways at once — partners take
+    `grip * 20%` off the top of export dollars (ledger line `foreignCut`), the trust target drops
+    `grip * 16`, every province gains `grip * 8` anger, and influence grows `grip * 3.5` slower. The way
+    back is `ACT.repay(s, $M)`: clearing debt buys one point per `SOV_PER_USD` ($100M), capped at
+    `s.sov0`, so money can undo a bargain you regret but never buy more standing than you inherited.
+    Sovereignty is graded against `s.bar` like Stability and Livelihoods — a wrecked country leaning on
+    its neighbours is forgiven, a working one that still lets foreigners run its ports is not.
   - **`s.bar` — the rising bar.** Ratchets up with the score and never falls. It raises what people expect of a
     wage, shortens their patience (trust and unrest), makes the state costlier to run, grows electricity demand,
     makes crises more frequent, and — the sharp end — is the yardstick two of the six score components are
@@ -68,7 +81,8 @@ fast: a player should be able to think, and should not have to wait two years to
   the population, a sector nobody has built, a neighbour's offer, a decree you can afford — each with two or
   three options. Every option calls the same `ACT.*` the panels call; the simulation is untouched. Rules:
   a question is only built when the player can *afford it and reach it* (`isOpen()` on every branch), the card
-  hides behind drawers and modals, and "Not now" parks that question for `decMonths`. When adding a source,
+  hides behind drawers and modals, and "Not now" parks that question for `decMonths`. The `sovBuy` source is the
+  one that asks about independence: only once `grip()` is actually biting, only with the dollars to act on it. When adding a source,
   filter skipped items *before* picking the best one, or skipping the top item silences the whole category.
 - **The Guide** (`GUIDE_TASKS`, `renderGuide()` in `src/ui/5-game.js`) is the first panel a new player sees and
   the only one open from month 0 to the end. It holds four things: the six first steps (ticked off by

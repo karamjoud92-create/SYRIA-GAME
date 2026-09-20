@@ -128,6 +128,17 @@ function indJobsAt(s, id){
   return j;
 }
 function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].jobless * p.pop; w += p.pop; }); return tot / w; }
+
+// GRIP. Independence is room to say no. A loan and a few hard bargains cost you some of it
+// and cost you nothing else — above 40 this is all zero, because leaning on your neighbours
+// is what a wrecked country does. Below 40 the people holding your debt, your ports and your
+// oilfields start holding the country: they take their cut of everything you sell before you
+// see it, the street stops believing you speak for it, and your decrees carry the weight of a
+// man relaying somebody else's orders. That is the spiral, and only money buys you out of it.
+function grip(s){ return clamp((40 - (s.sov === undefined ? 60 : s.sov)) / 40, 0, 1); }
+// $100M of debt cleared buys back one point — but only what you sold. Money can undo a
+// bargain you regret; it cannot buy you more standing than you inherited.
+const SOV_PER_USD = 100;
 // Visitors only come to a calm, lit country — and it pays in dollars with no ship involved.
 function tourismIncome(s){
   const n = indLvl(s, 'tourism'); if (!n) return 0;
@@ -140,7 +151,7 @@ const PARTNERS = {
   iraq:{ flag:'🇮🇶', pc:12, sov:0, ok:s => s.provs.deir.u < 65 },
   lebanon:{ flag:'🇱🇧', pc:8, sov:0, usd:40, ok:s => s.provs.homs.u < 70 },
   gulf:{ flag:'🌴', pc:15, sov:2, ok:s => s.corr < 55 },
-  eu:{ flag:'🇪🇺', pc:20, sov:1, ok:s => s.trust >= 45 && s.corr < 50, signReq:s => s.trust >= 45 && s.corr < 50 },
+  eu:{ flag:'🇪🇺', pc:20, sov:1, ok:s => s.trust >= 45 && s.corr < 50 && s.sov >= 30, signReq:s => s.trust >= 45 && s.corr < 50 && s.sov >= 30 },
   china:{ flag:'🇨🇳', pc:10, sov:5, ok:() => true },
   russia:{ flag:'🌾', pc:8, sov:5, ok:() => true },
 };
@@ -171,7 +182,7 @@ function newGame(seed, diff = 'learner', mission = null){
     v:6, diff, seed: seed ?? Math.floor(Math.random()*1e9), t:0,
     treasury: easy ? 70 : 40, reserves: easy ? 750 : 400, m2:190, official:110, parallel:125, infl:25,
     wage:3000, head:1.30, debt:6100, coupons:0,
-    pc: easy ? 70 : 50, trust:42, corr:58, sov:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
+    pc: easy ? 70 : 50, trust:42, corr:58, sov:60, sov0:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
     grant:0, repaired:0,
     policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
     res:{ oilCap:60, refinery:25, gas:7, phos:1, farm:1, offshore:null },
@@ -295,7 +306,12 @@ function step(state, dt = MONTH, policyOverride){
   };
   const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
   const fit = (wantTotal > capE ? capE / wantTotal : 1) * exportValue(s);
-  Object.entries(exportsWanted).forEach(([k, v]) => { if (v > 0.05) addU(k, v * fit); });
+  let grossX = 0;
+  Object.entries(exportsWanted).forEach(([k, v]) => { if (v > 0.05){ const got = v * fit; grossX += got; addU(k, got); } });
+  // Partners who own a piece of you take their share before you see a dollar of it. It scales
+  // with what you earn, so selling the country while poor is cheap and stays expensive forever.
+  const gripNow = grip(s);
+  if (gripNow > 0.02 && grossX > 1) addU('foreignCut', -grossX * gripNow * 0.20);
   s.clogged = wantTotal > capE ? wantTotal - capE : 0; s.exportWant = wantTotal; s.exportCap = capE;
   // --- dollars: transit, ports, investment ---
   const south = (s.provs.daraa.u + s.provs.quneitra.u) / 2;
@@ -349,10 +365,10 @@ function step(state, dt = MONTH, policyOverride){
   const tp = { base:45, decrees:(s.trustMod || 0), bread:{ full:6, partial:0, removed:-10 }[P.bread], fuel:{ full:4, partial:0, market:-6 }[P.fuel],
     pay:clamp((rw - s.expWage) * 0.6, -15, 15), power:(hrs - 6) * 1.2, prices:clamp(-(s.infl - 20) * 0.4, -15, 5),
     security:{ light:2, balanced:0, heavy:-6 }[P.security], tax:(P.tax === 'aggressive' ? -3 : 0), anger:-(nu - 45) * 0.5, debt:(s.treasury < -30 ? -5 : 0),
-    jobs:-(joblessNat(s) - 55) * 0.16, bar:-s.bar * 12, services:(s.health - 30) * 0.09 + (s.edu - 30) * 0.05 };
+    jobs:-(joblessNat(s) - 55) * 0.16, bar:-s.bar * 12, services:(s.health - 30) * 0.09 + (s.edu - 30) * 0.05, foreign:-gripNow * 16 };
   s.trustTarget = clamp(Object.values(tp).reduce((a, b) => a + b, 0), 0, 100);
   s.trust = clamp(s.trust + (s.trustTarget - s.trust) * relax(0.38, dt), 0, 100);
-  let dPC = 4 + (s.trust - 45) / 10 - (nu > 60 ? 3 : 0) + (P.security === 'heavy' ? 2 : 0) - (s.decrees.integrity ? 1 : 0);
+  let dPC = 4 + (s.trust - 45) / 10 - (nu > 60 ? 3 : 0) + (P.security === 'heavy' ? 2 : 0) - (s.decrees.integrity ? 1 : 0) - gripNow * 3.5;
   s.pc = clamp(s.pc + dPC * dt, 0, 200);
   const cT = 56 + clamp((25 - rw) * 0.8, -12, 20) + (P.crackdown ? -4 : 0) + (s.decrees.integrity ? -20 : 0) + (s.decrees.digitax ? -5 : 0) + (P.tax === 'aggressive' && rw < 25 ? 3 : 0);
   s.corr = clamp(s.corr + (cT - s.corr) * relax(0.22, dt), 5, 100);
@@ -374,13 +390,13 @@ function step(state, dt = MONTH, policyOverride){
   const reconB = P.recon * dt / s.parallel * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
   const privB = (s.trust > 40 ? (s.trust - 40) * s.cap * 0.0004 : 0) * dt;
   const totalDmg = PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) || 1;
-  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0 };
+  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0, foreign:0 };
   let wsum = 0, maxContagion = 0;
   PROVS.forEach(p => {
     const pv = s.provs[p.id], blackout = 24 - provHours(s, p.id);
     const parts = { trust:(50 - s.trust) * 0.4, pay:clamp((s.expWage - rw) * 0.5, -10, 15), power:blackout * 0.8 - 10,
       subsidies:{ full:-4, partial:0, removed:9 }[P.bread] + { full:-2, partial:0, market:5 }[P.fuel], security:{ light:5, balanced:0, heavy:-7 }[P.security],
-      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5 };
+      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5, foreign:gripNow * 8 };
     const tgt = clamp(p.base + Object.values(parts).reduce((a, b) => a + b, 0), 12, 100);
     let contagion = 0; p.nb.forEach(n => contagion += Math.max(0, s.provs[n].u - 60) * 0.06);
     maxContagion = Math.max(maxContagion, contagion);
@@ -480,6 +496,17 @@ const ACT = {
   wage(s, pct){ s.wage *= 1 + pct / 100; s.trust += pct / 10; s.log.push([s.t, 'wage', pct]); return true; },
   gift(s){ if (s.treasury < -100) return false; s.treasury -= 7; s.pc += 8; s.log.push([s.t, 'grantPop']); return true; },
   relief(s){ if (s.reserves < 40) return false; s.reserves -= 40; s.pc += 6; s.trust += 2; s.log.push([s.t, 'relief']); return true; },
+  // Buying the hook back out of your own mouth, at a worse price than they sold it to you.
+  // Clearing debt is worth a point per SOV_PER_USD; the loan that made it cost you far more.
+  repay(s, want){
+    const amt = Math.min(want, s.debt, Math.max(0, s.reserves - 300));
+    if (amt < 1) return false;
+    if (s.coupons) s.coupons = Math.max(0, s.coupons * ((s.debt - amt) / s.debt));
+    s.reserves -= amt; s.debt -= amt;
+    s.sov = Math.min(Math.max(s.sov, s.sov0 === undefined ? 60 : s.sov0), s.sov + amt / SOV_PER_USD);
+    s.log.push([s.t, 'repaid', Math.round(amt)]);
+    return true;
+  },
   invest(s, id){
     const x = INVEST[id]; if (s.reserves < x.usd || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'invest' && p.id === id)) return false;
     if (id === 'offshore' && s.res.offshore) return false;
@@ -545,8 +572,10 @@ function checkFail(s){
 
 function legacy(s){
   const nu = natUnrest(s);
-  // Two of the six are graded against what people now expect, not against 2027. Money in the
-  // bank and an honest ministry are facts; whether life feels good is always a comparison.
+  // Three of the six are graded against what people now expect, not against 2027. Money in the
+  // bank and an honest ministry are facts; whether life feels good is always a comparison —
+  // and so is independence. A wrecked country leaning on its neighbours is forgiven; a working
+  // one that still lets foreigners run its ports is not.
   const bar = s.bar || 0;
   const comp = {
     Stability: clamp(100 - nu - bar * 8, 0, 100),
@@ -554,7 +583,7 @@ function legacy(s){
     Reconstruction: clamp(s.repaired / 108 * 100 * 2.5, 0, 100),
     Institutions: clamp(100 - s.corr, 0, 100),
     Solvency: clamp(s.reserves / 1500 * 60 + (1 - s.debt / 15000) * 40, 0, 100),
-    Sovereignty: s.sov,
+    Sovereignty: clamp(s.sov - bar * 10, 0, 100),
   };
   const avg = Object.values(comp).reduce((a, b) => a + b, 0) / 6;
   const grade = avg >= 75 ? 'A' : avg >= 62 ? 'B' : avg >= 50 ? 'C' : avg >= 38 ? 'D' : 'F';
@@ -694,4 +723,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

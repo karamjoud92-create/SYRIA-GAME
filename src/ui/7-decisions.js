@@ -111,6 +111,21 @@ function decisionDeck(){
     }
   }
 
+  // 8. foreign partners have a grip, and there is money in the bank to loosen it. Only asked
+  //    once it actually bites (grip > 0) and only when the player can pay for it, like every
+  //    other question here — and it carries the highest weight, because it is a spiral.
+  if (S.debt > 0 && grip(S) > 0 && !decSkipped('sovBuy')){
+    const sov0 = S.sov0 === undefined ? 60 : S.sov0, room = Math.max(0, sov0 - S.sov);
+    const spare = Math.max(0, S.reserves - 300);
+    const amt = Math.min(S.debt, spare >= 1000 ? 1000 : 250);
+    if (room > 0 && amt >= 250 && spare >= amt){
+      out.push({ id:'sovBuy', icon:'\u{1F9ED}', weight:70, why:t('decSov'), title:t('repayTitle'), text:t('sovBiteLong'),
+        opts:[{ label:fill(t('decSovPay'), [usdM(amt)]), sub:t('decSovSub'),
+          chips:[`\u{1F3E6} ${usdM(amt)}`, `${t('independence')} +${Math.min(room, amt / SOV_PER_USD).toFixed(1)}`],
+          run:() => withEffects(t('repayTitle'), () => ACT.repay(S, amt)) }] });
+    }
+  }
+
   return out.sort((a, b) => b.weight - a.weight);
 }
 

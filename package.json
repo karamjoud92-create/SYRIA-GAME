@@ -14,7 +14,8 @@
     "econ": "node build.js && node tools/econ-check.mjs",
     "onboard": "node build.js && node tools/onboard-check.mjs",
     "guide": "node build.js && node tools/guide-check.mjs",
-    "decide": "node build.js && node tools/decide-check.mjs"
+    "decide": "node build.js && node tools/decide-check.mjs",
+    "indep": "node build.js && node tools/indep-check.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

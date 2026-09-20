@@ -106,6 +106,7 @@ const EFX_KEYS = [
   ['anger', s => natUnrest(s), 0.4, false, v => sign(v, 1)], ['power', s => nationalHours(s), 0.1, true, v => sign(v, 1) + (AR() ? 'س' : 'h')],
   ['poor', s => (s.cls || classes(s)).poor, 0.4, false, v => sign(v, 1) + '%'],
   ['edu', s => s.edu, 0.35, true, v => sign(v, 1)], ['health', s => s.health, 0.35, true, v => sign(v, 1)],
+  ['sov', s => s.sov, 0.5, true, v => sign(v, 0)],
   ['score', s => s.score, 0.2, true, v => sign(v, 1)],
 ];
 const EFX_ICON = { poor:'🧍' };
@@ -251,7 +252,7 @@ function renderHUD(P){
   const pop = UI.scoreDelta && Math.abs(UI.scoreDelta) >= 0.4 ? `<span class="spop ${UI.scoreDelta > 0 ? 'up' : 'down'}">${sign(UI.scoreDelta, 1)}</span>` : '';
   UI.scoreDelta = 0;
   return `<div class="turn">${ring}<div><div class="yr">${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div><div class="ss">${UI.speed ? '⏱️ ' + t(['', 'slow', 'normal', 'fastest'][UI.speed]) : '❚❚ ' + t('paused')}</div><div class="mbarwrap"><i class="${UI.speed ? 'run' : ''}" style="animation-duration:${SPEEDS[UI.speed] || 1}ms"></i></div></div></div>
-    <button class="scorebadge g-${g}" data-act="gloss" data-k="score" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
+    <button class="scorebadge g-${g}" data-act="showScore" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
       ${res('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
@@ -263,6 +264,7 @@ function renderHUD(P){
       ${res('anger', st ? Math.round(nu) : fog(nu, 5), nu, natUnrest(P), false, sign(natUnrest(P) - nu, 1))}
       ${res('jobs', (st ? Math.round(jb) : fog(jb, 5)) + '%', jb, joblessNat(P), false, sign(joblessNat(P) - jb, 1))}
       ${res('power', pw.toFixed(1) + (AR() ? 'س' : 'h'), pw, nationalHours(P), true, sign(nationalHours(P) - pw, 1))}
+      ${res('sov', Math.round(S.sov), S.sov, P.sov, true, sign(P.sov - S.sov, 1))}
     </div>
     <span class="spacer"></span>
     <button class="iconbtn" data-act="mute" aria-label="${SFX.on ? t('soundOff') : t('soundOn')}" title="${SFX.on ? t('soundOff') : t('soundOn')}">${SFX.on ? '🔊' : '🔇'}</button>
@@ -383,6 +385,16 @@ function renderMoneyActions(){
   h += `<div class="group"><h3>⭐ ${t('buyTitle')}</h3><p>${t('buyText')}</p>
     <div class="dcard"><span class="gem">⭐ +8</span><h4>${t('giftTitle')}</h4><div class="row spread"><span class="chip">💵 ${bn(7)}</span><button class="btn primary" data-act="grantPop" ${giftCd ? 'disabled' : ''}>${t('choose')}</button></div>${giftCd ? `<div class="why">${cdTxt('lastGift')}</div>` : ''}</div>
     <div class="dcard"><span class="gem">⭐ +6</span><h4>${t('reliefTitle')}</h4><div class="row spread"><div class="row"><span class="chip">🏦 ${usdM(40)}</span><span class="chip up">${fill(CHIP[LANG].trust, ['+2'])}</span></div><button class="btn primary" data-act="relief" ${relCd || S.reserves < 40 ? 'disabled' : ''}>${t('choose')}</button></div>${relCd ? `<div class="why">${cdTxt('lastRelief')}</div>` : ''}</div></div>`;
+  {
+    const sov0 = S.sov0 === undefined ? 60 : S.sov0, room = Math.max(0, sov0 - S.sov);
+    const spare = Math.max(0, S.reserves - 300), amts = [250, 1000].filter(a => a <= S.debt);
+    const why = S.debt <= 0 ? t('repayNone') : spare < amts[0] ? t('repayNeed') : '';
+    h += `<div class="group"><h3>\u{1F9ED} ${t('repayTitle')}</h3><p>${fill(t('repayText'), [usdM(S.debt), usdM(SOV_PER_USD)])}</p>
+      <div class="dcard"><h4>${t('debtLeft')}: ${usdM(S.debt)}</h4>
+      <div class="row spread"><div class="row">${room > 0 ? `<span class="chip up">${fill(t('buysBack'), [Math.min(room, 250 / SOV_PER_USD).toFixed(1)])}</span>` : `<span class="chip">${t('repayDone')}</span>`}</div>
+      <div class="row">${amts.map(a => `<button class="btn primary" data-act="repay" data-v="${a}" ${why || a > spare ? 'disabled' : ''}>${usdM(a)}</button>`).join('')}</div></div>
+      ${why ? `<div class="why">${esc(why)}</div>` : ''}</div></div>`;
+  }
   h += `<div class="group"><h3>🌍 ${t('abroadTitle')}</h3><p>${t('abroadText')}${S.grant > 0 ? ' ' + fill(t('grantOnHand'), [usdM(S.grant)]) : ''}</p>` + FACILITIES.map(f => {
     const tx = L2(FAC_TXT[f.id]), st = S.facilities[f.id];
     let why = ''; if (!st){ if (f.pc > S.pc) why = fill(t('needsInfluence'), [f.pc]); else if (f.signReq && !f.signReq(S)) why = f.id === 'gulf' ? (A ? 'يحتاج فساداً أقل من 50' : 'Needs corruption below 50') : (A ? 'يحتاج ثقة 40 أو أكثر' : 'Needs trust of 40+'); }
@@ -577,13 +589,13 @@ function drawerBody(id){
     case 'trade': return UI.sub.trade === 'ports' ? renderTradePorts() : UI.sub.trade === 'partners' ? renderTradePartners() : renderTradeResources();
     case 'people': return UI.sub.people === 'services' ? renderServices() : UI.sub.people === 'pop' ? renderPopulation() : renderPeople();
     case 'chains': return renderChains();
-    case 'progress': return UI.sub.progress === 'cycles' ? renderProgressCycles() : UI.sub.progress === 'news' ? renderNews() : UI.sub.progress === 'charts' ? renderProgressCharts() : renderWhyPanel();
+    case 'progress': return UI.sub.progress === 'score' ? renderScorePanel() : UI.sub.progress === 'cycles' ? renderProgressCycles() : UI.sub.progress === 'news' ? renderNews() : UI.sub.progress === 'charts' ? renderProgressCharts() : renderWhyPanel();
   }
 }
 function renderDrawer(){
   const d = DRAWERS5.find(x => x[0] === UI.drawer); if (!d) return '';
   const sub = d[0] === 'decrees' ? fill(t('decreesIntro'), [Math.round(S.pc)]) : t(d[3]);
-  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['score','subScore'],['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
   return `<aside class="drawer"><div class="head"><span class="dic" aria-hidden="true">${d[1]}</span><h2>${t(d[2])}</h2><button class="close" data-act="closeDrawer" aria-label="${t('close')}">✕</button></div>
     <div class="sub">${sub}</div>
     ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
@@ -648,6 +660,33 @@ function render(force){
   $('#dock').innerHTML = renderDock(); renderToasts(); renderEffect();
 }
 
+// ---------- what the score is made of ----------
+// Independence used to be a chip on a contract and then a number you saw once every five
+// years. It is a tab you can open any month now, next to the other five things it averages.
+const BAR_GRADED = { Stability:1, Livelihoods:1, Sovereignty:1 };
+function scoresBlock(){
+  const Lg = legacy(S), N = LEGACY_TXT[LANG].names, bar = S.bar || 0;
+  return `<div class="scores">${Object.entries(Lg.comp).map(([k, v]) => {
+    const note = BAR_GRADED[k] && bar > 0.05 ? ` <span class="muted" style="font-size:11px;font-weight:400">· ${t('vsBar')}</span>` : '';
+    return `<div><div class="row spread"><span>${N[k]}${note}</span><b>${Math.round(v)}</b></div><div class="bar"><i style="width:${clamp(v, 0, 100)}%;background:var(--wheat)"></i></div></div>`;
+  }).join('')}</div>`;
+}
+function renderScorePanel(){
+  const Lg = legacy(S), g = Lg.grade, gp = grip(S), G = L2(GLOSS.sov);
+  const sov0 = S.sov0 === undefined ? 60 : S.sov0, room = Math.max(0, sov0 - S.sov);
+  return `<div class="row" style="align-items:center;gap:14px">
+      <span class="scorebadge g-${g}" style="box-shadow:none;padding:0"><span class="sg">${g}</span></span>
+      <span><span style="font-size:26px;font-weight:800;display:block;line-height:1">${Math.round(Lg.avg)}</span><span class="muted" style="font-size:12.5px">${t('score')}</span></span>
+    </div>
+    <h3 class="bh">\u{1F3C6} ${t('scoreParts')}</h3>${scoresBlock()}
+    <p class="muted" style="font-size:13px">${t('scoreAvg')}</p>
+    <div class="dcard"><h4>\u{1F9ED} ${esc(G.name)} — ${Math.round(S.sov)}</h4>
+      <p class="kid">${esc(G.what)}</p>
+      ${gp > 0.01 ? `<p class="warnbox">⚠️ ${t('sovBite')}</p>` : ''}
+      <div class="row" style="margin-top:10px"><button class="btn" data-act="gloss" data-k="sov">${t('whatIsThis')}</button>
+      ${S.debt > 0 && room > 0 ? `<button class="btn primary" data-act="drawer" data-v="money">${t('repayTitle')} →</button>` : ''}</div></div>`;
+}
+
 // ---------- milestone, crisis, endings ----------
 function showStage(st){
   const gifts = (STAGE_GIFTS[st] || []).map(k => t(k));
@@ -690,9 +729,9 @@ document.addEventListener('pointerup', () => { UI.pdown = false; if (UI.dirty &&
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
-  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv'];
+  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore'];
   if (S && S.over && !always.includes(a)) return;
-  if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed'].includes(a)) sfx('tap');
+  if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed','showScore'].includes(a)) sfx('tap');
   const T = LANG === 'ar';
   switch(a){
     case 'mute': sfxToggle(); break;
@@ -700,6 +739,8 @@ document.addEventListener('click', ev => {
     case 'speed': setSpeed(+v); if (+v > 0) guideTick('start'); break;
     case 'drawer': UI.drawer = UI.drawer === v ? null : v; if (v === 'progress') UI.newCycle = false; if (v === 'money') guideTick('money'); if (UI.drawer && isPhone()) UI.provOpen = false; break;
     case 'closeDrawer': UI.drawer = null; break;
+    case 'showScore': if (!isOpen('progress')) return gloss('score');   // the panel is not hers yet
+      UI.drawer = 'progress'; UI.sub.progress = 'score'; if (isPhone()) UI.provOpen = false; break;
     case 'closeProv': UI.provOpen = false; break;
     case 'subtab': UI.sub[b.dataset.d] = v; break;
     case 'adv': if (UI.advOpen && UI.adv === v) UI.advOpen = false; else { UI.adv = v; UI.advOpen = true; } break;
@@ -717,6 +758,7 @@ document.addEventListener('click', ev => {
     case 'wage': if (!cooldown('lastRaise', 6)) withEffects(`${t('raiseTitle')} +${v}%`, () => { ACT.wage(S, +v); S.flags.lastRaise = S.t; return true; }); break;
     case 'grantPop': if (!cooldown('lastGift', 6)) withEffects(t('giftTitle'), () => { const ok = ACT.gift(S); if (ok) S.flags.lastGift = S.t; return ok; }); break;
     case 'relief': if (!cooldown('lastRelief', 6)) withEffects(t('reliefTitle'), () => { const ok = ACT.relief(S); if (ok) S.flags.lastRelief = S.t; return ok; }); break;
+    case 'repay': withEffects(t('repayTitle'), () => ACT.repay(S, +v)) && sfx('coin'); break;
     case 'invest': withEffects(L2(INV_TXT[id])[0], () => ACT.invest(S, id)); break;
     case 'svc': withEffects(svcLabel(id), () => ACT.service(S, id)); break;
     case 'portUp': withEffects(`${t('upgrade')}: ${PORT_NAME[LANG][id]}`, () => ACT.portUpgrade(S, id)); break;
