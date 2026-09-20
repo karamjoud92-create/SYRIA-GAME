@@ -127,6 +127,24 @@ const IND = {
   packaging:{ exp:5, prov:['aleppo','damascus'], valueUp:0.06 },        // the same goods, worth more abroad
 };
 const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
+// Nothing has a ceiling any more. Every sector, berth and grid can be pushed further; each level
+// costs about 40% more than the last while what it returns stays linear, so growth is paid for
+// out of growth and the wall is your economy rather than a number in a table.
+const invLvl = (s, id) => (s.invests && s.invests[id]) || 0;
+const investCost = (s, id) => Math.round(INVEST[id].usd * Math.pow(1.4, invLvl(s, id)));
+// The country's own level, the way a town hall has one: it only ever goes up, and it counts the
+// things a president actually built rather than how the score happens to be reading today.
+function levelPoints(s){
+  const ind = Object.values(s.ind || {}).reduce((a, b) => a + b, 0);
+  const inv = Object.values(s.invests || {}).reduce((a, b) => a + b, 0);
+  const svc = Object.values(s.svc || {}).reduce((a, b) => a + b, 0);
+  const ports = (s.ports.latakia.lvl - 1) + (s.ports.tartus.lvl - 1);
+  const built = PROVS.filter(p => s.provs[p.id].project === true).length;
+  return ind * 2.2 + inv * 1.8 + svc * 0.5 + ports * 2.5 + built * 2
+    + Math.max(0, (s.score || 0) - 35) * 0.5 + Math.max(0, s.mw - 2300) / 900 + (s.repaired || 0) * 0.25;
+}
+// Square root, so every level asks more of you than the last one did.
+const countryLevel = s => 1 + Math.floor(Math.sqrt(Math.max(0, levelPoints(s)) / 1.2));
 // Jobs a province gets from the sectors: full weight where they are built, a share elsewhere.
 function indJobsAt(s, id){
   let j = 0;   // jobs are a count; what it is a share OF depends on how many people there are
@@ -210,7 +228,7 @@ function newGame(seed, diff = 'learner', mission = null){
     treasury: easy ? 70 : 40, reserves: easy ? 750 : 400, m2:190, official:110, parallel:125, infl:25,
     wage:3000, head:1.30, debt:6100, coupons:0,
     pc: easy ? 70 : 50, trust:42, corr:58, sov:60, sov0:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
-    grant:0, repaired:0,
+    grant:0, repaired:0, lvl:1, chapter:1,
     policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
     res:{ oilCap:60, refinery:14, gas:7, phos:1, farm:1, offshore:null },
     ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0, logistics:0, coldchain:0, packaging:0 },
@@ -300,7 +318,7 @@ function step(state, dt = MONTH, policyOverride){
     if (item.kind === 'mw'){ s.mw += item.mw; if (item.mw >= 50) notes.push(['gridDone', Math.round(item.mw)]); }
     if (item.kind === 'proj') finishProject(s, item, notes);
     if (item.kind === 'invest') finishInvest(s, item, notes);
-    if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl = Math.min(3, p.lvl + 1); notes.push(['portDone', item.id, p.lvl]); }
+    if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl += 1; notes.push(['portDone', item.id, p.lvl]); }
     if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); }
     return false;
   });
@@ -490,6 +508,7 @@ function step(state, dt = MONTH, policyOverride){
   s.cls = classes(s);
   s.t = endT;
   s.score = legacy(s).avg;
+  s.lvl = Math.max(s.lvl || 1, countryLevel(s));
   s.last = { ledger:L, notes, dt, privB:privB / dt, maxContagion, clogged:s.clogged, oil,
     why:{ fx, pct:pct * 100, trustParts:tp, angerParts:ap } };
   return s;
@@ -578,10 +597,10 @@ const ACT = {
     return true;
   },
   invest(s, id){
-    const x = INVEST[id]; if (s.reserves < x.usd || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'invest' && p.id === id)) return false;
-    if (id === 'offshore' && s.res.offshore) return false;
-    if (x.max && (s.invests[id] || 0) >= x.max) return false;
-    s.reserves -= x.usd; s.pipe.push({ due:s.t + x.months, kind:'invest', id }); s.invests[id] = (s.invests[id] || 0) + 1;
+    const x = INVEST[id], cost = investCost(s, id);
+    if (s.reserves < cost || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'invest' && p.id === id)) return false;
+    if (id === 'offshore' && s.res.offshore) return false;   // one gamble, not a ladder
+    s.reserves -= cost; s.pipe.push({ due:s.t + x.months, kind:'invest', id }); s.invests[id] = (s.invests[id] || 0) + 1;
     if (id === 'offshore') s.res.offshore = 'drilling';
     s.log.push([s.t, 'investStart', id, x.months]); return true;
   },
@@ -799,4 +818,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, svcRoom, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

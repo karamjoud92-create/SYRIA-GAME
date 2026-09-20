@@ -257,6 +257,28 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(lira.end < lira.start, `${tag}: and twenty years of it ends stronger than it started ($${lira.start} -> $${lira.end.toFixed(0)})`);
   ok(lira.peak < lira.start * 1.35, `${tag}: without ever running away first (worst was $${lira.peak.toFixed(0)})`);
 
+  // 15. nothing has a ceiling, and twenty years is a chapter rather than a full stop
+  const grow = await page.evaluate(() => {
+    let s = newGame(7, 'learner'); s.reserves = 9e9; s.treasury = 9e6;
+    const c1 = investCost(s, 'textiles');
+    for (let i = 0; i < 8; i++){ ACT.invest(s, 'textiles'); for (let j = 0; j < 7; j++) s = step(s); s.reserves = 9e9; }
+    for (let i = 0; i < 8; i++){ ACT.portUpgrade(s, 'latakia'); for (let j = 0; j < 9; j++) s = step(s); s.reserves = 9e9; }
+    return { firstCost: c1, laterCost: investCost(s, 'textiles'), mills: s.invests.textiles, berth: s.ports.latakia.lvl, lvl: s.lvl };
+  });
+  ok(grow.mills > 3 && grow.berth > 3,
+    `${tag}: factories and berths have no ceiling (${grow.mills} mills, berth level ${grow.berth})`);
+  ok(grow.laterCost > grow.firstCost * 3,
+    `${tag}: and every one costs more than the last ($${grow.firstCost}M -> $${grow.laterCost}M)`);
+  ok(grow.lvl > 5, `${tag}: building raises the country's level (level ${grow.lvl})`);
+  const chap = await page.evaluate(() => {
+    const before = { chapter: S.chapter, over: S.over };
+    S.over = { won: true, chapter: S.chapter || 1 }; nextChapter();
+    return { before, chapter: S.chapter, over: S.over, chapters: (S.chapters || []).length, bar: S.bar };
+  });
+  ok(chap.chapter === 2 && chap.over === null && chap.chapters === 1,
+    `${tag}: twenty years ends a chapter and the same country carries on (now chapter ${chap.chapter})`);
+  ok(chap.bar >= 0.25, `${tag}: with more expected of it than before (bar ${chap.bar.toFixed(2)})`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

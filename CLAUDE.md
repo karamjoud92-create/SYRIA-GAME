@@ -129,6 +129,19 @@ fast: a player should be able to think, and should not have to wait two years to
   counts when both entries name each other with matching halves, so nobody can grant themselves one,
   and `PACT_MAX` caps how many at once. This needs no server change: the handshake rides on the
   scoreboard entry that already travels.
+- **Levels and chapters — nothing has a ceiling.** Every sector, berth and service is a ladder:
+  `investCost(s, id)` and `portCost(lvl)` charge about 40% more for each level while what a level
+  returns stays linear, so growth is paid for out of growth and the wall is the economy rather than
+  a number in a table. `countryLevel(s)` is the headline number in the corner where the year used to
+  be — a square root of `levelPoints(s)`, so every level asks more than the last, and `s.lvl`
+  ratchets so it is a record of what was built. Twenty years is a **chapter**, not an end:
+  `nextChapter()` records the grade, carries the same Syria forward and raises the floor of the bar,
+  so the game never finishes in one sitting. Watch for caps hiding in two places — the port cap was
+  in `ACT.portUpgrade` *and* in the pipe handler, so paying for a fourth berth took the money and
+  gave nothing.
+- **Nothing may fail silently.** `withEffects` toasts when an action is refused. A cap the player
+  cannot see is a dead click: the services cap (`svcRoom`) sat only in the engine, so the button
+  stayed live and nothing happened. Any new refusal needs a reason on the control too.
 - **Live play** (`LIVE_MS_PER_MONTH`, `catchUp()`, `showAway()` in `src/ui/5-game.js`). A game started
   in live mode runs on the wall clock: one game month per real hour, recorded in `S.realAt`. On open,
   `catchUp()` steps the months owed, collects what finished, and `showAway()` reports it. **Crises that

@@ -69,7 +69,7 @@ function catchUp(){
     S.last.notes.forEach(n => { notes.push(n); S.log.push([S.t, ...n]); });
     S.history.push(snap(S)); if (S.history.length > 480) S.history.shift();
     fail = checkFail(S); if (fail){ S.over = { fail:fail.id }; break; }
-    if (S.t >= GAME_MONTHS && !S.mission){ S.over = { won:true }; break; }
+    if (!S.mission && S.t >= GAME_MONTHS * (S.chapter || 1)){ S.over = { won:true, chapter:S.chapter || 1 }; break; }
     if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; break; }
     if (queued.length < LIVE_QUEUE_MAX){ const id = drawEvent(S); if (id) queued.push(id); }
   }
@@ -122,6 +122,7 @@ function advance(){
   [['cash', s => s.treasury, 1.5, true], ['usd', s => s.reserves, 12, true], ['fx', s => s.parallel, 1.5, false], ['pay', s => realWage(s), 0.3, true], ['trust', s => s.trust, 0.35, true], ['anger', s => natUnrest(s), 0.35, false], ['power', s => nationalHours(s), 0.08, true]]
     .forEach(([k, g, thr, goodUp]) => { const d = g(S) - g(prev); if (Math.abs(d) >= thr) UI.flash[k] = (d > 0) === goodUp ? 'up' : 'down'; });
   S.last.notes.forEach(n => { const k = n[0]; if (['projDone','investDone','portDone','gridDone'].includes(k)) sfx('done'); else if (k === 'dealOff' || k === 'facFrozen' || (k === 'offshore' && !n[1])) sfx('bad'); else if (k === 'offshore' || k === 'dealOn') sfx('cycle'); else if (k === 'grant') sfx('coin'); });
+  if ((S.lvl || 1) > (prev.lvl || 1)){ toast('⭐ ' + fill(t('levelUp'), [S.lvl]), 'year'); sfx('cycle'); }
   if (S.score - prevScore >= 0.4) sfx('up'); else if (S.score - prevScore <= -0.4) sfx('down'); else sfx('tick');
   S.last.notes.forEach(n => { S.log.push([S.t, ...n]); toast(noteText([S.t, ...n])); });
   if (S.log.length > 80) S.log = S.log.slice(-80);
@@ -133,7 +134,7 @@ function advance(){
   if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
   if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
-  if (!S.mission && S.t >= GAME_MONTHS){ S.over = { won:true }; setSpeed(0); persist(); render(true); sfx('year'); return showLegacy(); }
+  if (!S.mission && S.t >= GAME_MONTHS * (S.chapter || 1)){ S.over = { won:true, chapter:S.chapter || 1 }; setSpeed(0); persist(); render(true); sfx('year'); return showLegacy(); }
   if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('year'); return showMilestone(); }
   if (UI.queue && UI.queue.length){ persist(); render(true); sfx('cycle'); const [, id] = UI.queue.shift(); return showCycle(id, true); }
   S.event = drawEvent(S);
@@ -296,7 +297,12 @@ function renderHUD(P){
   const sc = S.score, P6 = P, dsc = P6.score - sc, g = gradeOf(sc);
   const pop = UI.scoreDelta && Math.abs(UI.scoreDelta) >= 0.4 ? `<span class="spop ${UI.scoreDelta > 0 ? 'up' : 'down'}">${sign(UI.scoreDelta, 1)}</span>` : '';
   UI.scoreDelta = 0;
-  return `<div class="turn">${ring}<div><div class="yr">${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div><div class="ss">${UI.speed ? '⏱️ ' + t(['', 'slow', 'normal', 'fastest'][UI.speed]) : '❚❚ ' + t('paused')}</div><div class="mbarwrap"><i class="${UI.speed ? 'run' : ''}" style="animation-duration:${SPEEDS[UI.speed] || 1}ms"></i></div></div></div>
+  const lv = S.lvl || 1, nextAt = Math.pow(lv, 2) * 1.2, pts = levelPoints(S), prevAt = Math.pow(lv - 1, 2) * 1.2;
+  const toNext = clamp((pts - prevAt) / Math.max(1, nextAt - prevAt) * 100, 0, 100);
+  return `<button class="turn lvl" data-act="showScore" aria-label="${fill(t('levelN'), [lv])}">${ring}<div>
+      <div class="yr">${fill(t('levelN'), [lv])}</div>
+      <div class="ss">${S.chapter > 1 ? fill(t('chapterN'), [S.chapter]) + ' · ' : ''}${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div>
+      <div class="mbarwrap lvlbar" title="${t('toNextLevel')}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
     <button class="scorebadge g-${g}" data-act="showScore" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
@@ -748,6 +754,21 @@ function startScreen(){
   <p class="muted" style="font-size:13px;margin:14px 0 0">${t('disclaimer')}</p>`);
 }
 
+// ---------- chapters ----------
+// Twenty years is where history has its say, not where the country stops. The verdict stands,
+// the grade is recorded, and then the same Syria carries on with more expected of it.
+function nextChapter(){
+  const lg = legacy(S);
+  S.chapters = (S.chapters || []).concat([{ n:S.chapter || 1, score:Math.round(lg.avg), grade:lg.grade, lvl:S.lvl || 1 }]);
+  S.chapter = (S.chapter || 1) + 1;
+  S.over = null;
+  // What counted as good enough last chapter is the floor of this one.
+  S.bar = clamp(Math.max(S.bar || 0, 0.25 + (S.chapter - 2) * 0.12), 0, 1);
+  S.pending = []; if (S.live) S.realAt = Date.now();
+  persist(); closeModal(); render(true); setSpeed(UI.speed);
+  toast('\u{1F4D6} ' + fill(t('chapterStart'), [S.chapter]), 'year'); sfx('cycle');
+}
+
 // ---------- coming back to a country that kept running ----------
 const liveLeft = () => Math.max(0, LIVE_MS_PER_MONTH - (Date.now() - (S.realAt || Date.now())));
 function liveLeftTxt(){
@@ -824,7 +845,7 @@ document.addEventListener('pointerup', () => { UI.pdown = false; if (UI.dirty &&
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
-  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore','awayGo','livemode'];
+  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore','awayGo','livemode','nextChapter'];
   if (S && S.over && !always.includes(a)) return;
   if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed','showScore'].includes(a)) sfx('tap');
   const T = LANG === 'ar';
@@ -835,6 +856,7 @@ document.addEventListener('click', ev => {
     case 'drawer': UI.drawer = UI.drawer === v ? null : v; if (v === 'progress') UI.newCycle = false; if (v === 'money') guideTick('money'); if (UI.drawer && isPhone()) UI.provOpen = false; break;
     case 'closeDrawer': UI.drawer = null; break;
     case 'awayGo': return nextPending();
+    case 'nextChapter': return nextChapter();
     case 'livemode': UI.live = v === 'live'; return startScreen();
     case 'showScore': if (!isOpen('progress')) return gloss('score');   // the panel is not hers yet
       UI.drawer = 'progress'; UI.sub.progress = 'score'; if (isPhone()) UI.provOpen = false; break;
