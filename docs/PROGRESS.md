@@ -22,7 +22,7 @@ paste the printed address into 🏆 → ⚙️ in the game. See `worker/README.m
 
 ## What the game is now
 
-A bilingual country-management game. You are president of post-war Syria from 2027. Time runs month by
+A bilingual country-management game. You are president of post-war Syria for 240 months. Time runs month by
 month on a slow clock; a legacy score (0–100, A–F) moves every month. The through-line is **systems**:
 nothing you touch has one effect.
 
@@ -103,7 +103,7 @@ not come free. Without this the builder treasury ran to 5,010bn — the same bro
 `fxSlack` gives intervention diminishing returns: selling dollars can stop a currency falling, it cannot
 make it permanently strong. Without it the lira could be pushed to 60 and `realWage` bought score.
 
-Measured over 8 seeds × 20 years, the window is score-neutral at $50M and $150M and costs ~7 points at
+Measured over 8 seeds × 240 months, the window is score-neutral at $50M and $150M and costs ~7 points at
 $400M. It is a real trade-off — lira now, exports later — not a button.
 
 **The caveat, stated plainly.** This moved `builder` on Learner from 73.1 avg / 0-in-8 A-grades to
