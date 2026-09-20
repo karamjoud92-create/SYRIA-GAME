@@ -144,7 +144,11 @@ function tourismIncome(s){
   const n = indLvl(s, 'tourism'); if (!n) return 0;
   return 18 * n * clamp(1.25 - natUnrest(s) / 55, 0, 1.1) * clamp(nationalHours(s) / 14, 0.3, 1);
 }
-function industryExports(s){ let e = 0; Object.keys(IND).forEach(k => e += IND[k].exp * indLvl(s, k)); return e; }
+// A workshop with no power is a shed. Diesel keeps a fraction of it going; a full shift needs
+// the grid. Extraction is deliberately not in here — a wellhead runs on its own power, which is
+// exactly why pumping oil survives a blackout and making things does not. Same shape as tourism.
+const industryPower = s => clamp(nationalHours(s) / 14, 0.2, 1);
+function industryExports(s){ let e = 0; Object.keys(IND).forEach(k => e += IND[k].exp * indLvl(s, k)); return e * industryPower(s); }
 const PARTNERS = {
   turkey:{ flag:'🇹🇷', pc:15, sov:1, ok:s => s.provs.aleppo.u < 65 && s.provs.idlib.u < 65 },
   jordan:{ flag:'🇯🇴', pc:10, sov:0, ok:s => s.provs.daraa.u < 65 },
@@ -309,7 +313,7 @@ function step(state, dt = MONTH, policyOverride){
     phos: (35 * (1 - s.provs.homs.u / 150) * s.res.phos * (s.flags.phosConcession ? 0.6 : 1) + (built(s,'homs') ? PROJECTS.homs.phosphate * (1 - projLeak(s,'homs')) : 0)) * (dealOn(s, 'china') ? 0.7 : 1),
     oilExport: oil.exp * 1.8 * euMult,
     farm: 10 * s.res.farm * euMult * clamp(1.3 - (s.provs.hama.u + s.provs.idlib.u + s.provs.hasakeh.u) / 300, 0.4, 1),
-    exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * (dealOn(s, 'turkey') ? 1.15 : 1) : 0,
+    exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * (dealOn(s, 'turkey') ? 1.15 : 1) * industryPower(s) : 0,
     industry: industryExports(s) * euMult * (dealOn(s, 'turkey') ? 1.15 : 1),
   };
   const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
@@ -333,7 +337,7 @@ function step(state, dt = MONTH, policyOverride){
   if (dealOn(s, 'eu')) addU('euGrant', 30);
   if (s.cap > 20) addU('imports', -(s.cap - 20) * 1.4);
   // --- dollars: buying food and fuel ---
-  let wheatCut = indLvl(s, 'food') * IND.food.wheatCut; ['hama','hasakeh','raqqa'].forEach(k => { if (built(s, k)) wheatCut += PROJECTS[k].wheat * (1 - projLeak(s, k)); });
+  let wheatCut = indLvl(s, 'food') * IND.food.wheatCut * industryPower(s); ['hama','hasakeh','raqqa'].forEach(k => { if (built(s, k)) wheatCut += PROJECTS[k].wheat * (1 - projLeak(s, k)); });
   const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil ? 2.1 : 1;
   const ez = s.diff === 'learner' ? 0.88 : 1;
   const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) - wheatCut);
@@ -734,4 +738,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

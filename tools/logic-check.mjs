@@ -73,6 +73,22 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
     `${tag}: ten calls in one instant land once each (gift ${cd.gift}, raise ${cd.wage}, relief ${cd.relief})`);
   ok(cd.returns, `${tag}: and they come back six months later`);
 
+  // 5. "Keep the lights on so workshops can run" — the jobs glossary says it, so it must be true.
+  //    Extraction is meant to shrug a blackout off; making things is not.
+  const pw = await page.evaluate(() => {
+    const run = mw => { let s = newGame(7, 'learner');
+      s.ind = { textiles:3, food:3, pharma:3, cement:3, telecom:3, tourism:0, logistics:3, coldchain:3, packaging:3 };
+      s.mw = mw; s.reserves = 3000;
+      for (let i = 0; i < 24; i++) s = step(s);
+      const g = k => (s.last.ledger.usd.find(r => r[0] === k) || [0, 0])[1] / s.last.dt;
+      return { h: nationalHours(s), ind: g('industry'), oil: g('oilExport') + g('phos') + g('farm') }; };
+    return { lit: run(9000), dark: run(900) };
+  });
+  ok(pw.dark.ind < pw.lit.ind * 0.4,
+    `${tag}: the factories stop in the dark ($${pw.lit.ind.toFixed(0)}M at ${pw.lit.h.toFixed(1)}h -> $${pw.dark.ind.toFixed(0)}M at ${pw.dark.h.toFixed(1)}h)`);
+  ok(pw.dark.oil > pw.lit.oil * 0.8,
+    `${tag}: but a wellhead runs on its own power ($${pw.lit.oil.toFixed(0)}M -> $${pw.dark.oil.toFixed(0)}M)`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }
