@@ -29,8 +29,9 @@ another player's country.
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
-- CI (`.github/workflows/ci.yml`) runs `npm run check` **and all six browser suites on every branch and
-  pull request**, and only publishes to Pages from the default branch once both are green. Before this it
+- CI (`.github/workflows/ci.yml`) runs `npm run check` **and all seven browser suites, the dead-end audit
+  included, on every branch and pull request**, and only publishes to Pages from the default branch once both
+  are green. Before this it
   ran `build.js` and the scoreboard test on the default branch alone, so nothing else had ever run in CI.
 - `npm run levels` → the progression in a real browser: the clock is a level and not a year, the Build panel
   opens at its level with the rest locked, an upgrade costs more the second time, a trade route widens, the medal

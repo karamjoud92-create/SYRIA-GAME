@@ -59,6 +59,8 @@ jobs:
         run: node tools/levels-check.mjs
       - name: Sectors, factories and work
         run: node tools/econ-check.mjs
+      - name: Dead-end sweep — every level, every panel, both languages, phone and desktop
+        run: node tools/audit.mjs
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

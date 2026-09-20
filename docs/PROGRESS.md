@@ -67,8 +67,9 @@ Built in this session, in order:
 15. **The networks are on the map.** Roads between neighbouring provinces that thicken as you build them, a
    railway that lays one more line per level, and markers at the ports and airports. The four networks with no
    geography are counted in the legend instead of being faked as a colour.
-16. **CI actually runs the tests.** `npm run check` plus all six browser suites, on every branch and pull
-   request; Pages only publishes from the default branch once both are green.
+16. **CI actually runs the tests.** `npm run check` plus all seven browser suites — the dead-end audit
+   included — on every branch and pull request; Pages only publishes from the default branch once both are
+   green.
 
 17. **Nothing is silently absent any more.** A 🔒 button in the dock lists every panel, map layer, policy
    dial and feature still to come, grouped by the level that opens it. This was reported as "the Progress
