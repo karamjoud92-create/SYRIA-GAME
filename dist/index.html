@@ -662,9 +662,12 @@ const PARTNERS = {
 const PORT_UPGRADE = { usd:60, months:8 };
 // What a state is actually for. Each level is a wave of buildings, not one building.
 const SERVICES = {
-  schools:{ usd:16, syp:3, months:4, per:0.55, run:0.5 },
-  clinics:{ usd:24, syp:3, months:5, per:0.42, run:0.8, runUsd:4 },
-  unis:{ usd:52, syp:4, months:10, per:0.16, run:1.2, runUsd:3, req:s => s.edu >= 42, reqKey:'needsEdu' },
+  // Upkeep used to be 23.6bn a half-year at full coverage: more than the entire public payroll
+  // and more than every lira of tax and customs put together. Staffing your schools and clinics
+  // cost the player score. Real states spend something like a fifth of the budget here.
+  schools:{ usd:16, syp:3, months:4, per:0.55, run:0.18 },
+  clinics:{ usd:24, syp:3, months:5, per:0.42, run:0.30, runUsd:2.5 },
+  unis:{ usd:52, syp:4, months:10, per:0.16, run:0.45, runUsd:2, req:s => s.edu >= 42, reqKey:'needsEdu' },
 };
 const svcNeed = (s, k) => Math.max(1, Math.round(s.popM * SERVICES[k].per));
 const svcCover = (s, k) => clamp(((s.svc && s.svc[k]) || 0) / svcNeed(s, k), 0, 1.25);

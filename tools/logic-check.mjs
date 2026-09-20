@@ -177,6 +177,26 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(inv.iJob > inv.xJob * 2,
     `${tag}: and industry is what employs people (${inv.iJob.toFixed(1)}pp of unemployment vs ${inv.xJob.toFixed(1)}pp)`);
 
+  // 11. "What a state is actually for" — the comment above SERVICES. Building schools and
+  //     clinics to need used to LOWER your score, because upkeep at full coverage cost more
+  //     than every lira of tax and customs put together.
+  const sv = await page.evaluate(() => {
+    const play = on => { let s = newGame(7, 'learner'); s.reserves = 6000; s.treasury = 600;
+      for (let i = 0; i < 180; i++){ const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive'; P.crackdown = true;
+        P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 20 ? 10 : 0;
+        if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
+        if (on && i % 4 === 0) for (const k of ['schools','clinics','unis'])
+          if (((s.svc && s.svc[k]) || 0) < svcNeed(s, k)) ACT.service(s, k);
+        s = step(s); }
+      const l = k => (s.last.ledger.syp.find(r => r[0] === k) || [0, 0])[1] / s.last.dt;
+      return { score: s.score, edu: s.edu, health: s.health, upkeep: -l('services'), tax: l('taxes') + l('customs') }; };
+    return { off: play(false), on: play(true) };
+  });
+  ok(sv.on.score > sv.off.score + 3,
+    `${tag}: schooling and treating people is worth doing (${sv.off.score.toFixed(1)} -> ${sv.on.score.toFixed(1)}, edu ${sv.off.edu.toFixed(0)} -> ${sv.on.edu.toFixed(0)}, health ${sv.off.health.toFixed(0)} -> ${sv.on.health.toFixed(0)})`);
+  ok(sv.on.upkeep < sv.on.tax * 0.3,
+    `${tag}: and a state can afford to run them (${sv.on.upkeep.toFixed(1)}bn upkeep against ${sv.on.tax.toFixed(1)}bn of tax and customs)`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }
