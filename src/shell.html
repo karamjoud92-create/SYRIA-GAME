@@ -333,6 +333,14 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .rgrid{ grid-template-columns:1fr; }
 }
 
+/* ===== trading with another player's Syria ===== */
+.mprow{ flex-wrap:wrap; }
+.mptrade{ flex:1 0 100%; display:flex; align-items:center; gap:8px; justify-content:space-between;
+  margin-top:6px; padding:6px 10px; border-radius:12px; background:var(--card-2); font-size:12.5px; }
+.mptrade.live{ background:#e4f5e7; } .mptrade.wait{ background:#fff4dc; }
+.mptrade.none{ background:none; color:var(--card-muted); padding:4px 0 0; }
+.mptrade .btn.small{ flex:0 0 auto; }
+
 /* ===== live clock: the real one ===== */
 .liveclock{ display:flex; align-items:center; gap:9px; background:var(--card); color:var(--card-ink); border-radius:18px; padding:5px 15px 5px 7px; box-shadow:var(--shadow); }
 .liveclock .lc{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:18px; background:var(--card-2); }

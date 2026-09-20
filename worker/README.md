@@ -5,11 +5,19 @@ and hand the list back. No accounts, no cookies, no game state. Each player's Sy
 leaves their own device — only the scoreboard travels.
 
 ```
-POST /r/{ROOM}   {id, name, score, grade, comp, t, diff, mission, over}  ->  {now, players:[…]}
+POST /r/{ROOM}   {id, name, score, grade, comp, t, diff, mission, over,
+                  has, needs, pacts}                                    ->  {now, players:[…]}
 GET  /r/{ROOM}                                                           ->  {now, players:[…]}
 ```
 
 A room is forgotten 24 hours after its last player, and holds at most 60 players.
+
+`has`, `needs` and `pacts` are what let players trade. They are still not game state: `has` and
+`needs` are five numbers between 0 and 1 saying what a country could spare and what it is short
+of, and `pacts` is who it has shaken hands with. A pact only counts when both players' entries
+name each other, and the bonus it unlocks is sized by the receiver's own economy — so there is
+nothing here a player could mint and hand to a friend, which is the whole reason it is shaped
+this way. The server rebuilds all three field by field, like everything else.
 
 ## Put it on Cloudflare (free, one command)
 

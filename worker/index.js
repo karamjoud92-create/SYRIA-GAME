@@ -2,7 +2,7 @@
 // It holds nothing but a name and a score per player per room, and forgets a room a day after
 // its last player. No accounts, no cookies, no game state: each player's Syria stays on their own device.
 //
-//   POST /r/{ROOM}  {id,name,score,grade,comp,t,diff,mission,over}  -> {now, players:[...]}
+//   POST /r/{ROOM}  {id,name,score,grade,comp,t,diff,mission,over,has,needs,pacts}  -> {now, players:[...]}
 //   GET  /r/{ROOM}                                                  -> {now, players:[...]}
 //
 // Deploy:  cd worker && npx wrangler deploy
@@ -22,6 +22,14 @@ const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>
 const num = (v, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, x)) : 0; };
 const COMP = ['Stability', 'Livelihoods', 'Reconstruction', 'Institutions', 'Solvency', 'Sovereignty'];
 
+const KINDS = ['power','oil','food','ports','money'];
+const PACTS = 2;
+// What a country can spare, what it is short of, and who it has shaken hands with. Rebuilt
+// field by field like everything else: a bad client must not be able to poison a room.
+const vec = raw => { const r = {}; if (raw && typeof raw === 'object') KINDS.forEach(k => { if (raw[k] !== undefined) r[k] = Math.round(num(raw[k], 0, 1) * 10) / 10; }); return r; };
+const pactList = raw => Array.isArray(raw) ? raw.slice(0, PACTS)
+  .map(p => p && typeof p === 'object' ? { w:str(p.w, 40).replace(/[^A-Za-z0-9_-]/g, ''), g:KINDS.includes(p.g) ? p.g : null, s:KINDS.includes(p.s) ? p.s : null } : null)
+  .filter(p => p && p.w && p.g && p.s) : [];
 function clean(raw, now){
   if (!raw || typeof raw !== 'object') return null;
   const id = str(raw.id, 40).replace(/[^A-Za-z0-9_-]/g, '');
@@ -34,6 +42,7 @@ function clean(raw, now){
     t: Math.round(num(raw.t, 0, 100000)), diff: raw.diff === 'realistic' ? 'realistic' : 'learner',
     mission: raw.mission ? str(raw.mission, 20) : null,
     over: ['fail', 'end'].includes(raw.over) ? raw.over : null,
+    has: vec(raw.has), needs: vec(raw.needs), pacts: pactList(raw.pacts),
     at: now,                                   // the server's clock, so nobody can fake being fresh
   };
 }

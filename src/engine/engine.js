@@ -253,6 +253,29 @@ function exportCapacity(s){
 // packaging lifts what the same goods fetch; cold chain stops the harvest rotting on the road
 const exportValue = s => 1 + indLvl(s, 'packaging') * IND.packaging.valueUp + indLvl(s, 'coldchain') * IND.coldchain.spoilCut;
 
+// ---------- trading with another player's Syria ----------
+// What a country has spare and what it is short of, read off the state everyone already
+// publishes. A pact is brokered from these and from scores — never from claimed inventory,
+// because inventory is the one thing a player can fake in their own browser.
+const PACT_KINDS = ['power', 'oil', 'food', 'ports', 'money'];
+const PACT_MAX = 2;                 // at most two neighbours at a time
+function tradeProfile(s){
+  const oil = oilNumbers(s), has = {}, needs = {};
+  const set = (k, v) => { if (v >= 0.2) has[k] = Math.min(1, Math.round(v * 10) / 10);
+                          else if (v <= -0.2) needs[k] = Math.min(1, Math.round(-v * 10) / 10); };
+  set('power', (nationalHours(s) - 13) / 7);
+  set('oil', (oil.exp - 10) / 18);
+  set('food', (s.res.farm + indLvl(s, 'food') * 0.6 - 1.6) / 2.4);
+  set('ports', (exportCapacity(s) - (s.exportWant || 0) - 30) / 110);
+  set('money', (s.reserves - 1500) / 3500);
+  return { has, needs };
+}
+// A live pact hands you a bonus sized by YOUR OWN economy. The neighbour decides which bonus
+// you get, never how big it is — so a player who fakes their numbers can bring a deal forward
+// and nothing else. Both sides must be publishing the same pact for it to count.
+const pactsOn = s => (s.pacts || []).filter(p => PACT_KINDS.includes(p.get)).slice(0, PACT_MAX);
+const pactHas = (s, kind) => pactsOn(s).some(p => p.get === kind);
+
 // ---------- one month (or any dt) ----------
 function step(state, dt = MONTH, policyOverride){
   const s = clone(state);
@@ -289,7 +312,7 @@ function step(state, dt = MONTH, policyOverride){
 
   // --- trade deals: active only while their conditions hold ---
   Object.entries(s.deals).forEach(([id, d]) => { const on = PARTNERS[id].ok(s); if (on !== d.on){ d.on = on; notes.push([on ? 'dealOn' : 'dealOff', id]); } });
-  s.mwImport = dealOn(s, 'iraq') ? 300 : 0;
+  s.mwImport = (dealOn(s, 'iraq') ? 300 : 0) + (pactHas(s, 'power') ? 260 : 0);
 
   // --- lira budget ---
   const capMult = 1 + (s.cap - 20) * 0.0125, pIdx = s.parallel / BASE_FX;
@@ -327,7 +350,7 @@ function step(state, dt = MONTH, policyOverride){
     exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * (dealOn(s, 'turkey') ? 1.15 : 1) * industryPower(s) : 0,
     industry: industryExports(s) * euMult * (dealOn(s, 'turkey') ? 1.15 : 1),
   };
-  const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
+  const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s) + (pactHas(s, 'ports') ? 55 : 0);
   const fit = (wantTotal > capE ? capE / wantTotal : 1) * exportValue(s);
   let grossX = 0;
   Object.entries(exportsWanted).forEach(([k, v]) => { if (v > 0.05){ const got = v * fit; grossX += got; addU(k, got); } });
@@ -345,15 +368,16 @@ function step(state, dt = MONTH, policyOverride){
   addU('overflight', 8);
   { const tr = tourismIncome(s); if (tr > 0.5) addU('tourism', tr); }
   if (dealOn(s, 'gulf')) addU('fdi', 40);
+  if (pactHas(s, 'money')) addU('pact', 34);
   if (dealOn(s, 'eu')) addU('euGrant', 30);
   if (s.cap > 20) addU('imports', -(s.cap - 20) * 1.4);
   // --- dollars: buying food and fuel ---
   let wheatCut = indLvl(s, 'food') * IND.food.wheatCut * industryPower(s); ['hama','hasakeh','raqqa'].forEach(k => { if (built(s, k)) wheatCut += PROJECTS[k].wheat * (1 - projLeak(s, k)); });
   const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil ? 2.1 : 1;
   const ez = s.diff === 'learner' ? 0.88 : 1;
-  const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) - wheatCut);
+  const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) * (pactHas(s, 'food') ? 0.82 : 1) - wheatCut);
   addU('wheat', -wheat * ez);
-  addU('fuel', -ez * (86 * { full:1.15, partial:1, market:0.85 }[P.fuel] * (season === 'H1' ? 0.9 : 1.15) + s.mw / 2300 * 25));
+  addU('fuel', -ez * (86 * { full:1.15, partial:1, market:0.85 }[P.fuel] * (season === 'H1' ? 0.9 : 1.15) * (pactHas(s, 'oil') ? 0.84 : 1) + s.mw / 2300 * 25));
   addU('homeEnergy', oil.home * 4.2 + s.res.gas * 5 + (dealOn(s, 'iraq') ? 10 : 0));
   if (dealOn(s, 'iraq')) addU('powerImport', -15);
   addU('debt', -(s.debt * 0.006 + s.coupons));
@@ -767,4 +791,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, popRatio, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

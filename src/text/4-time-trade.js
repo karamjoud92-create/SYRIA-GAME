@@ -306,3 +306,22 @@ const PART_TXT = {
   russia:{ en:['Russia','Wheat supply deal','Cheaper wheat, in exchange for a long lease on part of Tartus port.','Wheat imports cost 25% less. Independence −5.','No conditions'],
     ar:['روسيا','اتفاق توريد القمح','قمح أرخص مقابل تأجير طويل لجزء من ميناء طرطوس.','استيراد القمح أرخص بـ25%. الاستقلال −5.','بلا شروط'] },
 };
+
+
+// ---------- trading with another player's Syria ----------
+const PACT_TXT = {
+  en:{ power:'electricity', oil:'fuel', food:'food', ports:'port space', money:'investment' },
+  ar:{ power:'\u0627\u0644\u0643\u0647\u0631\u0628\u0627\u0621', oil:'\u0627\u0644\u0648\u0642\u0648\u062f', food:'\u0627\u0644\u063a\u0630\u0627\u0621', ports:'\u0645\u0633\u0627\u062d\u0629 \u0627\u0644\u0645\u0648\u0627\u0646\u0626', money:'\u0627\u0644\u0627\u0633\u062a\u062b\u0645\u0627\u0631' },
+};
+STR.en.pactCan = 'They have {0}, you have {1}';
+STR.en.pactOffer = 'Offer';
+STR.en.pactWait = 'Waiting for them to agree: their {0} for your {1}';
+STR.en.pactLive = 'Trading: their {0} for your {1}';
+STR.en.pactEnd = 'End';
+STR.en.pactNone = 'Nothing to trade right now \u2014 you both need the same things.';
+STR.ar.pactCan = '\u0644\u062f\u064a\u0647\u0645 {0}\u060c \u0648\u0644\u062f\u064a\u0643 {1}';
+STR.ar.pactOffer = '\u0627\u0639\u0631\u0636';
+STR.ar.pactWait = '\u0628\u0627\u0646\u062a\u0638\u0627\u0631 \u0645\u0648\u0627\u0641\u0642\u062a\u0647\u0645: {0} \u0639\u0646\u062f\u0647\u0645 \u0645\u0642\u0627\u0628\u0644 {1} \u0639\u0646\u062f\u0643';
+STR.ar.pactLive = '\u062a\u0628\u0627\u062f\u0644 \u0642\u0627\u0626\u0645: {0} \u0639\u0646\u062f\u0647\u0645 \u0645\u0642\u0627\u0628\u0644 {1} \u0639\u0646\u062f\u0643';
+STR.ar.pactEnd = '\u0625\u0646\u0647\u0627\u0621';
+STR.ar.pactNone = '\u0644\u0627 \u0634\u064a\u0621 \u0644\u0644\u062a\u0628\u0627\u062f\u0644 \u0627\u0644\u0622\u0646 \u2014 \u0643\u0644\u0627\u0643\u0645\u0627 \u064a\u062d\u062a\u0627\u062c \u0627\u0644\u0623\u0634\u064a\u0627\u0621 \u0646\u0641\u0633\u0647\u0627.';

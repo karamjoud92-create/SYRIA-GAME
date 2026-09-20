@@ -24,6 +24,10 @@ fast: a player should be able to think, and should not have to wait two years to
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
+- `npm run trade` → two real browsers, two Syrias, one room: a trade is suggested from what each
+  country actually has and needs, one side offering is not a deal, both agreeing makes it live, the
+  bonus lands on the country that was short, a friend claiming a perfect score cannot inflate it,
+  and either side can end it.
 - `npm run live`   → real-time play: the start screen offers live or all-at-once, a live game runs on
   the wall clock, seven hours away is seven months of country, you are told what happened, no crisis
   is ever answered on your behalf, and a very long absence ends the presidency. Both languages.
@@ -114,6 +118,17 @@ fast: a player should be able to think, and should not have to wait two years to
   key>'` and is filtered out by `usable()`; `advisorsOpen()` hides ministers whose brief has not opened. This
   was wrong twice — the guide told a brand-new player to build schools, then to fund power stations, both of
   them months away from existing. `npm run guide` now fails if it happens again.
+- **Trading between players** (`tradeProfile`, `pactsOn`, `PACT_KINDS` in the engine; `mpOffer`,
+  `mpPactWith`, `mpMatch` in `src/net/net.js`; `mpTradeLine` in `6-multiplayer.js`). Everyone plays
+  their own Syria and the simulation stays on their own device, so **nothing tradeable can ever be a
+  quantity a player claims to own** — that is the one thing a browser cannot be trusted about.
+  Instead: `tradeProfile(s)` reads what a country has spare and what it is short of off the state it
+  already publishes; `mpMatch` finds a pair that suits both; and a live pact hands each side a bonus
+  **sized by their own economy** (more hours of power, a cheaper wheat bill, more port space, cheaper
+  fuel, more investment). The neighbour decides *which* bonus you get, never *how big*. A pact only
+  counts when both entries name each other with matching halves, so nobody can grant themselves one,
+  and `PACT_MAX` caps how many at once. This needs no server change: the handshake rides on the
+  scoreboard entry that already travels.
 - **Live play** (`LIVE_MS_PER_MONTH`, `catchUp()`, `showAway()` in `src/ui/5-game.js`). A game started
   in live mode runs on the wall clock: one game month per real hour, recorded in `S.realAt`. On open,
   `catchUp()` steps the months owed, collects what finished, and `showAway()` reports it. **Crises that

@@ -44,9 +44,14 @@ function mpEntry(){
   if (!S) return null;
   const lg = legacy(S), comp = {};
   Object.keys(lg.comp).forEach(k => comp[k] = Math.round(lg.comp[k]));
+  const tp = tradeProfile(S);
   return { v:1, id:mpId(), name:MP.name || '—', score:Math.round(S.score * 10) / 10, grade:lg.grade, comp,
     t:S.t, diff:S.diff, mission:(S.mission && S.mission.id) || null,
-    over:S.over ? (S.over.fail ? 'fail' : 'end') : null };
+    over:S.over ? (S.over.fail ? 'fail' : 'end') : null,
+    // what this country could spare, what it is short of, and who it has shaken hands with.
+    // A pact only counts when BOTH players publish it, so nobody can claim one alone.
+    has:tp.has, needs:tp.needs,
+    pacts:(S.pacts || []).slice(0, PACT_MAX).map(p => ({ w:p.with, g:p.get, s:p.give })) };
 }
 // Anything arriving from another player is untrusted: rebuild it field by field.
 function mpClean(e, now){
@@ -57,16 +62,57 @@ function mpClean(e, now){
   if (e.comp && typeof e.comp === 'object') ['Stability','Livelihoods','Reconstruction','Institutions','Solvency','Sovereignty']
     .forEach(k => { if (e.comp[k] !== undefined) comp[k] = num(e.comp[k], 0, 100, 0); });
   const at = num(e.at, 0, 4e12, now);
+  const vec = o => { const r = {}; if (o && typeof o === 'object') PACT_KINDS.forEach(k => { if (o[k] !== undefined) r[k] = num(o[k], 0, 1, 0); }); return r; };
+  const pacts = Array.isArray(e.pacts) ? e.pacts.slice(0, PACT_MAX).map(p => p && typeof p === 'object'
+      ? { w:String(p.w || '').slice(0, 40), g:PACT_KINDS.includes(p.g) ? p.g : null, s:PACT_KINDS.includes(p.s) ? p.s : null } : null)
+    .filter(p => p && p.w && p.g && p.s) : [];
   return { id, name:mpNameOk(e.name) || '—', score:num(e.score, 0, 100, 0), grade:['A','B','C','D','F'].includes(e.grade) ? e.grade : 'F',
+    has:vec(e.has), needs:vec(e.needs), pacts,
     comp, t:num(e.t, 0, 100000, 0), diff:e.diff === 'realistic' ? 'realistic' : 'learner',
     mission:e.mission ? String(e.mission).slice(0, 20) : null, over:['fail','end'].includes(e.over) ? e.over : null,
     at, age:Math.max(0, now - at), src:e.src === 'code' ? 'code' : 'server' };
 }
 
+// ---------- pacts: a handshake that rides on the scoreboard ----------
+// One side offers, the other mirrors it, and only when both entries agree does the pact count.
+// Neither side can grant themselves anything: the bonus is sized by your own economy (see
+// pactsOn in the engine), so a player faking their numbers can bring a deal forward and no more.
+function mpOffer(them, give, get){
+  if (!S || !them) return false;
+  S.pacts = (S.pacts || []).filter(p => p.with !== them.id);
+  if (S.pacts.length >= PACT_MAX) return false;
+  S.pacts.push({ with:them.id, give, get, at:Date.now() });
+  MP.lastPush = 0; mpSync(true);   // a handshake should not wait for the next poll
+  return true;
+}
+function mpDropPact(id){
+  if (!S) return false;
+  S.pacts = (S.pacts || []).filter(p => p.with !== id);
+  MP.lastPush = 0; mpSync(true);   // a handshake should not wait for the next poll
+  return true;
+}
+// Live = I name them and they name me, with the halves matching.
+function mpPactWith(them){
+  if (!S || !them) return null;
+  const mine = (S.pacts || []).find(p => p.with === them.id); if (!mine) return null;
+  const theirs = (them.pacts || []).find(p => p.w === mpId());
+  const agreed = !!theirs && theirs.g === mine.give && theirs.s === mine.get;
+  return { give:mine.give, get:mine.get, live:agreed };
+}
+// What the two of them could usefully do for each other, best match first.
+function mpMatch(them){
+  if (!S || !them) return null;
+  const me = tradeProfile(S), out = [];
+  PACT_KINDS.forEach(get => { if (!(me.needs[get] > 0) || !(them.has[get] > 0)) return;
+    PACT_KINDS.forEach(give => { if (get === give || !(me.has[give] > 0) || !(them.needs[give] > 0)) return;
+      out.push({ give, get, fit:Math.min(me.needs[get], them.has[get]) + Math.min(me.has[give], them.needs[give]) }); }); });
+  return out.sort((a, b) => b.fit - a.fit)[0] || null;
+}
+
 // ---------- score codes (work with no server at all) ----------
 function mpCode(){
   const e = mpEntry(); if (!e) return '';
-  delete e.comp;                 // codes get pasted into chat apps: keep them short
+  delete e.comp; delete e.has; delete e.needs; delete e.pacts;   // codes get pasted into chat apps: keep them short
   e.at = Date.now();
   try { return btoa(unescape(encodeURIComponent(JSON.stringify(e)))).replace(/=+$/, ''); } catch(err){ return ''; }
 }

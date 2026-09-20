@@ -5,7 +5,7 @@ const vm = require('vm'), fs = require('fs'), path = require('path'), { spawn } 
 const ENG = require('../src/engine/engine.js');
 const NET = fs.readFileSync(path.join(__dirname, '..', 'src', 'net', 'net.js'), 'utf8')
   // in a browser these are script globals; in a vm sandbox top-level const stays lexical, so publish them
-  + '\n;Object.assign(globalThis, { MP, mpJoin, mpSync, mpSetRelay, mpCode, mpReadCode, mpSaveCode, mpMerge, mpLeave, mpInviteLink, mpBoot, mpNewRoom, mpRoomOk, mpNameOk, mpEntry, mpCodeList, mpLoop });';
+  + '\n;Object.assign(globalThis, { MP, mpJoin, mpSync, mpSetRelay, mpCode, mpReadCode, mpSaveCode, mpMerge, mpLeave, mpInviteLink, mpBoot, mpNewRoom, mpRoomOk, mpNameOk, mpEntry, mpCodeList, mpLoop, mpOffer, mpDropPact, mpPactWith, mpMatch });';
 const PORT = 8000 + Math.floor(Math.random() * 1000), RELAY = 'http://localhost:' + PORT;
 
 let fails = 0;
@@ -17,6 +17,8 @@ function player(name, score){
   const said = [];
   const ctx = {
     S: null, legacy: ENG.legacy, console,
+    // the transport reads these off the engine too, now that entries carry what a country can trade
+    tradeProfile: ENG.tradeProfile, PACT_KINDS: ENG.PACT_KINDS, PACT_MAX: ENG.PACT_MAX,
     fill: (s, a) => String(s).replace(/\{(\d)\}/g, (m, i) => a[i]), t: k => k,
     toast: x => said.push(x),
     setInterval, clearInterval, setTimeout, clearTimeout, fetch, AbortController, Promise, Date, Math, JSON, URL, URLSearchParams,

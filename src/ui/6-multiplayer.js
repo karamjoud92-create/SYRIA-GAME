@@ -34,7 +34,22 @@ function mpRow(e){
   return `<div class="mprow${e.me ? ' me' : ''}${e.over ? ' done' : ''}">
     <span class="pl">${e.place}</span><span class="gr g-${e.grade}">${e.grade}</span>
     <span class="nm"><b>${esc(e.name)}</b>${flag}<small>${esc(mpWhen(e))} ${stale}</small></span>
-    <span class="sc">${Math.round(e.score)}</span></div>`;
+    <span class="sc">${Math.round(e.score)}</span>${mpTradeLine(e)}</div>`;
+}
+// What these two could do for each other, and where the handshake has got to. Nothing here
+// moves goods: a live pact unlocks a bonus sized by your own country, never by theirs.
+function mpTradeLine(e){
+  if (e.me || e.over || e.src === 'code' || !S || S.over) return '';
+  const K = PACT_TXT[LANG], pact = mpPactWith(e);
+  if (pact) return `<div class="mptrade ${pact.live ? 'live' : 'wait'}">
+    <span>${pact.live ? '\u{1F91D}' : '\u{23F3}'} ${fill(t(pact.live ? 'pactLive' : 'pactWait'), [K[pact.get], K[pact.give]])}</span>
+    <button class="btn small" data-act="mpPactEnd" data-id="${esc(e.id)}">${t('pactEnd')}</button></div>`;
+  const m = mpMatch(e);
+  if (!m) return `<div class="mptrade none">${t('pactNone')}</div>`;
+  const full = (S.pacts || []).length >= PACT_MAX;
+  return `<div class="mptrade">
+    <span>\u{1F504} ${fill(t('pactCan'), [K[m.get], K[m.give]])}</span>
+    <button class="btn small primary" data-act="mpPactOffer" data-id="${esc(e.id)}" data-give="${m.give}" data-get="${m.get}" ${full ? 'disabled' : ''}>${t('pactOffer')}</button></div>`;
 }
 function mpPanel(){
   if (!MP.open || !MP.room) return '';
@@ -178,6 +193,10 @@ document.addEventListener('click', ev => {
       MP.afterLobby = null; return render(true);
     }
     case 'mpBoard': MP.open = true; mpLoop(); closeModal(); mpSync(true); return render(true);
+    case 'mpPactOffer': { const them = MP.roster.find(r => r.id === b.dataset.id);
+      if (them && mpOffer(them, b.dataset.give, b.dataset.get)) sfx('coin');
+      persist(); mpPaint(); return render(true); }
+    case 'mpPactEnd': mpDropPact(b.dataset.id); persist(); mpPaint(); return render(true);
     case 'mpClose': MP.open = false; mpLoop(); return render(true);
     case 'mpLeave': mpLeave(); closeModal(); return render(true);
     case 'mpInvite': return mpCopy(mpInviteLink());
