@@ -213,7 +213,7 @@ function whyLive(){
   const a = H[Math.max(0, n - 7)], c = H[n - 1], w = S.last.why, W = WHY[LANG], out = [], st = (txt, cls) => ({ txt, cls });
   const pct = (c.fx / a.fx - 1) * 100;
   if (Math.abs(pct) >= 1){
-    const f = w.fx, up = pct > 0, cand = [[f.print, fill(W.print, [S.policy.print * 2])], [f.reserves, f.reserves > 0 ? W.reserves : W.reservesGood], [f.deficit, W.deficit], [f.trust, f.trust > 0 ? W.lowTrust : W.highTrust], [f.intervene, W.intervene]];
+    const f = w.fx, up = pct > 0, cand = [[f.print, fill(W.print, [S.policy.print * 2])], [f.reserves, f.reserves > 0 ? W.reserves : W.reservesGood], [f.deficit, W.deficit], [f.trust, f.trust > 0 ? W.lowTrust : W.highTrust], [f.intervene, W.intervene], [f.trade, f.trade > 0 ? W.tradeBad : W.tradeGood]];
     const dr = cand.filter(([v]) => up ? v > 0.5 : v < -0.5).sort((x, y) => Math.abs(y[0]) - Math.abs(x[0])).slice(0, 2).map(x => x[1]);
     const ch = [st(dr.length ? dr.join(' + ') : W.base, 'cause'), st(up ? fill(W.fxUp, [pct.toFixed(1)]) : fill(W.fxDown, [pct.toFixed(1)]), up ? 'bad' : 'good')];
     const dp = c.pay - a.pay; if (Math.abs(dp) >= 0.3) ch.push(st(dp < 0 ? fill(W.payDown, [Math.abs(dp).toFixed(1)]) : fill(W.payUp, [dp.toFixed(1)]), dp < 0 ? 'bad' : 'good'));

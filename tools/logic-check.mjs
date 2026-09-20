@@ -233,6 +233,30 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(flee.leave.score <= flee.stay.score,
     `${tag}: half the country leaving is not worth points (${flee.stay.pop.toFixed(1)}M scores ${flee.stay.score.toFixed(1)}, ${flee.leave.pop.toFixed(1)}M scores ${flee.leave.score.toFixed(1)})`);
 
+  // 14. the lira has to be winnable. It used to fall for eighteen years whatever you did: the
+  //     rate had a stock term (months of cover, capped at -1.5) and trust (capped at -2.0, and
+  //     trust of 70 takes a decade) against a hardcoded +2.5 drift, and no trade term at all —
+  //     so the one thing a player builds, exports, could not move it.
+  const lira = await page.evaluate(() => {
+    let s = newGame(7, 'learner'); const path = [];
+    for (let m = 0; m < 240; m++){
+      const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive'; P.crackdown = true;
+      P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 20 ? 10 : 0;
+      if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
+      for (const id of ['tribal','integrity','digitax','dialogue','northeast','braingain'])
+        if (s.decrees[id] === undefined && ACT.decree(s, id)) break;
+      if (s.reserves > 260) for (const id of ['textiles','food','pharma','logistics','coldchain','packaging']) ACT.invest(s, id);
+      s = step(s); path.push(s.parallel);
+    }
+    const peak = Math.max(...path.slice(0, 120));
+    return { start: 125, peakYear: path.indexOf(peak) / 12, peak, end: path[path.length - 1],
+      hasTrade: s.last.why.fx.trade !== undefined };
+  });
+  ok(lira.hasTrade, `${tag}: the exchange rate knows whether the country earns more dollars than it spends`);
+  ok(lira.peakYear < 8, `${tag}: building an export economy turns the lira round within ${lira.peakYear.toFixed(0)} years, not eighteen`);
+  ok(lira.end < lira.start, `${tag}: and twenty years of it ends stronger than it started ($${lira.start} -> $${lira.end.toFixed(0)})`);
+  ok(lira.peak < lira.start * 1.35, `${tag}: without ever running away first (worst was $${lira.peak.toFixed(0)})`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

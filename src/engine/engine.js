@@ -361,6 +361,7 @@ function step(state, dt = MONTH, policyOverride){
   if (P.intervene) addU('intervene', -P.intervene);
   if (hasDecree(s, 'vocational')) addU('vocational', -10);
   const outflowRate = L.usd.filter(x => x[1] < 0).reduce((a, x) => a - x[1], 0) / dt;
+  const inflowRate = L.usd.filter(x => x[1] > 0).reduce((a, x) => a + x[1], 0) / dt;
 
   // --- grid: new stations arrive 12 months later ---
   const gridEff = s.corr > 60 ? 0.7 : 1;
@@ -369,10 +370,17 @@ function step(state, dt = MONTH, policyOverride){
 
   // --- currency (rates per half-year, applied for dt) ---
   const cover = s.reserves / Math.max(1, outflowRate / 6);
+  // A country that earns more dollars than it spends has a stronger currency. The model had a
+  // stock term — how many months of cover you are sitting on — and no flow term at all, so the
+  // one thing a player actually builds could not move the rate. Without this, `base` was
+  // unbeatable for the first decade: the only offsets were reserves (capped at -1.5) and trust
+  // (capped at -2.0, and trust of 70 takes ten years), so the lira fell whatever you did.
+  const trade = clamp(-(inflowRate - outflowRate) / Math.max(60, outflowRate) * 4, -1.6, 4);
   const fx = { base:2.5, print:(P.print / s.m2) * 110,
     reserves: cover < 2 ? (2 - cover) * 6 : cover < 4 ? 0.5 : -0.5 * Math.min(3, cover - 4),
+    trade,
     trust: -clamp((s.trust - 45) * 0.08, -3, 2), deficit: s.treasury < 0 ? Math.min(8, -s.treasury / 3) : 0, intervene: -P.intervene * 0.08, shock:0 };
-  const pct = clamp(Object.values(fx).reduce((a, b) => a + b, 0) / 100, -0.025, 0.5);
+  const pct = clamp(Object.values(fx).reduce((a, b) => a + b, 0) / 100, -0.010, 0.5);
   s.parallel *= Math.pow(1 + pct, dt);
   s.official = s.flags.unified ? s.parallel : s.official + (s.parallel - s.official) * relax(0.2, dt);
   s.infl = Math.max(1, s.infl + (((1 + pct) ** 2 - 1) * 100 - s.infl) * relax(0.7, dt));
