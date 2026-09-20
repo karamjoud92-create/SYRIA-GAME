@@ -4,24 +4,20 @@
 const fs = require('fs'), path = require('path');
 const FILES = [...fs.readdirSync('src/text').map(f => 'src/text/' + f), ...fs.readdirSync('src/ui').map(f => 'src/ui/' + f)].filter(f => f.endsWith('.js'));
 // a line is allowed to carry a year only if it is one of these real-world citations
-const ALLOW = /lebanon:|zimbabwe:|germany:|rwanda:|iraq:\{|World Bank|البنك الدولي|Natural Earth/;
+const ALLOW = /en:\['(Lebanon|Zimbabwe|West Germany|Rwanda|Iraq), |ar:\['(لبنان|زيمبابوي|ألمانيا الغربية|رواندا|العراق)،|World Bank’s 2025|البنك الدولي لعام 2025/;
 const PATTERNS = [
-  [/\b(year|years|yearly|annual|annually)\b/i, 'en year word'],
+  [/\b(year|years|yearly|annual|annually|biannual|bi-annual)\b/i, 'en year word'],
   [/\/yr\b/, 'en /yr'],
   [/\b20[2-4]\d\b/, 'calendar year'],
-  [/سنة|سنوات|سنوي|عاماً|أعوام/, 'ar year word'],
+  [/سنة|سنتين|سنوات|سنوي|عاماً|عامين|أعوام/, 'ar year word'],
   [/(^|[\s،.(])عام([\s،.)]|$)/, 'ar عام (year)'],       // standalone; "العام"/"عامة" (public/general) are not matched
   [/هذا العام|كل عام|بعد عام|خلال عام|في عام|منذ عام/, 'ar "the year" phrase'],
 ];
 let bad = 0;
 for (const f of FILES) {
   const lines = fs.readFileSync(f, 'utf8').split('\n');
-  let prevAllowed = false;
   lines.forEach((line, i) => {
-    // a citation's Arabic twin sits on the next line: it inherits the allowance
-    const allowed = ALLOW.test(line) || (prevAllowed && /^\s*ar:\[/.test(line));
-    prevAllowed = allowed;
-    if (allowed) return;
+    if (ALLOW.test(line)) return;
     if (/^\s*\/\//.test(line)) return;                       // comments are not player-facing
     for (const [re, why] of PATTERNS) {
       const m = line.match(re);

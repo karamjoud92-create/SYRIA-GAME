@@ -95,7 +95,6 @@ function advance(){
   if (!S.mission && S.t >= GAME_MONTHS){ S.over = { won:true }; setSpeed(0); persist(); render(true); sfx('level'); return showLegacy(); }
   if (S.level > prevLevel){ toast(fill(t('levelUp'), [S.level, levelName(S.level)]), 'level'); sfx('level'); }
   else if (S.level < prevLevel){ toast(fill(t('levelDown'), [S.level, levelName(S.level)]), 'bad'); sfx('bad'); }
-  if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [S.t, Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'level'); sfx('level'); }
   if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('level'); return showMilestone(); }
   if (UI.queue && UI.queue.length){ persist(); render(true); sfx('cycle'); const [, id] = UI.queue.shift(); return showCycle(id, true); }
   S.event = drawEvent(S);
@@ -775,6 +774,6 @@ document.addEventListener('keydown', ev => {
   if (!l) l = (navigator.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
   setLang(l);
   if (isPhone()) UI.advOpen = false;
-  if (restore()){ render(true); if (S.over){ S.over.fail ? showFail(S.over.fail) : showMissionEnd(); } else if (S.event) showEvent(); }
+  if (restore()){ render(true); if (S.over){ S.over.fail ? showFail(S.over.fail) : S.over.won ? showLegacy() : showMissionEnd(); } else if (S.event) showEvent(); }
   else { S = startGame(undefined, 'learner'); S.history = [snap(S)]; S.log = []; syncD(); render(true); startScreen(); }
 })();

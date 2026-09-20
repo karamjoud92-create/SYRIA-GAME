@@ -321,7 +321,7 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 .dcard.inv h4{ padding-inline-end:84px; }
 .dgroup.trade .dbtn{ background:#fff4dc; } .dgroup.trade .dbtn[aria-pressed="true"]{ background:var(--gold); }
 @media (max-width: 1640px){ .res .lab .dl{ display:none; } .res{ gap:6px; } .dbtn{ min-width:62px; padding:5px 8px 4px; } }
-@media (max-width: 1250px){ .scorebadge .sl{ display:none; } .cbtn{ min-width:38px; } .dbtn .dt{ font-size:11.5px; } }
+@media (max-width: 1250px){ .scorebadge .sl .dl{ display:none; } .cbtn{ min-width:38px; } .dbtn .dt{ font-size:11.5px; } }
 @media (max-width: 760px){
   .scorebadge{ padding:3px 10px 3px 4px; } .scorebadge .sg{ width:32px; height:32px; font-size:19px; } .scorebadge .sn{ font-size:19px; }
   .clock{ order:5; width:100%; justify-content:space-between; } .cbtn{ flex:1; height:38px; }
@@ -1086,11 +1086,13 @@ function checkFail(s){
 const LEVELS = [[0, 22], [23, 28], [29, 38], [39, 44], [45, 50], [51, 57], [58, 63], [64, 69], [70, 75], [76, 100]];
 function levelRaw(score){ let lv = 1; LEVELS.forEach(([lo], i) => { if (score >= lo) lv = i + 1; }); return lv; }
 function levelOf(score, prev){
+  const held = prev >= 1 && prev <= 10 ? prev : 0;
+  if (!Number.isFinite(score)) return held || 1;          // a poisoned score must not read as "level 1"
   const raw = levelRaw(score);
-  if (!prev || prev < 1 || prev > 10) return raw;
-  if (raw > prev) return score >= LEVELS[raw - 1][0] + 1 ? raw : prev;
-  if (raw < prev) return score <= LEVELS[prev - 1][0] - 1.5 ? raw : prev;
-  return prev;
+  if (!held) return raw;
+  if (raw > held) return score >= LEVELS[raw - 1][0] + 1 ? raw : Math.max(held, raw - 1);
+  if (raw < held) return score <= LEVELS[held - 1][0] - 1.5 ? raw : held;
+  return held;
 }
 // the colour family a level belongs to, so the old grade styles keep working
 const levelTone = lv => lv >= 9 ? 'A' : lv >= 7 ? 'B' : lv >= 5 ? 'C' : lv >= 4 ? 'D' : 'F';
@@ -1714,7 +1716,7 @@ Object.assign(STR.en, {
   levelUp:'⬆️ Level {0}: {1}', levelDown:'⬇️ Down to level {0}: {1}',
   levelHelp:'Your level, 1 to 10, comes from your score. Every game starts on level 3. The level goes up when the country does better and comes down when it does worse — and the last levels are the hardest to hold.',
   finalLevel:'You finished on level {0}: {1}', endTitle:'240 months are up',
-  milestoneTitle:'{0} months in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going', newYear:'Month {0}. Score {1} ({2} over the last 12 months).',
+  milestoneTitle:'{0} months in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going',
   whyNow:'What’s driving things right now',
   // trade drawer
   dTrade:'Trade', tradeSub:'Oil, gas, factories, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
@@ -1807,7 +1809,7 @@ Object.assign(STR.ar, {
   levelUp:'⬆️ المستوى {0}: {1}', levelDown:'⬇️ نزلتَ إلى المستوى {0}: {1}',
   levelHelp:'مستواك، من 1 إلى 10، يأتي من نقاطك. كل لعبة تبدأ من المستوى 3. يرتفع المستوى عندما يتحسّن حال البلاد وينزل عندما يسوء، والمستويات الأخيرة هي الأصعب في الحفاظ عليها.',
   finalLevel:'أنهيتَ على المستوى {0}: {1}', endTitle:'انتهت الـ240 شهراً',
-  milestoneTitle:'{0} شهراً في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع', newYear:'الشهر {0}. النقاط {1} ({2} خلال آخر 12 شهراً).',
+  milestoneTitle:'{0} شهراً في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع',
   whyNow:'ما الذي يحرّك الأمور الآن',
   dTrade:'التجارة', tradeSub:'النفط والغاز والمصانع والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
   decHeading:'ماذا تريد أن تفعل؟', decLater:'ليس الآن', decSkip:'شيء آخر',
@@ -2022,10 +2024,11 @@ const PART_TXT = {
 
 // The ten levels. A ladder a player can read at a glance: each name must obviously beat the one
 // below it. Level 1 is a country in crisis; level 10 is a country that has been rebuilt — not a
-// paradise, a country. Plain words, no slogans, no side taken.
+// paradise, a country. Plain words, no slogans, no side taken: no الصمود, no حالة الطوارئ, no
+// إصلاحات — every one of those is a word one side of the war owns.
 const LEVEL_TXT = {
-  en:['Emergency', 'On the brink', 'Holding on', 'Catching breath', 'Finding our feet', 'Steadying', 'Recovering', 'Building', 'Growing', 'Rebuilt'],
-  ar:['حالة طوارئ', 'على الحافة', 'صامدون', 'نلتقط أنفاسنا', 'نقف على أقدامنا', 'نستقر', 'نتعافى', 'نبني', 'ننمو', 'أعدنا البناء'],
+  en:['Falling apart', 'On the brink', 'Holding on', 'Catching breath', 'Finding our feet', 'Steadying', 'Recovering', 'Building', 'Growing', 'Rebuilt'],
+  ar:['انهيار', 'على الحافة', 'نتماسك', 'نلتقط أنفاسنا', 'نقف على أقدامنا', 'نستقر', 'نتعافى', 'نبني', 'ننمو', 'أعدنا البناء'],
 };
 const levelName = lv => (LEVEL_TXT[LANG] || LEVEL_TXT.en)[Math.max(1, Math.min(10, lv)) - 1];
 
@@ -3336,7 +3339,6 @@ function advance(){
   if (!S.mission && S.t >= GAME_MONTHS){ S.over = { won:true }; setSpeed(0); persist(); render(true); sfx('level'); return showLegacy(); }
   if (S.level > prevLevel){ toast(fill(t('levelUp'), [S.level, levelName(S.level)]), 'level'); sfx('level'); }
   else if (S.level < prevLevel){ toast(fill(t('levelDown'), [S.level, levelName(S.level)]), 'bad'); sfx('bad'); }
-  if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [S.t, Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'level'); sfx('level'); }
   if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('level'); return showMilestone(); }
   if (UI.queue && UI.queue.length){ persist(); render(true); sfx('cycle'); const [, id] = UI.queue.shift(); return showCycle(id, true); }
   S.event = drawEvent(S);
@@ -4016,7 +4018,7 @@ document.addEventListener('keydown', ev => {
   if (!l) l = (navigator.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
   setLang(l);
   if (isPhone()) UI.advOpen = false;
-  if (restore()){ render(true); if (S.over){ S.over.fail ? showFail(S.over.fail) : showMissionEnd(); } else if (S.event) showEvent(); }
+  if (restore()){ render(true); if (S.over){ S.over.fail ? showFail(S.over.fail) : S.over.won ? showLegacy() : showMissionEnd(); } else if (S.event) showEvent(); }
   else { S = startGame(undefined, 'learner'); S.history = [snap(S)]; S.log = []; syncD(); render(true); startScreen(); }
 })();
 

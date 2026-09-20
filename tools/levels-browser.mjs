@@ -50,6 +50,11 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(r.endSrc && !/20\d\d/.test(r.endSrc), `${tag}: the ending names the level, not a year ("${r.endSrc}")`);
   ok(r.level >= 9, `${tag}: a builder finishes on level 9 or 10 (level ${r.level}, score ${r.score})`);
   ok(String(r.badgeNow) === String(r.level), `${tag}: the badge matches the state (${r.badgeNow} = ${r.level}), name "${r.nameNow?.trim().split('  ')[0]}"`);
+  ok(r.downs.length === 0 || r.downs[0] > 24, `${tag}: no level-down in the opening months while investments are still building (downs: ${r.downs.join(',') || 'none'})`);
+  // a finished game reloaded must show its ending again, not crash into the mission screen
+  await p.reload(); await p.waitForTimeout(500);
+  const again = await p.evaluate(() => ({ over: S.over, h2: document.querySelector('.modal h2')?.textContent, big: document.querySelector('.modal .grade')?.textContent }));
+  ok(again.over && again.over.won && again.h2 && /^(\d|10)$/.test(again.big || ''), `${tag}: reloading a finished game shows the ending again (${again.big}: "${again.h2}")`);
   if (tag === 'ar') ok(r.dir === 'rtl', `ar: page is RTL (${r.dir})`);
   await p.screenshot({ path: `tools/shot-levels-${tag}.png` });
   await p.close();

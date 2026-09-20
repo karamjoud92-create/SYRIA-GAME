@@ -146,6 +146,20 @@ forever. `advance()` now ends the game at `GAME_MONTHS` with a revived `showLega
 Port sizes were called "Level 1 of 3", which would have collided with the new levels on screen; they are
 "Size 1 of 3" now.
 
+**The level names went through an Arabic review for this audience, and it changed two of them.** The
+first draft had level 3 as "صامدون" and level 1 as "حالة طوارئ". Both are words one side of the war owns:
+الصمود is factional vocabulary in Syrian political discourse, and حالة الطوارئ is the 1963–2011 emergency
+law. They are "نتماسك" and "انهيار" now (English "Falling apart" for 1, to match). Rule 6 applies to level
+names as much as to crisis options — the reviewer also flagged إصلاحات (political reforms, not repairs) and
+متمرّد (the state's word for the uprising) as words to keep out of anything a level card says.
+
+Two bugs the review caught in the same pass: reloading a finished campaign crashed (`restore()` sent every
+non-fail ending to `showMissionEnd()`, which reads `S.mission.id`), and a score jump of two bands that landed
+inside a point of the top floor froze the level instead of settling one band down. Both have tests now. The
+12-month score toast — the old "new year" toast with a new name — is gone: it was a year rhythm in disguise
+and fired in the same frame as level toasts. On phones the badge now keeps the level name and drops only the
+score delta; before, it showed a bare "3 | 37".
+
 ## Open, and worth doing next
 
 - **Provinces are not staged.** All 14 are yours from month 0. Locking them behind "extending state

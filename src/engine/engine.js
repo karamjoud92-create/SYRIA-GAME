@@ -585,11 +585,13 @@ function checkFail(s){
 const LEVELS = [[0, 22], [23, 28], [29, 38], [39, 44], [45, 50], [51, 57], [58, 63], [64, 69], [70, 75], [76, 100]];
 function levelRaw(score){ let lv = 1; LEVELS.forEach(([lo], i) => { if (score >= lo) lv = i + 1; }); return lv; }
 function levelOf(score, prev){
+  const held = prev >= 1 && prev <= 10 ? prev : 0;
+  if (!Number.isFinite(score)) return held || 1;          // a poisoned score must not read as "level 1"
   const raw = levelRaw(score);
-  if (!prev || prev < 1 || prev > 10) return raw;
-  if (raw > prev) return score >= LEVELS[raw - 1][0] + 1 ? raw : prev;
-  if (raw < prev) return score <= LEVELS[prev - 1][0] - 1.5 ? raw : prev;
-  return prev;
+  if (!held) return raw;
+  if (raw > held) return score >= LEVELS[raw - 1][0] + 1 ? raw : Math.max(held, raw - 1);
+  if (raw < held) return score <= LEVELS[held - 1][0] - 1.5 ? raw : held;
+  return held;
 }
 // the colour family a level belongs to, so the old grade styles keep working
 const levelTone = lv => lv >= 9 ? 'A' : lv >= 7 ? 'B' : lv >= 5 ? 'C' : lv >= 4 ? 'D' : 'F';

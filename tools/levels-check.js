@@ -19,6 +19,11 @@ ok(mono, 'level never falls as score rises');
   lv = E.levelOf(50.2, 6); ok(lv === 6, `dipping just under the floor holds (50.2 → ${lv})`);
   lv = E.levelOf(49.3, 6); ok(lv === 5, `dropping 1.5 below the floor falls (49.3 → ${lv})`); }
 
+// a two-band jump that lands just under the top floor settles one band down, not frozen at the old level
+ok(E.levelOf(51.4, 3) === 5, `a jump from level 3 to score 51.4 settles on 5, not 3 (${E.levelOf(51.4, 3)})`);
+ok(E.levelOf(52.5, 3) === 6, `a jump from level 3 to score 52.5 lands on 6 (${E.levelOf(52.5, 3)})`);
+ok(E.levelOf(NaN, 7) === 7 && E.levelOf(undefined, 7) === 7 && E.levelOf(NaN) === 1, 'a broken score holds the level it has, and reads 1 only with nothing to hold');
+
 // every game starts on level 3
 for (const d of ['learner', 'realistic']) { const s = E.startGame(7, d); ok(E.levelOf(s.score) === 3, `${d} starts on level 3 (score ${s.score.toFixed(0)})`); }
 

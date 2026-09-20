@@ -21,7 +21,7 @@ Object.assign(STR.en, {
   levelUp:'⬆️ Level {0}: {1}', levelDown:'⬇️ Down to level {0}: {1}',
   levelHelp:'Your level, 1 to 10, comes from your score. Every game starts on level 3. The level goes up when the country does better and comes down when it does worse — and the last levels are the hardest to hold.',
   finalLevel:'You finished on level {0}: {1}', endTitle:'240 months are up',
-  milestoneTitle:'{0} months in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going', newYear:'Month {0}. Score {1} ({2} over the last 12 months).',
+  milestoneTitle:'{0} months in office', milestoneSub:'Report card, {0}', keepPlaying:'Keep going',
   whyNow:'What’s driving things right now',
   // trade drawer
   dTrade:'Trade', tradeSub:'Oil, gas, factories, farms, ports and deals with other countries.', subResources:'Resources', subPorts:'Ports', subPartners:'Partners',
@@ -114,7 +114,7 @@ Object.assign(STR.ar, {
   levelUp:'⬆️ المستوى {0}: {1}', levelDown:'⬇️ نزلتَ إلى المستوى {0}: {1}',
   levelHelp:'مستواك، من 1 إلى 10، يأتي من نقاطك. كل لعبة تبدأ من المستوى 3. يرتفع المستوى عندما يتحسّن حال البلاد وينزل عندما يسوء، والمستويات الأخيرة هي الأصعب في الحفاظ عليها.',
   finalLevel:'أنهيتَ على المستوى {0}: {1}', endTitle:'انتهت الـ240 شهراً',
-  milestoneTitle:'{0} شهراً في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع', newYear:'الشهر {0}. النقاط {1} ({2} خلال آخر 12 شهراً).',
+  milestoneTitle:'{0} شهراً في الرئاسة', milestoneSub:'بطاقة التقييم، {0}', keepPlaying:'تابع',
   whyNow:'ما الذي يحرّك الأمور الآن',
   dTrade:'التجارة', tradeSub:'النفط والغاز والمصانع والمزارع والموانئ والاتفاقات مع الدول.', subResources:'الموارد', subPorts:'الموانئ', subPartners:'الشركاء',
   decHeading:'ماذا تريد أن تفعل؟', decLater:'ليس الآن', decSkip:'شيء آخر',
@@ -329,10 +329,11 @@ const PART_TXT = {
 
 // The ten levels. A ladder a player can read at a glance: each name must obviously beat the one
 // below it. Level 1 is a country in crisis; level 10 is a country that has been rebuilt — not a
-// paradise, a country. Plain words, no slogans, no side taken.
+// paradise, a country. Plain words, no slogans, no side taken: no الصمود, no حالة الطوارئ, no
+// إصلاحات — every one of those is a word one side of the war owns.
 const LEVEL_TXT = {
-  en:['Emergency', 'On the brink', 'Holding on', 'Catching breath', 'Finding our feet', 'Steadying', 'Recovering', 'Building', 'Growing', 'Rebuilt'],
-  ar:['حالة طوارئ', 'على الحافة', 'صامدون', 'نلتقط أنفاسنا', 'نقف على أقدامنا', 'نستقر', 'نتعافى', 'نبني', 'ننمو', 'أعدنا البناء'],
+  en:['Falling apart', 'On the brink', 'Holding on', 'Catching breath', 'Finding our feet', 'Steadying', 'Recovering', 'Building', 'Growing', 'Rebuilt'],
+  ar:['انهيار', 'على الحافة', 'نتماسك', 'نلتقط أنفاسنا', 'نقف على أقدامنا', 'نستقر', 'نتعافى', 'نبني', 'ننمو', 'أعدنا البناء'],
 };
 const levelName = lv => (LEVEL_TXT[LANG] || LEVEL_TXT.en)[Math.max(1, Math.min(10, lv)) - 1];
 
