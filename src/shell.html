@@ -496,6 +496,13 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .iconbtn.mpchip{ height:38px; padding:0 8px; } .iconbtn.mpchip b{ font-size:12px; }
 }
 @media (prefers-reduced-motion: reduce){ .mppanel{ animation:none; } }
+/* the locked list */
+.dbtn.lockbtn{ opacity:.72; }
+.dbtn.lockbtn:hover{ opacity:1; }
+.lockgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:7px; margin-bottom:12px; }
+.lockrow{ display:flex; gap:9px; align-items:center; border:2px dashed var(--card-line); border-radius:14px; padding:8px 11px; background:var(--card-2); }
+.lockrow .li{ font-size:21px; flex:0 0 auto; }
+.lockrow b{ font-size:14px; line-height:1.2; }
 /* levels, medals, infrastructure */
 .lvup{ display:flex; align-items:flex-end; gap:14px; }
 .lvbadge{ width:62px; height:62px; border-radius:18px; background:var(--gold); color:var(--gold-ink); display:grid; place-items:center; font-size:30px; font-weight:800; box-shadow:0 4px 0 var(--gold-deep); flex:0 0 auto; }

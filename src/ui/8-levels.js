@@ -201,3 +201,49 @@ function netLegend(){
     .map(([k, i]) => `<span title="${esc(L2(INFRA_TXT[k])[0])}">${i} ${iLvl(S, k)}/${INFRA[k].max}</span>`).join('');
   return rows || `<span>${esc(t('infraNone'))}</span>`;
 }
+
+// ---------- nothing silently does not exist ----------
+// The dock used to simply omit a panel that had not opened yet. A player looking for Progress at
+// level 1 found no button, clicked nothing, and had no way to learn that it arrives at level 5 —
+// the one place in the game where something was hidden without saying so. Everywhere else already
+// says it: the Build panel greys a locked network with "Opens at level 4", and so do the far
+// markets. The dock now carries one 🔒 button that lists everything still to come, and when.
+//
+// Called from renderDock() during the first render, so: function declarations, and nothing here
+// may reach for a `const` declared in this file. See rule 10 in CLAUDE.md.
+function lockedThings(){
+  if (!S) return [];
+  const pol = k => (typeof POL !== 'undefined' && POL[k]) ? L2(POL[k]).name : k;
+  const rows = [
+    ['build', '🏗️', () => t('dBuild')], ['layerBuild', '🛣️', () => t('layerBuild')], ['medals', '🏅', () => t('subMedals')],
+    ['decrees', '⭐', () => t('dDecrees')], ['layerPower', '💡', () => t('layerPower')],
+    ['polTax', '🧾', () => pol('tax')], ['polPrint', '🖨️', () => pol('print')],
+    ['trade', '🚢', () => t('dTrade')], ['progress', '📈', () => t('dProgress')], ['chains', '🔗', () => t('dSupply')],
+    ['layerDamage', '🏚️', () => t('layerDamage')], ['ports', '⚓', () => t('subPorts')], ['partners', '🤝', () => t('subPartners')],
+    ['polCapex', '⚡', () => pol('capex')], ['polRecon', '🧱', () => pol('recon')],
+    ['routes', '🚚', () => t('lockRoutes')],
+    ['services', '🏫', () => t('subServices')], ['sectors', '🏭', () => t('sectorTitle')], ['layerJobs', '💼', () => t('layerJobs')],
+    ['polIntervene', '💱', () => pol('intervene')], ['polCrackdown', '🚓', () => pol('crackdown')],
+    ['supply', '📦', () => t('lockSupply')], ['unis', '🎓', () => t('svcUnis')],
+  ];
+  return rows.filter(([k]) => !isOpen(k))
+    .map(([k, icon, name]) => ({ key:k, icon, name:name(), lvl:(UNLOCK[k] || 1) }))
+    .sort((a, b) => a.lvl - b.lvl || a.name.localeCompare(b.name));
+}
+function lockedCount(){ return lockedThings().length; }
+function showLocked(){
+  const rows = lockedThings(), lv = levelNow();
+  const groups = [];
+  rows.forEach(r => { const g = groups.find(x => x.lvl === r.lvl); if (g) g.items.push(r); else groups.push({ lvl:r.lvl, items:[r] }); });
+  modal(`<div class="tut-icon" aria-hidden="true">🔒</div><h2>${t('lockedTitle')}</h2>
+    <p class="lede">${esc(fill(t('lockedSub'), [lv]))}</p>
+    ${rows.length ? groups.map(g => `<h3 class="bh">${esc(fill(t('levelN'), [g.lvl]))}</h3>
+        <div class="lockgrid">${g.items.map(r => `<div class="lockrow"><span class="li" aria-hidden="true">${r.icon}</span><b>${esc(r.name)}</b></div>`).join('')}</div>`).join('')
+      : `<p class="lede">${esc(t('lockedNone'))}</p>`}
+    <p class="tipbox">💡 ${esc(t('lockedHow'))}</p>
+    <div class="row"><button class="btn primary" data-act="close">${t('close')}</button></div>`);
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act=locked]'); if (!b) return;
+  sfx('tap'); showLocked();
+});

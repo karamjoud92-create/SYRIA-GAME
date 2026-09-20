@@ -496,6 +496,13 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .iconbtn.mpchip{ height:38px; padding:0 8px; } .iconbtn.mpchip b{ font-size:12px; }
 }
 @media (prefers-reduced-motion: reduce){ .mppanel{ animation:none; } }
+/* the locked list */
+.dbtn.lockbtn{ opacity:.72; }
+.dbtn.lockbtn:hover{ opacity:1; }
+.lockgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:7px; margin-bottom:12px; }
+.lockrow{ display:flex; gap:9px; align-items:center; border:2px dashed var(--card-line); border-radius:14px; padding:8px 11px; background:var(--card-2); }
+.lockrow .li{ font-size:21px; flex:0 0 auto; }
+.lockrow b{ font-size:14px; line-height:1.2; }
 /* levels, medals, infrastructure */
 .lvup{ display:flex; align-items:flex-end; gap:14px; }
 .lvbadge{ width:62px; height:62px; border-radius:18px; background:var(--gold); color:var(--gold-ink); display:grid; place-items:center; font-size:30px; font-weight:800; box-shadow:0 4px 0 var(--gold-deep); flex:0 0 auto; }
@@ -2180,7 +2187,11 @@ Object.assign(STR.en, {
   levelN:'Level {0}', monthNo:'Month {0}', levelUp:'Level {0} reached', levelMax:'Top level. Nothing left to unlock — only medals.',
   xpToNext:'{0} experience to the next level', xpHave:'{0} experience', medalsHave:'{0} of {1} medals',
   levelNoGift:'No new panel this time. The medals are still out there, and every one of them is experience.',
-  needsLevel:'Opens at level {0}',
+  needsLevel:'Opens at level {0}', lockBtn:'Locked',
+  lockedTitle:'Still to come', lockedSub:'You are level {0}. These open as you go — nothing here is missing, it just has not arrived yet.',
+  lockedNone:'Nothing is locked. The whole country is yours to run.',
+  lockedHow:'Levels come from months in office and from experience for getting things done, whichever arrives first. Build something and you get there sooner.',
+  lockSupply:'Trucks, cold chain and packaging', lockRoutes:'Widening trade routes',
   veteran:'nothing new — you have the whole country now', mentorOff:'the game stops suggesting and lets you run it',
   routesGift:'widening trade routes', moreRoutes:'two more countries to trade with',
   infraRoads:'Roads and bridges', infraEgov:'Digital government', infraAir:'Airports',
@@ -2215,7 +2226,11 @@ Object.assign(STR.ar, {
   levelN:'المستوى {0}', monthNo:'الشهر {0}', levelUp:'وصلت إلى المستوى {0}', levelMax:'أعلى مستوى. لا يتبقى ما يُفتح — إلا الأوسمة.',
   xpToNext:'{0} خبرة حتى المستوى التالي', xpHave:'{0} خبرة', medalsHave:'{0} من {1} وسام',
   levelNoGift:'لا لوحة جديدة هذه المرة. الأوسمة ما زالت موجودة، وكل وسام منها خبرة.',
-  needsLevel:'يُفتح في المستوى {0}',
+  needsLevel:'يُفتح في المستوى {0}', lockBtn:'مُقفل',
+  lockedTitle:'ما زال قادماً', lockedSub:'أنت في المستوى {0}. هذه تُفتح مع تقدّمك — لا شيء هنا ناقص، لكنه لم يصل بعد.',
+  lockedNone:'لا شيء مقفل. البلد كله بين يديك.',
+  lockedHow:'المستويات تأتي من أشهر الرئاسة ومن الخبرة التي تكسبها بإنجاز الأمور، أيهما يسبق. ابنِ شيئاً وتصل أسرع.',
+  lockSupply:'الشاحنات والتبريد والتعبئة', lockRoutes:'توسيع الطرق التجارية',
   veteran:'لا شيء جديد — البلد كله بين يديك الآن', mentorOff:'اللعبة تتوقف عن الاقتراح وتتركك تدير',
   routesGift:'توسيع الطرق التجارية', moreRoutes:'بلدان إضافيان للتجارة',
   infraRoads:'الطرق والجسور', infraEgov:'الحكومة الرقمية', infraAir:'المطارات',
@@ -3467,7 +3482,8 @@ function stageNow(){ return [1, 3, 5, 7, 9].filter(n => levelNow() >= n).length 
 const UNLOCK = {
   guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
   build:2, medals:2, layerBuild:2, infraGrid:2, infraWater:2, infraHousing:2,
-  decrees:3, layerPower:3, polTax:3, polPrint:3, families:3,
+  families:1,
+  decrees:3, layerPower:3, polTax:3, polPrint:3,
   infraRoads:4, infraEgov:4,
   trade:5, progress:5, chains:5, layerDamage:5, polCapex:5, polRecon:5, ports:5, partners:5, infraRail:5,
   routes:6, infraAir:6,
@@ -4038,10 +4054,15 @@ function drawerBody(id){
 function renderDrawer(){
   const d = DRAWERS5.find(x => x[0] === UI.drawer); if (!d) return '';
   const sub = d[0] === 'decrees' ? fill(t('decreesIntro'), [Math.round(S.pc)]) : t(d[3]);
-  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['medals','subMedals'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  const all = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['medals','subMedals'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  // A subtab is gated by the same key as the thing behind it. Without this the People panel showed
+  // "Schools & clinics" from month 0 and let you build them, while the guide was forbidden from
+  // ever mentioning schools until level 7 — the panel and the advice disagreeing about the game.
+  const subtabs = all ? all.filter(([k]) => isOpen(k)) : null;
+  if (subtabs && subtabs.length && !subtabs.some(([k]) => UI.sub[d[0]] === k)) UI.sub[d[0]] = subtabs[0][0];
   return `<aside class="drawer"><div class="head"><span class="dic" aria-hidden="true">${d[1]}</span><h2>${t(d[2])}</h2><button class="close" data-act="closeDrawer" aria-label="${t('close')}">✕</button></div>
     <div class="sub">${sub}</div>
-    ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
+    ${subtabs && subtabs.length > 1 ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
     <div class="body">${drawerBody(d[0])}</div></aside>`;
 }
 function renderProgressCharts(){
@@ -4066,7 +4087,10 @@ function renderDock(){
   const btn = ([k, i, l]) => `<button class="dbtn" data-act="drawer" data-v="${k}" aria-pressed="${UI.drawer === k}"><span class="di" aria-hidden="true">${i}</span><span class="dt">${t(l)}</span>${badge[k] || ''}</button>`;
   const sp = [[0, '❚❚', 'pause'], [1, '▶', 'slow'], [2, '▶▶', 'normal'], [3, '▶▶▶', 'fastest']];
   const tr = DR.find(d => d[0] === 'trade'), rest = DR.filter(d => d[0] !== 'trade');
-  return `<div class="dgroup">${rest.slice(0, 3).map(btn).join('')}</div>${tr ? `<div class="dgroup trade">${btn(tr)}</div>` : ''}${rest.length > 3 ? `<div class="dgroup">${rest.slice(3).map(btn).join('')}</div>` : ''}
+  // Everything still to come, behind one button, so nothing is ever simply missing.
+  const lockN = typeof lockedCount === 'function' ? lockedCount() : 0;
+  const lockBtn = lockN ? `<button class="dbtn lockbtn" data-act="locked" aria-label="${esc(t('lockedTitle'))}"><span class="di" aria-hidden="true">🔒</span><span class="dt">${t('lockBtn')}</span><span class="badge">${lockN}</span></button>` : '';
+  return `<div class="dgroup">${rest.slice(0, 3).map(btn).join('')}</div>${tr ? `<div class="dgroup trade">${btn(tr)}</div>` : ''}${rest.length > 3 || lockBtn ? `<div class="dgroup">${rest.slice(3).map(btn).join('')}${lockBtn}</div>` : ''}
     <span class="spacer"></span>
     <button class="influence" data-act="drawer" data-v="decrees"><span class="st" aria-hidden="true">⭐</span><span><span class="n">${Math.round(S.pc)}</span><span class="l">${t('influenceLbl')}</span></span></button>
     ${S.over ? `<button class="endturn" data-act="restart">${t('playAgain')}</button>` : `<div class="clock" role="group" aria-label="${t('play')}">${sp.map(([v, ic, l]) => `<button class="cbtn${v === 0 ? ' pause' : ''}" data-act="speed" data-v="${v}" aria-pressed="${UI.speed === v}" aria-label="${t(l)}" title="${t(l)}"><span dir="ltr">${ic}</span></button>`).join('')}</div>`}`;
@@ -4877,6 +4901,52 @@ function netLegend(){
     .map(([k, i]) => `<span title="${esc(L2(INFRA_TXT[k])[0])}">${i} ${iLvl(S, k)}/${INFRA[k].max}</span>`).join('');
   return rows || `<span>${esc(t('infraNone'))}</span>`;
 }
+
+// ---------- nothing silently does not exist ----------
+// The dock used to simply omit a panel that had not opened yet. A player looking for Progress at
+// level 1 found no button, clicked nothing, and had no way to learn that it arrives at level 5 —
+// the one place in the game where something was hidden without saying so. Everywhere else already
+// says it: the Build panel greys a locked network with "Opens at level 4", and so do the far
+// markets. The dock now carries one 🔒 button that lists everything still to come, and when.
+//
+// Called from renderDock() during the first render, so: function declarations, and nothing here
+// may reach for a `const` declared in this file. See rule 10 in CLAUDE.md.
+function lockedThings(){
+  if (!S) return [];
+  const pol = k => (typeof POL !== 'undefined' && POL[k]) ? L2(POL[k]).name : k;
+  const rows = [
+    ['build', '🏗️', () => t('dBuild')], ['layerBuild', '🛣️', () => t('layerBuild')], ['medals', '🏅', () => t('subMedals')],
+    ['decrees', '⭐', () => t('dDecrees')], ['layerPower', '💡', () => t('layerPower')],
+    ['polTax', '🧾', () => pol('tax')], ['polPrint', '🖨️', () => pol('print')],
+    ['trade', '🚢', () => t('dTrade')], ['progress', '📈', () => t('dProgress')], ['chains', '🔗', () => t('dSupply')],
+    ['layerDamage', '🏚️', () => t('layerDamage')], ['ports', '⚓', () => t('subPorts')], ['partners', '🤝', () => t('subPartners')],
+    ['polCapex', '⚡', () => pol('capex')], ['polRecon', '🧱', () => pol('recon')],
+    ['routes', '🚚', () => t('lockRoutes')],
+    ['services', '🏫', () => t('subServices')], ['sectors', '🏭', () => t('sectorTitle')], ['layerJobs', '💼', () => t('layerJobs')],
+    ['polIntervene', '💱', () => pol('intervene')], ['polCrackdown', '🚓', () => pol('crackdown')],
+    ['supply', '📦', () => t('lockSupply')], ['unis', '🎓', () => t('svcUnis')],
+  ];
+  return rows.filter(([k]) => !isOpen(k))
+    .map(([k, icon, name]) => ({ key:k, icon, name:name(), lvl:(UNLOCK[k] || 1) }))
+    .sort((a, b) => a.lvl - b.lvl || a.name.localeCompare(b.name));
+}
+function lockedCount(){ return lockedThings().length; }
+function showLocked(){
+  const rows = lockedThings(), lv = levelNow();
+  const groups = [];
+  rows.forEach(r => { const g = groups.find(x => x.lvl === r.lvl); if (g) g.items.push(r); else groups.push({ lvl:r.lvl, items:[r] }); });
+  modal(`<div class="tut-icon" aria-hidden="true">🔒</div><h2>${t('lockedTitle')}</h2>
+    <p class="lede">${esc(fill(t('lockedSub'), [lv]))}</p>
+    ${rows.length ? groups.map(g => `<h3 class="bh">${esc(fill(t('levelN'), [g.lvl]))}</h3>
+        <div class="lockgrid">${g.items.map(r => `<div class="lockrow"><span class="li" aria-hidden="true">${r.icon}</span><b>${esc(r.name)}</b></div>`).join('')}</div>`).join('')
+      : `<p class="lede">${esc(t('lockedNone'))}</p>`}
+    <p class="tipbox">💡 ${esc(t('lockedHow'))}</p>
+    <div class="row"><button class="btn primary" data-act="close">${t('close')}</button></div>`);
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act=locked]'); if (!b) return;
+  sfx('tap'); showLocked();
+});
 
 </script>
 </body>

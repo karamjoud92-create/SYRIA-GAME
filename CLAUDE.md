@@ -36,6 +36,10 @@ another player's country.
   opens at its level with the rest locked, an upgrade costs more the second time, a trade route widens, the medal
   shelf fills, the networks are drawn on the map, and the mentor asks fewer questions as it is turned down.
   Both languages.
+- `npm run audit`  → the dead-end sweep: at every level, in both languages, on desktop and phone, it opens
+  every panel and subtab, switches every map layer, opens every province, and fails on a panel that opens
+  empty, a control disabled with no reason beside it, a raw string key on screen, a click that throws, a
+  subtab offered above its own level, or anything locked that is named nowhere the player can see.
 - `npm run strings`→ every `t()` key and every bilingual table has English *and* Arabic. `t()` falls back to
   printing the key, so a missing string does not crash — it just appears on screen. This found two.
 - Optional browser test: `npm i -D playwright && npx playwright install chromium`, then `node tools/smoke.mjs`.
@@ -148,7 +152,16 @@ another player's country.
 8. In `build.js`, `String.replace` must use the function form — a plain string replacement turns `$$` into `$` and corrupts text.
 9. **No calendar years in front of the player.** The clock is `Level N · Month M`. `npm run onboard` fails if a
    four-digit year appears on the dashboard or in the news.
-10. **Later files load after the boot render.** `src/ui/5-game.js` ends with the IIFE that renders the first
+10. **Nothing may be silently absent.** If a control is not available yet, the player must be able to find
+   out that it exists and when it arrives — a locked network says "Opens at level 4", a far market says the
+   same, and the dock's 🔒 button (`lockedThings()`, `showLocked()`) lists everything still to come. A panel
+   that simply is not rendered reads as a broken button: that is exactly how the Progress panel was reported
+   as "not clicking" when it was really gated to level 5. `npm run audit` enforces this.
+11. **A subtab is gated by the same key as the thing behind it** (`renderDrawer` filters `all` through
+   `isOpen`). The People panel used to offer "Schools & clinics" from month 0 and let you build them, while
+   the guide was forbidden from mentioning schools until level 7 — the panel and the advice disagreeing about
+   what the player had been given. When a panel's only open subtab is the first one, the tab row is hidden.
+12. **Later files load after the boot render.** `src/ui/5-game.js` ends with the IIFE that renders the first
    screen, so anything that first render touches must already exist. A `const` declared in `7-`/`8-` is still in
    its temporal dead zone at that moment and throws; `function` declarations hoist and are safe. This is why
    `INFRA_ORDER` lives in the engine and `infraReady()` is a function declaration.

@@ -17,7 +17,8 @@
     "guide": "node build.js && node tools/guide-check.mjs",
     "decide": "node build.js && node tools/decide-check.mjs",
     "levels": "node build.js && node tools/levels-check.mjs",
-    "strings": "node build.js && node tools/strings-check.mjs"
+    "strings": "node build.js && node tools/strings-check.mjs",
+    "audit": "node build.js && node tools/audit.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

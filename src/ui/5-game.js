@@ -39,7 +39,8 @@ function stageNow(){ return [1, 3, 5, 7, 9].filter(n => levelNow() >= n).length 
 const UNLOCK = {
   guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
   build:2, medals:2, layerBuild:2, infraGrid:2, infraWater:2, infraHousing:2,
-  decrees:3, layerPower:3, polTax:3, polPrint:3, families:3,
+  families:1,
+  decrees:3, layerPower:3, polTax:3, polPrint:3,
   infraRoads:4, infraEgov:4,
   trade:5, progress:5, chains:5, layerDamage:5, polCapex:5, polRecon:5, ports:5, partners:5, infraRail:5,
   routes:6, infraAir:6,
@@ -610,10 +611,15 @@ function drawerBody(id){
 function renderDrawer(){
   const d = DRAWERS5.find(x => x[0] === UI.drawer); if (!d) return '';
   const sub = d[0] === 'decrees' ? fill(t('decreesIntro'), [Math.round(S.pc)]) : t(d[3]);
-  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['medals','subMedals'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  const all = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['medals','subMedals'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  // A subtab is gated by the same key as the thing behind it. Without this the People panel showed
+  // "Schools & clinics" from month 0 and let you build them, while the guide was forbidden from
+  // ever mentioning schools until level 7 — the panel and the advice disagreeing about the game.
+  const subtabs = all ? all.filter(([k]) => isOpen(k)) : null;
+  if (subtabs && subtabs.length && !subtabs.some(([k]) => UI.sub[d[0]] === k)) UI.sub[d[0]] = subtabs[0][0];
   return `<aside class="drawer"><div class="head"><span class="dic" aria-hidden="true">${d[1]}</span><h2>${t(d[2])}</h2><button class="close" data-act="closeDrawer" aria-label="${t('close')}">✕</button></div>
     <div class="sub">${sub}</div>
-    ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
+    ${subtabs && subtabs.length > 1 ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
     <div class="body">${drawerBody(d[0])}</div></aside>`;
 }
 function renderProgressCharts(){
@@ -638,7 +644,10 @@ function renderDock(){
   const btn = ([k, i, l]) => `<button class="dbtn" data-act="drawer" data-v="${k}" aria-pressed="${UI.drawer === k}"><span class="di" aria-hidden="true">${i}</span><span class="dt">${t(l)}</span>${badge[k] || ''}</button>`;
   const sp = [[0, '❚❚', 'pause'], [1, '▶', 'slow'], [2, '▶▶', 'normal'], [3, '▶▶▶', 'fastest']];
   const tr = DR.find(d => d[0] === 'trade'), rest = DR.filter(d => d[0] !== 'trade');
-  return `<div class="dgroup">${rest.slice(0, 3).map(btn).join('')}</div>${tr ? `<div class="dgroup trade">${btn(tr)}</div>` : ''}${rest.length > 3 ? `<div class="dgroup">${rest.slice(3).map(btn).join('')}</div>` : ''}
+  // Everything still to come, behind one button, so nothing is ever simply missing.
+  const lockN = typeof lockedCount === 'function' ? lockedCount() : 0;
+  const lockBtn = lockN ? `<button class="dbtn lockbtn" data-act="locked" aria-label="${esc(t('lockedTitle'))}"><span class="di" aria-hidden="true">🔒</span><span class="dt">${t('lockBtn')}</span><span class="badge">${lockN}</span></button>` : '';
+  return `<div class="dgroup">${rest.slice(0, 3).map(btn).join('')}</div>${tr ? `<div class="dgroup trade">${btn(tr)}</div>` : ''}${rest.length > 3 || lockBtn ? `<div class="dgroup">${rest.slice(3).map(btn).join('')}${lockBtn}</div>` : ''}
     <span class="spacer"></span>
     <button class="influence" data-act="drawer" data-v="decrees"><span class="st" aria-hidden="true">⭐</span><span><span class="n">${Math.round(S.pc)}</span><span class="l">${t('influenceLbl')}</span></span></button>
     ${S.over ? `<button class="endturn" data-act="restart">${t('playAgain')}</button>` : `<div class="clock" role="group" aria-label="${t('play')}">${sp.map(([v, ic, l]) => `<button class="cbtn${v === 0 ? ' pause' : ''}" data-act="speed" data-v="${v}" aria-pressed="${UI.speed === v}" aria-label="${t(l)}" title="${t(l)}"><span dir="ltr">${ic}</span></button>`).join('')}</div>`}`;

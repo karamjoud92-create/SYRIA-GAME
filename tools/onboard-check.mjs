@@ -13,14 +13,23 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   page.on('pageerror', e => errs.push(tag + ': ' + e.message));
   page.on('console', m => { const x = m.text(); if (m.type() === 'error' && !/ERR_CERT|fonts\.g/.test(x)) errs.push(tag + ' console: ' + x); });
   await page.goto(file); await page.waitForTimeout(400);
+  const t0Progress = await page.evaluate(() => t('dProgress'));
   await page.click('[data-act=newgame][data-v=learner]');
   for (let i = 0; i < 8; i++) { const x = await page.$('.modal .btn.primary'); if (x) await x.click(); await page.waitForTimeout(40); }
   await clear(page);
 
   // --- month 0: a small game ---
-  const dock0 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
+  const dock0 = await page.$$eval('.dbtn:not(.lockbtn)', e => e.map(n => n.dataset.v));
   ok(dock0.length === 4 && ['guide','policy','money','people'].every(k => dock0.includes(k)),
      `${tag}: month 0 offers 4 panels, not 8 (${dock0.join(',')})`);
+  // A panel that has not opened yet must still be findable, or a player goes looking for it,
+  // finds no button at all, and concludes the game is broken. That is exactly what happened.
+  ok(await page.$('.lockbtn'), `${tag}: month 0 says what is still to come`);
+  await page.click('.lockbtn'); await page.waitForTimeout(220);
+  const locked0 = await page.$$eval('.lockrow b', e => e.map(n => n.textContent.trim()));
+  ok(locked0.length >= 15, `${tag}: and lists all of it (${locked0.length} things)`);
+  ok(locked0.some(x => x === t0Progress), `${tag}: including Progress, which opens at level 5`);
+  await clear(page);
   const layers0 = await page.$$eval('.layers button', e => e.length);
   ok(layers0 === 1, `${tag}: month 0 has one map layer (${layers0})`);
   await page.click('.dbtn[data-v=policy]'); await page.waitForTimeout(200);
@@ -30,13 +39,13 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // --- the stages open up ---
   await jump(page, 8); await clear(page);
-  const dock1 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
+  const dock1 = await page.$$eval('.dbtn:not(.lockbtn)', e => e.map(n => n.dataset.v));
   ok(dock1.includes('decrees'), `${tag}: decrees open in year 1 (${dock1.length} panels)`);
   await jump(page, 10); await clear(page);
-  const dock2 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
+  const dock2 = await page.$$eval('.dbtn:not(.lockbtn)', e => e.map(n => n.dataset.v));
   ok(dock2.includes('trade') && dock2.includes('progress'), `${tag}: trade and progress open in year 2 (${dock2.length} panels)`);
   await jump(page, 20); await clear(page);
-  const dock3 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
+  const dock3 = await page.$$eval('.dbtn:not(.lockbtn)', e => e.map(n => n.dataset.v));
   const layers3 = await page.$$eval('.layers button', e => e.length);
   ok(dock3.length === 9 && layers3 === 5, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
 

@@ -70,6 +70,13 @@ Built in this session, in order:
 16. **CI actually runs the tests.** `npm run check` plus all six browser suites, on every branch and pull
    request; Pages only publishes from the default branch once both are green.
 
+17. **Nothing is silently absent any more.** A 🔒 button in the dock lists every panel, map layer, policy
+   dial and feature still to come, grouped by the level that opens it. This was reported as "the Progress
+   button is not clicking" — it was gated to level 5 and simply was not rendered, so there was no button.
+18. **`npm run audit`** — a dead-end sweep across twelve levels, two languages and two screen sizes: ~800
+   checks for empty panels, silently disabled controls, raw string keys, thrown clicks, subtabs offered
+   above their level, and anything locked that is named nowhere.
+
 ## Decisions worth not undoing
 
 - **The artifact cannot host live shared scores.** Declaring the artifact database makes a page
@@ -93,6 +100,14 @@ Built in this session, in order:
 - **Networks have upkeep.** Without it, `infra` scored 75 on Learner with no industry at all and Reconstruction
   pinned at 100 — a free A by ignoring the economy. With it, `infra` is a 68 on Learner and dies of a default at
   year 4 on Realistic. That failing line in `npm run sim` is the intended lesson, not a regression.
+- **A hidden control reads as a broken one.** The Progress panel was fine; it just did not exist below
+  level 5, and nothing said so. Users do not conclude "not unlocked yet", they conclude "this button is
+  broken". Anything gated must announce itself and its level.
+- **Gate the subtab, not just the panel.** `UNLOCK.services` was set to level 7 and the guide obeyed it, but
+  the People panel rendered a "Schools & clinics" tab from month 0 with a working build button. The gate has
+  to be applied where the control is drawn, or the panel quietly contradicts the advice.
+- **`UNLOCK.families` gated nothing.** There was no `isOpen('families')` anywhere — dead config carried over
+  from the stage table. The new audit invariant ("locked but named nowhere") is what surfaced it.
 - **Don't fake geography.** Water, housing and digital government are national, and tinting provinces by them
   would have been a lie dressed as information. They are counted in the legend instead. Only roads, rail, ports
   and airports are drawn, because only those are actually somewhere.
