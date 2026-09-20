@@ -131,20 +131,51 @@ function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[
 // Visitors only come to a calm, lit country — and it pays in dollars with no ship involved.
 function tourismIncome(s){
   const n = indLvl(s, 'tourism'); if (!n) return 0;
-  return 18 * n * clamp(1.25 - natUnrest(s) / 55, 0, 1.1) * clamp(nationalHours(s) / 14, 0.3, 1);
+  return 18 * n * (1 + iLvl(s, 'air') * INFRA.air.tour) * clamp(1.25 - natUnrest(s) / 55, 0, 1.1) * clamp(nationalHours(s) / 14, 0.3, 1);
 }
 function industryExports(s){ let e = 0; Object.keys(IND).forEach(k => e += IND[k].exp * indLvl(s, k)); return e; }
+// Trade partners. A signed deal is level 1; a route can be widened twice more, which costs
+// influence and dollars again and gives more of the same thing. `ok` is the condition that keeps
+// the route open — a deal with a burning border is a piece of paper.
 const PARTNERS = {
-  turkey:{ flag:'🇹🇷', pc:15, sov:1, ok:s => s.provs.aleppo.u < 65 && s.provs.idlib.u < 65 },
-  jordan:{ flag:'🇯🇴', pc:10, sov:0, ok:s => s.provs.daraa.u < 65 },
-  iraq:{ flag:'🇮🇶', pc:12, sov:0, ok:s => s.provs.deir.u < 65 },
-  lebanon:{ flag:'🇱🇧', pc:8, sov:0, usd:40, ok:s => s.provs.homs.u < 70 },
-  gulf:{ flag:'🌴', pc:15, sov:2, ok:s => s.corr < 55 },
-  eu:{ flag:'🇪🇺', pc:20, sov:1, ok:s => s.trust >= 45 && s.corr < 50, signReq:s => s.trust >= 45 && s.corr < 50 },
-  china:{ flag:'🇨🇳', pc:10, sov:5, ok:() => true },
-  russia:{ flag:'🌾', pc:8, sov:5, ok:() => true },
+  turkey:{ flag:'🇹🇷', pc:15, sov:1, max:3, up:{ pc:10, usd:55, sov:0 }, ok:s => s.provs.aleppo.u < 65 && s.provs.idlib.u < 65 },
+  jordan:{ flag:'🇯🇴', pc:10, sov:0, max:3, up:{ pc:8, usd:45, sov:0 }, ok:s => s.provs.daraa.u < 65 },
+  iraq:{ flag:'🇮🇶', pc:12, sov:0, max:3, up:{ pc:9, usd:60, sov:1 }, ok:s => s.provs.deir.u < 65 },
+  lebanon:{ flag:'🇱🇧', pc:8, sov:0, usd:40, max:3, up:{ pc:7, usd:40, sov:0 }, ok:s => s.provs.homs.u < 70 },
+  gulf:{ flag:'🌴', pc:15, sov:2, max:3, up:{ pc:12, usd:0, sov:1 }, ok:s => s.corr < 55 },
+  eu:{ flag:'🇪🇺', pc:20, sov:1, max:3, up:{ pc:16, usd:0, sov:0 }, ok:s => s.trust >= 45 && s.corr < 50, signReq:s => s.trust >= 45 && s.corr < 50 },
+  china:{ flag:'🇨🇳', pc:10, sov:5, max:3, up:{ pc:8, usd:0, sov:3 }, ok:() => true },
+  russia:{ flag:'🌾', pc:8, sov:5, max:3, up:{ pc:7, usd:0, sov:2 }, ok:() => true },
+  // opened later in the game, once there is something to sell and somewhere to sell it from
+  egypt:{ flag:'🇪🇬', pc:12, sov:0, max:3, up:{ pc:9, usd:50, sov:0 }, lvlReq:5, ok:s => s.provs.damascus.u < 65 },
+  india:{ flag:'🇮🇳', pc:12, sov:0, max:3, up:{ pc:9, usd:35, sov:0 }, lvlReq:6, ok:s => s.corr < 62 },
+  africa:{ flag:'🌍', pc:14, sov:0, max:3, up:{ pc:10, usd:45, sov:0 }, lvlReq:7,
+    signReq:s => s.ports.latakia.lvl + s.ports.tartus.lvl >= 3, ok:s => exportCapacity(s) > 90 },
 };
+// 0 when the route is shut or unsigned, otherwise how wide it is (1..3).
+const dealLvl = (s, id) => (s.deals[id] && s.deals[id].on) ? (s.deals[id].lvl || 1) : 0;
+const dealCost = (s, id) => { const x = PARTNERS[id], n = (s.deals[id] && s.deals[id].lvl) || 1;
+  return { pc:Math.round(x.up.pc * (1 + 0.5 * (n - 1))), usd:Math.round(x.up.usd * (1 + 0.6 * (n - 1))), sov:x.up.sov }; };
 const PORT_UPGRADE = { usd:60, months:8 };
+
+// ---------- infrastructure: seven things a country runs on, each with levels ----------
+// Every track does one job the rest of the simulation already understands, so a level is never a
+// number on a card: the grid makes electricity, roads move goods, water keeps people alive.
+// Costs and build times climb with each level, so level 5 of anything is a real commitment.
+const INFRA = {
+  grid:    { usd:70, syp:4, months:8,  max:5, mw:430, lvlReq:2 },
+  water:   { usd:42, syp:4, months:6,  max:5, health:4.4, calm:0.9, lvlReq:2 },
+  housing: { usd:58, syp:8, months:8,  max:5, repair:0.22, calm:1.2, lvlReq:2 },
+  roads:   { usd:52, syp:3, months:7,  max:5, capacity:24, jobs:1.1, lvlReq:4 },
+  egov:    { usd:34, syp:2, months:6,  max:4, comp:4.5, honest:2.6, lvlReq:4 },
+  rail:    { usd:88, syp:4, months:12, max:4, capacity:30, value:0.035, lvlReq:5 },
+  air:     { usd:78, syp:3, months:10, max:3, tour:0.16, remit:0.04, lvlReq:6 },
+};
+const INFRA_ORDER = ['grid', 'water', 'housing', 'roads', 'egov', 'rail', 'air'];
+const iLvl = (s, k) => (s.infra && s.infra[k]) || 0;
+// Clash-of-Clans arithmetic, on purpose: each level costs about 60% more and takes 25% longer.
+const infraCost = (s, k) => { const x = INFRA[k], n = iLvl(s, k);
+  return { usd:Math.round(x.usd * Math.pow(1.6, n)), syp:+(x.syp * Math.pow(1.45, n)).toFixed(1), months:Math.round(x.months * (1 + 0.25 * n)) }; };
 // What a state is actually for. Each level is a wave of buildings, not one building.
 const SERVICES = {
   schools:{ usd:16, syp:3, months:4, per:0.55, run:0.5 },
@@ -168,7 +199,8 @@ function newGame(seed, diff = 'learner', mission = null){
   const provs = {};
   PROVS.forEach(p => provs[p.id] = { id:p.id, u:p.u, dmg:p.dmg, dmg0:p.dmg, jobless:clamp(p.jobless + (easy ? 0 : 9), 0, 95), jobsMod:0, mod:0, power:0, project:false });
   return {
-    v:6, diff, seed: seed ?? Math.floor(Math.random()*1e9), t:0,
+    v:7, diff, seed: seed ?? Math.floor(Math.random()*1e9), t:0,
+    xp:0, medals:{}, selfActs:0, cardActs:0, infra:{ grid:0, water:0, roads:0, rail:0, air:0, egov:0, housing:0 },
     treasury: easy ? 70 : 40, reserves: easy ? 750 : 400, m2:190, official:110, parallel:125, infl:25,
     wage:3000, head:1.30, debt:6100, coupons:0,
     pc: easy ? 70 : 50, trust:42, corr:58, sov:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
@@ -214,11 +246,52 @@ function oilNumbers(s){
 }
 function exportCapacity(s){
   const L = s.ports.latakia.lvl, T = s.ports.tartus.lvl;
-  return 70 + 45 * (L + T - 2) + (dealOn(s, 'turkey') ? 30 : 0) + (dealOn(s, 'jordan') ? 25 : 0) + (built(s, 'latakia') ? 20 : 0) + (built(s, 'daraa') ? 15 : 0)
-    + indLvl(s, 'logistics') * IND.logistics.capacity;
+  return 70 + 45 * (L + T - 2) + dealLvl(s, 'turkey') * 30 + dealLvl(s, 'jordan') * 25 + dealLvl(s, 'africa') * 20
+    + (built(s, 'latakia') ? 20 : 0) + (built(s, 'daraa') ? 15 : 0)
+    + indLvl(s, 'logistics') * IND.logistics.capacity
+    + iLvl(s, 'roads') * INFRA.roads.capacity + iLvl(s, 'rail') * INFRA.rail.capacity;
 }
 // packaging lifts what the same goods fetch; cold chain stops the harvest rotting on the road
-const exportValue = s => 1 + indLvl(s, 'packaging') * IND.packaging.valueUp + indLvl(s, 'coldchain') * IND.coldchain.spoilCut;
+const exportValue = s => 1 + indLvl(s, 'packaging') * IND.packaging.valueUp + indLvl(s, 'coldchain') * IND.coldchain.spoilCut
+  + iLvl(s, 'rail') * INFRA.rail.value;
+
+// ---------- experience and medals ----------
+// Experience is the only thing levels are bought with. It is written here and read nowhere else in
+// this file: the balance simulation and the missions see the number and ignore it, which is how the
+// unlock ladder stays a UI matter (see the note in CLAUDE.md).
+function xp(s, n){ s.xp = (s.xp || 0) + Math.max(0, n); }
+// A ladder of things worth doing, in the order a country would actually do them. Each one is paid
+// for once, in experience — never in dollars, or the simulation and the played game would drift apart.
+const MEDALS = [
+  { id:'firstProject', xp:90,  need:s => PROVS.some(p => built(s, p.id)) },
+  { id:'fiveProjects', xp:200, need:s => PROVS.filter(p => built(s, p.id)).length >= 5 },
+  { id:'allProjects',  xp:500, need:s => PROVS.every(p => built(s, p.id)) },
+  { id:'firstFactory', xp:90,  need:s => Object.keys(IND).some(k => indLvl(s, k) > 0) },
+  { id:'tenFactories', xp:220, need:s => Object.keys(IND).reduce((a, k) => a + indLvl(s, k), 0) >= 10 },
+  { id:'lights12',     xp:140, need:s => nationalHours(s) >= 12 },
+  { id:'lights18',     xp:260, need:s => nationalHours(s) >= 18 },
+  { id:'schooled',     xp:150, need:s => svcCover(s, 'schools') >= 1 },
+  { id:'healthy',      xp:150, need:s => svcCover(s, 'clinics') >= 1 },
+  { id:'educated',     xp:180, need:s => s.edu >= 60 },
+  { id:'work35',       xp:200, need:s => joblessNat(s) < 35 },
+  { id:'work25',       xp:320, need:s => joblessNat(s) < 25 },
+  { id:'trusted',      xp:170, need:s => s.trust >= 60 },
+  { id:'honest',       xp:190, need:s => s.corr <= 35 },
+  { id:'saver',        xp:180, need:s => s.reserves >= 2000 },
+  { id:'twoRoutes',    xp:110, need:s => Object.keys(s.deals).length >= 2 },
+  { id:'fiveRoutes',   xp:210, need:s => Object.keys(s.deals).length >= 5 },
+  { id:'wideRoute',    xp:200, need:s => Object.values(s.deals).some(d => (d.lvl || 1) >= 3) },
+  { id:'firstBuild',   xp:80,  need:s => Object.keys(INFRA).some(k => iLvl(s, k) > 0) },
+  { id:'deepBuild',    xp:200, need:s => Object.keys(INFRA).some(k => iLvl(s, k) >= 3) },
+  { id:'wholeCountry', xp:320, need:s => Object.keys(INFRA).every(k => iLvl(s, k) >= 1) },
+  { id:'bothPorts',    xp:220, need:s => s.ports.latakia.lvl >= 3 && s.ports.tartus.lvl >= 3 },
+  { id:'gradeB',       xp:240, need:s => (s.score || 0) >= 62 },
+  { id:'gradeA',       xp:400, need:s => (s.score || 0) >= 75 },
+];
+function medalScan(s, notes){
+  if (!s.medals) s.medals = {};
+  MEDALS.forEach(m => { if (s.medals[m.id] === undefined && m.need(s)){ s.medals[m.id] = s.t; xp(s, m.xp); if (notes) notes.push(['medal', m.id, m.xp]); } });
+}
 
 // ---------- one month (or any dt) ----------
 function step(state, dt = MONTH, policyOverride){
@@ -237,8 +310,9 @@ function step(state, dt = MONTH, policyOverride){
     if (item.kind === 'mw'){ s.mw += item.mw; if (item.mw >= 50) notes.push(['gridDone', Math.round(item.mw)]); }
     if (item.kind === 'proj') finishProject(s, item, notes);
     if (item.kind === 'invest') finishInvest(s, item, notes);
-    if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl = Math.min(3, p.lvl + 1); notes.push(['portDone', item.id, p.lvl]); }
-    if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); }
+    if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl = Math.min(3, p.lvl + 1); notes.push(['portDone', item.id, p.lvl]); xp(s, 80); }
+    if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); xp(s, 46); }
+    if (item.kind === 'infra') finishInfra(s, item, notes);
     return false;
   });
 
@@ -256,7 +330,8 @@ function step(state, dt = MONTH, policyOverride){
 
   // --- trade deals: active only while their conditions hold ---
   Object.entries(s.deals).forEach(([id, d]) => { const on = PARTNERS[id].ok(s); if (on !== d.on){ d.on = on; notes.push([on ? 'dealOn' : 'dealOff', id]); } });
-  s.mwImport = dealOn(s, 'iraq') ? 300 : 0;
+  const dl = id => dealLvl(s, id);
+  s.mwImport = (dl('iraq') ? 300 + 150 * (dl('iraq') - 1) : 0) + dl('egypt') * 180;
 
   // --- lira budget ---
   const capMult = 1 + (s.cap - 20) * 0.0125, pIdx = s.parallel / BASE_FX;
@@ -272,26 +347,32 @@ function step(state, dt = MONTH, policyOverride){
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
   addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
   { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
+    svcU *= 1 - 0.18 * dl('india');            // generics bought at Indian prices, not European ones
     if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
     if (svcU) addU('medicine', -svcU); }
   if (P.recon) addS('recon', -P.recon);
+  // What CoC never charges you for and a country always pays: a network costs money to keep running.
+  // This is the brake on "build everything and coast" — a grid nobody maintains is a dark grid.
+  { const inf = Object.keys(INFRA).reduce((a, k) => a + iLvl(s, k), 0);
+    if (inf){ addS('upkeep', -inf * 0.22 * Math.pow(pIdx, 0.7)); addU('upkeep', -inf * 1.3); } }
   if (s.decrees.integrity) addS('integrity', -0.5);
   if (state.treasury < 0) addS('interest', state.treasury * 0.04);
   if (P.print) addS('printed', P.print);
 
   // --- dollars: money from abroad ---
   const spread = s.official ? s.parallel / s.official - 1 : 0;
-  const capture = clamp((s.flags.unified ? 1 : 1.1 - spread * 3) + (s.flags.remitBoost ? 0.15 : 0), 0.25, 1.1);
+  const capture = clamp((s.flags.unified ? 1 : 1.1 - spread * 3) + (s.flags.remitBoost ? 0.15 : 0) + iLvl(s, 'air') * INFRA.air.remit, 0.25, 1.25);
   addU('remit', 160 * capture * (1 + (s.trust - 42) / 200));
   // --- dollars: selling abroad (limited by what ports and border crossings can move) ---
-  const euMult = dealOn(s, 'eu') ? 1.25 : 1;
+  const euMult = dl('eu') ? 1 + 0.25 + 0.12 * (dl('eu') - 1) : 1;
+  const indMult = (1 + 0.15 * dl('turkey') + 0.08 * dl('africa'));
   const oil = oilNumbers(s);
   const exportsWanted = {
     phos: (35 * (1 - s.provs.homs.u / 150) * s.res.phos * (s.flags.phosConcession ? 0.6 : 1) + (built(s,'homs') ? PROJECTS.homs.phosphate * (1 - projLeak(s,'homs')) : 0)) * (dealOn(s, 'china') ? 0.7 : 1),
     oilExport: oil.exp * 1.8 * euMult,
-    farm: 10 * s.res.farm * euMult * clamp(1.3 - (s.provs.hama.u + s.provs.idlib.u + s.provs.hasakeh.u) / 300, 0.4, 1),
-    exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * (dealOn(s, 'turkey') ? 1.15 : 1) : 0,
-    industry: industryExports(s) * euMult * (dealOn(s, 'turkey') ? 1.15 : 1),
+    farm: 10 * s.res.farm * euMult * (1 + 0.12 * dl('egypt')) * clamp(1.3 - (s.provs.hama.u + s.provs.idlib.u + s.provs.hasakeh.u) / 300, 0.4, 1),
+    exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * indMult : 0,
+    industry: (industryExports(s) + IND.pharma.exp * indLvl(s, 'pharma') * 0.25 * dl('india')) * euMult * indMult,
   };
   const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
   const fit = (wantTotal > capE ? capE / wantTotal : 1) * exportValue(s);
@@ -302,21 +383,23 @@ function step(state, dt = MONTH, policyOverride){
   const portShare = (s.ports.latakia.op === 'foreign' ? 0.15 : 0) + (s.ports.tartus.op === 'foreign' ? 0.15 : 0);
   addU('transit', (25 * (P.crackdown ? 1.2 : 1) * (1 - south / 200) * (0.8 + 0.2 * (s.ports.latakia.lvl + s.ports.tartus.lvl) / 2) * (1 - portShare)
     + (built(s,'latakia') ? 15 * (1 - projLeak(s,'latakia')) : 0) + (built(s,'daraa') ? 20 * (1 - projLeak(s,'daraa')) : 0)
-    + (dealOn(s, 'jordan') ? 20 : 0) + (dealOn(s, 'lebanon') ? 12 : 0)));
+    + dl('jordan') * 20 + dl('lebanon') * 12));
   addU('overflight', 8);
   { const tr = tourismIncome(s); if (tr > 0.5) addU('tourism', tr); }
-  if (dealOn(s, 'gulf')) addU('fdi', 40);
-  if (dealOn(s, 'eu')) addU('euGrant', 30);
+  if (dl('gulf')) addU('fdi', 40 * dl('gulf'));
+  if (dl('eu')) addU('euGrant', 30 * dl('eu'));
   if (s.cap > 20) addU('imports', -(s.cap - 20) * 1.4);
   // --- dollars: buying food and fuel ---
   let wheatCut = indLvl(s, 'food') * IND.food.wheatCut; ['hama','hasakeh','raqqa'].forEach(k => { if (built(s, k)) wheatCut += PROJECTS[k].wheat * (1 - projLeak(s, k)); });
   const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil ? 2.1 : 1;
   const ez = s.diff === 'learner' ? 0.88 : 1;
-  const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) - wheatCut);
+  const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought
+    * (dl('russia') ? 1 - (0.25 + 0.09 * (dl('russia') - 1)) : 1) - wheatCut);
   addU('wheat', -wheat * ez);
   addU('fuel', -ez * (86 * { full:1.15, partial:1, market:0.85 }[P.fuel] * (season === 'H1' ? 0.9 : 1.15) + s.mw / 2300 * 25));
-  addU('homeEnergy', oil.home * 2.2 + s.res.gas * 3 + (dealOn(s, 'iraq') ? 10 : 0));
-  if (dealOn(s, 'iraq')) addU('powerImport', -15);
+  addU('homeEnergy', oil.home * 2.2 + s.res.gas * 3 + dl('iraq') * 10);
+  if (dl('iraq')) addU('powerImport', -15 * dl('iraq'));
+  if (dl('egypt')) addU('powerImport', -9 * dl('egypt'));
   addU('debt', -(s.debt * 0.006 + s.coupons));
   if (P.capex) addU('grid', -P.capex);
   if (P.intervene) addU('intervene', -P.intervene);
@@ -354,24 +437,26 @@ function step(state, dt = MONTH, policyOverride){
   s.trust = clamp(s.trust + (s.trustTarget - s.trust) * relax(0.38, dt), 0, 100);
   let dPC = 4 + (s.trust - 45) / 10 - (nu > 60 ? 3 : 0) + (P.security === 'heavy' ? 2 : 0) - (s.decrees.integrity ? 1 : 0);
   s.pc = clamp(s.pc + dPC * dt, 0, 200);
-  const cT = 56 + clamp((25 - rw) * 0.8, -12, 20) + (P.crackdown ? -4 : 0) + (s.decrees.integrity ? -20 : 0) + (s.decrees.digitax ? -5 : 0) + (P.tax === 'aggressive' && rw < 25 ? 3 : 0);
+  const cT = 56 + clamp((25 - rw) * 0.8, -12, 20) + (P.crackdown ? -4 : 0) + (s.decrees.integrity ? -20 : 0) + (s.decrees.digitax ? -5 : 0) + (P.tax === 'aggressive' && rw < 25 ? 3 : 0) - iLvl(s, 'egov') * INFRA.egov.honest;
   s.corr = clamp(s.corr + (cT - s.corr) * relax(0.22, dt), 5, 100);
-  const compT = 38 + s.trust * 0.35 - s.corr * 0.3 + { lax:-4, standard:0, aggressive:8 }[P.tax] + (s.decrees.digitax ? 12 : 0) + (s.decrees.braingain ? 3 : 0) + indLvl(s, 'telecom') * IND.telecom.comp;
+  const compT = 38 + s.trust * 0.35 - s.corr * 0.3 + { lax:-4, standard:0, aggressive:8 }[P.tax] + (s.decrees.digitax ? 12 : 0) + (s.decrees.braingain ? 3 : 0)
+    + indLvl(s, 'telecom') * IND.telecom.comp + iLvl(s, 'egov') * INFRA.egov.comp;
   s.comp = clamp(s.comp + (compT - s.comp) * relax(0.35, dt), 5, 95);
   const eduT = clamp(27 + 52 * svcCover(s, 'schools') + 15 * svcCover(s, 'unis') - s.corr * 0.09 - Math.max(0, nu - 55) * 0.28, 5, 100);
   s.edu = clamp(s.edu + (eduT - s.edu) * relax(0.22, dt), 0, 100);
-  const healthT = clamp(28 + 56 * svcCover(s, 'clinics') + (hrs - 8) * 0.7 - Math.max(0, nu - 55) * 0.30 - Math.max(0, s.infl - 25) * 0.13, 5, 100);
+  const healthT = clamp(28 + 56 * svcCover(s, 'clinics') + iLvl(s, 'water') * INFRA.water.health + (hrs - 8) * 0.7 - Math.max(0, nu - 55) * 0.30 - Math.max(0, s.infl - 25) * 0.13, 5, 100);
   s.health = clamp(s.health + (healthT - s.health) * relax(0.26, dt), 0, 100);
   const revolts = PROVS.filter(p => tierOf(s.provs[p.id].u) === 'revolt').length;
   let gain = { 0:-0.8, 20:0.5, 40:1 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (s.decrees.braingain ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
     + indLvl(s, 'telecom') * IND.telecom.capGain + clamp((38 - joblessNat(s)) * 0.04, -0.8, 1.2)
+    + iLvl(s, 'roads') * 0.10 + iLvl(s, 'rail') * 0.12 + (dl('gulf') > 1 ? 0.2 * (dl('gulf') - 1) : 0)
     + (s.edu - 30) * 0.018 + (s.health - 30) * 0.012;
   if (gain > 0 && s.corr > 60) gain *= 0.5;
   if (gain > 0) gain *= Math.max(0.15, 1 - s.cap / 110);
   s.cap = clamp(s.cap + (gain - revolts * 1.5 - (nu > 60 ? 1 : 0)) * dt, 5, 100);
 
   // --- provinces ---
-  const reconB = P.recon * dt / s.parallel * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
+  const reconB = (P.recon * dt / s.parallel + iLvl(s, 'housing') * INFRA.housing.repair * dt) * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
   const privB = (s.trust > 40 ? (s.trust - 40) * s.cap * 0.0004 : 0) * dt;
   const totalDmg = PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) || 1;
   const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0 };
@@ -380,7 +465,8 @@ function step(state, dt = MONTH, policyOverride){
     const pv = s.provs[p.id], blackout = 24 - provHours(s, p.id);
     const parts = { trust:(50 - s.trust) * 0.4, pay:clamp((s.expWage - rw) * 0.5, -10, 15), power:blackout * 0.8 - 10,
       subsidies:{ full:-4, partial:0, removed:9 }[P.bread] + { full:-2, partial:0, market:5 }[P.fuel], security:{ light:5, balanced:0, heavy:-7 }[P.security],
-      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5 };
+      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15,
+      local:pv.mod + s.bar * 5 - iLvl(s, 'water') * INFRA.water.calm - iLvl(s, 'housing') * INFRA.housing.calm };
     const tgt = clamp(p.base + Object.values(parts).reduce((a, b) => a + b, 0), 12, 100);
     let contagion = 0; p.nb.forEach(n => contagion += Math.max(0, s.provs[n].u - 60) * 0.06);
     maxContagion = Math.max(maxContagion, contagion);
@@ -394,6 +480,7 @@ function step(state, dt = MONTH, policyOverride){
       - Math.max(0, s.edu - 30) * 0.14 - Math.max(0, s.health - 30) * 0.06
       - (s.decrees.vocational ? 9 : 0)
       - (built(s, p.id) ? 7 : 0)
+      - iLvl(s, 'roads') * INFRA.roads.jobs
       + Math.max(0, 12 - provHours(s, p.id)) * 0.55
       + Math.max(0, pv.u - 55) * 0.35, 4, 95);
     pv.jobless = clamp(pv.jobless + (jt - pv.jobless) * relax(0.30, dt), 0, 100);
@@ -405,6 +492,10 @@ function step(state, dt = MONTH, policyOverride){
   { const leave = clamp((joblessNat(s) - 42) * 0.016 + (s.expWage - rw) * 0.010 + (nu - 48) * 0.012 - (s.trust - 45) * 0.006, -0.5, 1.6);
     s.popM = clamp(s.popM * (1 + (0.006 - leave / 100) * dt * 2), 12, 40); }
   s.cls = classes(s);
+  // Experience for keeping the lights on, not for the calendar turning over. Nothing in the
+  // simulation ever reads it back: it only opens up the game (see `levelNow()` in the UI).
+  xp(s, months * (2.2 + Math.max(0, (s.score || 40) - 40) * 0.09));
+  medalScan(s, notes);
   s.t = endT;
   s.score = legacy(s).avg;
   s.last = { ledger:L, notes, dt, privB:privB / dt, maxContagion, clogged:s.clogged, oil,
@@ -423,10 +514,19 @@ function finishProject(s, item, notes){
   if (x.trust) s.trust += x.trust * k;
   const rep = Math.min(pv.dmg, x.repair * k); pv.dmg -= rep; s.repaired += rep;
   s.cap += (s.corr > 60 ? 0.5 : 1) * x.cap * k;
+  xp(s, 130);
   notes.push(['projDone', item.id, Math.round(x.usd * item.leak)]);
+}
+function finishInfra(s, item, notes){
+  const x = INFRA[item.id];
+  s.infra[item.id] = Math.min(x.max, iLvl(s, item.id) + 1);
+  if (x.mw) s.mw += x.mw;
+  xp(s, 55 + 35 * s.infra[item.id]);
+  notes.push(['infraDone', item.id, s.infra[item.id]]);
 }
 function finishInvest(s, item, notes){
   const r = s.res;
+  xp(s, 70);
   if (IND[item.id]){ s.ind[item.id] = (s.ind[item.id] || 0) + 1; notes.push(['investDone', item.id]); return; }
   switch(item.id){
     case 'oilwells': r.oilCap += 25; break;
@@ -458,7 +558,7 @@ const ACT = {
       case 'dialogue': s.trust += 8; s.trustMod = (s.trustMod||0) + 6; PROVS.forEach(p => pv[p.id].mod -= 5); break;
       case 'stats': s.flags.stats = true; s.corr -= 4; s.comp += 5; break;
     }
-    s.log.push([s.t, 'decree', id]); return true;
+    xp(s, 55); s.log.push([s.t, 'decree', id]); return true;
   },
   project(s, id, mode){
     const x = PROJECTS[id], pv = s.provs[id]; if (pv.project) return false;
@@ -510,9 +610,27 @@ const ACT = {
   deal(s, id){
     const x = PARTNERS[id]; if (s.deals[id] || s.pc < x.pc || (x.usd && s.reserves < x.usd) || (x.signReq && !x.signReq(s))) return false;
     s.pc -= x.pc; if (x.usd) s.reserves -= x.usd; s.sov -= x.sov;
-    s.deals[id] = { signed:s.t, on:x.ok(s) };
+    s.deals[id] = { signed:s.t, on:x.ok(s), lvl:1 };
     if (id === 'china'){ ['latakia','tartus'].forEach(k => { if (s.ports[k].lvl < 3) s.pipe.push({ due:s.t + 8, kind:'port', id:k }); }); }
-    s.log.push([s.t, 'dealSign', id]); return true;
+    xp(s, 60); s.log.push([s.t, 'dealSign', id]); return true;
+  },
+  // A signed route can be widened twice. Same partner, same conditions, more of it — and the
+  // partners who ask for independence ask for it again every time.
+  dealWiden(s, id){
+    const x = PARTNERS[id], d = s.deals[id]; if (!d) return false;
+    const n = d.lvl || 1; if (n >= (x.max || 1)) return false;
+    const c = dealCost(s, id); if (s.pc < c.pc || s.reserves < c.usd) return false;
+    s.pc -= c.pc; s.reserves -= c.usd; s.sov = clamp(s.sov - c.sov, 0, 100);
+    d.lvl = n + 1; xp(s, 45);
+    s.log.push([s.t, 'dealWiden', id, d.lvl]); return true;
+  },
+  // Infrastructure: pick a track, pay, wait. The next level always costs more and takes longer.
+  infra(s, id){
+    const x = INFRA[id], c = infraCost(s, id);
+    if (iLvl(s, id) >= x.max || s.reserves < c.usd || s.pipe.some(q => q.kind === 'infra' && q.id === id)) return false;
+    s.reserves -= c.usd; s.treasury -= c.syp;
+    s.pipe.push({ due:s.t + c.months, kind:'infra', id });
+    s.log.push([s.t, 'infraStart', id, c.months, iLvl(s, id) + 1]); return true;
   },
 };
 
@@ -635,7 +753,7 @@ const EVENTS = [
     { label:'Fast-track compliance reforms', text:'Remittances start moving through banks.', eff:{ pc:-10, corr:-3, cap:3, flag:'remitBoost' } },
     { label:'Move slowly', text:'Powerful people prefer the old channels.', eff:{ corr:2 } },
   ]},
-  { id:'cholera', title:'Cholera in the east', src:'Ministry of Health', text:'Cases are rising along the Euphrates where water plants are broken.', opts:[
+  { id:'cholera', title:'Cholera in the east', src:'Ministry of Health', when:s=>iLvl(s,'water')<3, text:'Cases are rising along the Euphrates where water plants are broken.', opts:[
     { label:'Chlorinate and vaccinate', text:'Fast and well-proven.', eff:{ usd:-15, syp:-2, trust:2 } },
     { label:'Rely on aid agencies', text:'They will come. Eventually.', eff:{ sov:-2, trust:-3, prov:{ deir:5, raqqa:5 } } },
   ]},
@@ -694,4 +812,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { INFRA_ORDER, startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf, INFRA, infraCost, iLvl, PARTNERS, dealLvl, dealCost, MEDALS, PROJECTS, DECREES, FACILITIES };

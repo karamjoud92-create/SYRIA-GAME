@@ -42,7 +42,11 @@ h2,h3,h4{ margin:0; line-height:1.15; font-weight:800; }
 .ring{ width:54px; height:54px; position:relative; }
 .ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
 .ring .ic{ position:absolute; inset:0; display:grid; place-items:center; font-size:22px; }
-.turn .yr{ font-size:26px; font-weight:800; line-height:1; }
+.turn .yr{ font-size:17px; font-weight:800; line-height:1.15; display:flex; align-items:center; gap:7px; }
+.lvchip{ background:var(--gold); color:var(--gold-ink); border-radius:99px; padding:1px 10px; font-size:15px; box-shadow:0 2px 0 var(--gold-deep); white-space:nowrap; }
+.turn .mono{ font-size:13px; color:var(--ink-soft); font-weight:700; white-space:nowrap; }
+.xpwrap{ height:7px; border-radius:99px; background:var(--board-2); overflow:hidden; margin:4px 0 3px; width:136px; max-width:100%; }
+.xpwrap i{ display:block; height:100%; background:var(--gold); border-radius:99px; transition:width .4s ease; }
 .turn .ss{ font-size:13px; color:var(--ink-soft); }
 .tray{ display:flex; gap:4px; background:var(--card); color:var(--card-ink); border-radius:18px; padding:5px; box-shadow:var(--shadow); }
 .res{ display:flex; align-items:center; gap:7px; padding:4px 7px 4px 5px; border:0; background:none; border-radius:14px; text-align:start; position:relative; min-width:0; }
@@ -492,6 +496,17 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .iconbtn.mpchip{ height:38px; padding:0 8px; } .iconbtn.mpchip b{ font-size:12px; }
 }
 @media (prefers-reduced-motion: reduce){ .mppanel{ animation:none; } }
+/* levels, medals, infrastructure */
+.lvup{ display:flex; align-items:flex-end; gap:14px; }
+.lvbadge{ width:62px; height:62px; border-radius:18px; background:var(--gold); color:var(--gold-ink); display:grid; place-items:center; font-size:30px; font-weight:800; box-shadow:0 4px 0 var(--gold-deep); flex:0 0 auto; }
+.medalgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:8px; margin-bottom:14px; }
+.medal{ display:flex; gap:9px; align-items:center; border:2px solid var(--card-line); border-radius:14px; padding:8px 10px; background:var(--card-2); opacity:.55; }
+.medal.on{ opacity:1; background:#fff4dc; border-color:var(--gold-deep); }
+.medal .mi{ font-size:23px; flex:0 0 auto; }
+.medal b{ display:block; font-size:13.5px; line-height:1.2; }
+.medal .small{ font-size:11.5px; display:block; }
+.dcard.locked{ opacity:.65; border-style:dashed; background:var(--card-2); }
+.dcard.infra .stars span{ letter-spacing:3px; }
 </style>
 </head>
 <body>

@@ -8,26 +8,49 @@ const syncD = () => { if (S) D.policy = S.policy; };
 const DRAWERS5 = [
   ['guide', '🧭', 'dGuide', 'guideSub'],
   ['policy', '📜', 'dPolicy', 'policySub'], ['decrees', '⭐', 'dDecrees', 'decreesSub'], ['money', '💰', 'dMoney', 'moneySub'],
-  ['trade', '🚢', 'dTrade', 'tradeSub'],
+  ['build', '🏗️', 'dBuild', 'buildSub'], ['trade', '🚢', 'dTrade', 'tradeSub'],
   ['people', '👥', 'dPeople', 'peopleSub'], ['chains', '🔗', 'dSupply', 'supplySub'], ['progress', '📈', 'dProgress', 'progressSub'],
 ];
 
 
-// ---------- opening up slowly ----------
-// A new president does not get fourteen provinces and twelve industries on day one. Each stage
-// hands over one more part of the job, so the player learns it before the next thing arrives.
-const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
-function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
+// ---------- twelve levels ----------
+// A new president does not get fourteen provinces and twelve industries on day one. Each level
+// hands over one more part of the job. A level is reached in one of two ways, whichever comes
+// first: enough months have passed, or enough experience has been earned by actually doing things.
+// The months are a floor, so a player who taps nothing still eventually sees the whole game; the
+// experience is the ceiling coming down, so a player who builds gets there sooner. `S.xp` is
+// written by the engine and read only here — the balance simulation never sees a level.
+const LEVEL_AT = [0, 4, 7, 11, 15, 21, 27, 36, 45, 60, 84, 120];     // months, levels 1..12
+const LEVEL_XP = [0, 200, 500, 900, 1400, 2000, 2700, 3400, 4300, 5600, 7800, 11000];
+const MAX_LEVEL = LEVEL_AT.length;
+function levelByTime(months){ let n = 1; for (let i = 0; i < LEVEL_AT.length; i++) if (months >= LEVEL_AT[i]) n = i + 1; return n; }
+function levelByXp(xp){ let n = 1; for (let i = 0; i < LEVEL_XP.length; i++) if ((xp || 0) >= LEVEL_XP[i]) n = i + 1; return n; }
+function levelNow(st){ const x = st || S; if (!x) return 1; return Math.max(levelByTime(x.t), levelByXp(x.xp)); }
+// How far through the current level, 0..1, on whichever of the two is further along.
+function levelProgress(){
+  const n = levelNow(); if (n >= MAX_LEVEL) return 1;
+  const byT = (S.t - LEVEL_AT[n - 1]) / Math.max(1, LEVEL_AT[n] - LEVEL_AT[n - 1]);
+  const byX = ((S.xp || 0) - LEVEL_XP[n - 1]) / Math.max(1, LEVEL_XP[n] - LEVEL_XP[n - 1]);
+  return clamp(Math.max(byT, byX), 0, 1);
+}
+const xpToNext = () => levelNow() >= MAX_LEVEL ? 0 : Math.max(0, LEVEL_XP[levelNow()] - (S.xp || 0));
+// kept so older code that still says "stage" keeps working: stages 0..4 are levels 1, 3, 5, 7, 9
+function stageNow(){ return [1, 3, 5, 7, 9].filter(n => levelNow() >= n).length - 1; }
 const UNLOCK = {
-  guide:0, policy:0, money:0, people:0, layerUnrest:0, projects:0,
-  decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
-  trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2,
-  services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
-  supply:4, unis:4,
+  guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
+  build:2, medals:2, infraGrid:2, infraWater:2, infraHousing:2,
+  decrees:3, layerPower:3, polTax:3, polPrint:3, families:3,
+  infraRoads:4, infraEgov:4,
+  trade:5, progress:5, chains:5, layerDamage:5, polCapex:5, polRecon:5, ports:5, partners:5, infraRail:5,
+  routes:6, infraAir:6,
+  services:7, sectors:7, layerJobs:7, polIntervene:7, polCrackdown:7,
+  supply:9, unis:9,
 };
-const isOpen = f => stageNow() >= (UNLOCK[f] === undefined ? 0 : UNLOCK[f]);
-// what each stage hands over, for the announcement
-const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['subServices', 'sectorTitle'], ['extractTitle', 'svcUnis']];
+const isOpen = f => levelNow() >= (UNLOCK[f] === undefined ? 1 : UNLOCK[f]);
+// what each level hands over, for the announcement. Index 0 is level 1.
+const LEVEL_GIFTS = [[], ['dBuild', 'subMedals'], ['dDecrees', 'layerPower'], ['infraRoads', 'infraEgov'],
+  ['dTrade', 'dProgress'], ['routesGift', 'infraAir'], ['subServices', 'sectorTitle'], ['moreRoutes'],
+  ['extractTitle', 'svcUnis'], ['mentorOff'], ['veteran'], ['veteran']];
 
 // ---------- time words ----------
 function monthsTxt(n){
@@ -36,7 +59,9 @@ function monthsTxt(n){
   if (n % 12 === 0) return n === 12 ? t('years1') : fill(t('yearsN'), [n / 12]);
   return n === 1 ? t('months1') : fill(t('monthsN'), [n]);
 }
-const whenTxt = tt => `${MONTHS[LANG][((tt % 12) + 12) % 12]} ${START_YEAR + Math.floor(tt / 12)}`;
+// The player's clock is levels and months in office. There are no years in this game: a 15-year-old
+// does not care that it is 2031, and "month 40, level 6" is something you can actually feel.
+const whenTxt = tt => fill(t('monthNo'), [Math.round(tt) + 1]);
 const seasonsTxt = n => monthsTxt(n);
 const gradeOf = v => v >= 75 ? 'A' : v >= 62 ? 'B' : v >= 50 ? 'C' : v >= 38 ? 'D' : 'F';
 
@@ -46,7 +71,7 @@ function snap(s){ return { t:s.t, popM:s.popM, cash:s.treasury, usd:s.reserves, 
 function persist(){ STORE[UI.active] = { S }; STORE.active = UI.active; try { localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e){} }
 function restore(){
   try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!o) return false; STORE = o; UI.active = o.active || 'campaign';
-    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
+    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 7) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
 }
 function begin(diff, mission){
   setSpeed(0);
@@ -54,9 +79,9 @@ function begin(diff, mission){
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
   UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
 }
-function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
+function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:7, S, active:UI.active })))); }
 function loadCode(code){
-  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 6) return false;
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 7) return false;
     UI.active = o.active || 'campaign'; S = o.S; syncD(); setSpeed(0); persist(); return true; } catch(e){ return false; }
 }
 function pcLeft(){ return S.pc; }
@@ -73,7 +98,7 @@ function tick(){
   advance();
 }
 function advance(){
-  const prevScore = S.score, prev = S, prevStage = stageNow();
+  const prevScore = S.score, prev = S, prevLevel = levelNow();
   S = step(S); syncD();
   UI.flash = {};
   [['cash', s => s.treasury, 1.5, true], ['usd', s => s.reserves, 12, true], ['fx', s => s.parallel, 1.5, false], ['pay', s => realWage(s), 0.3, true], ['trust', s => s.trust, 0.35, true], ['anger', s => natUnrest(s), 0.35, false], ['power', s => nationalHours(s), 0.08, true]]
@@ -87,10 +112,8 @@ function advance(){
   if (S.t % 6 === 0){ const nc = detectCycles(); if (nc.length){ S.cycles = (S.cycles || []).concat(nc); UI.newCycle = true; UI.queue = nc.map(id => ['cycle', id]); } }
   const fail = checkFail(S);
   if (fail){ S.over = { fail:fail.id }; setSpeed(0); persist(); render(true); sfx('fail'); return showFail(fail.id); }
-  if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
+  if (levelNow() > prevLevel){ setSpeed(0); persist(); render(true); sfx('cycle'); return showLevelUp(levelNow()); }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
-  if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
-  if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('year'); return showMilestone(); }
   if (UI.queue && UI.queue.length){ persist(); render(true); sfx('cycle'); const [, id] = UI.queue.shift(); return showCycle(id, true); }
   S.event = drawEvent(S);
   persist(); render();
@@ -250,7 +273,10 @@ function renderHUD(P){
   const sc = S.score, P6 = P, dsc = P6.score - sc, g = gradeOf(sc);
   const pop = UI.scoreDelta && Math.abs(UI.scoreDelta) >= 0.4 ? `<span class="spop ${UI.scoreDelta > 0 ? 'up' : 'down'}">${sign(UI.scoreDelta, 1)}</span>` : '';
   UI.scoreDelta = 0;
-  return `<div class="turn">${ring}<div><div class="yr">${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div><div class="ss">${UI.speed ? '⏱️ ' + t(['', 'slow', 'normal', 'fastest'][UI.speed]) : '❚❚ ' + t('paused')}</div><div class="mbarwrap"><i class="${UI.speed ? 'run' : ''}" style="animation-duration:${SPEEDS[UI.speed] || 1}ms"></i></div></div></div>
+  const lv = levelNow();
+  return `<div class="turn">${ring}<div><div class="yr"><b class="lvchip">${fill(t('levelN'), [lv])}</b> <span class="mono">${esc(whenTxt(S.t))}</span></div>
+      <div class="xpwrap" title="${esc(lv >= MAX_LEVEL ? t('levelMax') : fill(t('xpToNext'), [Math.round(xpToNext())]))}"><i style="width:${(levelProgress() * 100).toFixed(1)}%"></i></div>
+      <div class="ss">${UI.speed ? '⏱️ ' + t(['', 'slow', 'normal', 'fastest'][UI.speed]) : '❚❚ ' + t('paused')}</div><div class="mbarwrap"><i class="${UI.speed ? 'run' : ''}" style="animation-duration:${SPEEDS[UI.speed] || 1}ms"></i></div></div></div>
     <button class="scorebadge g-${g}" data-act="gloss" data-k="score" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
@@ -574,16 +600,17 @@ function drawerBody(id){
     case 'policy': return renderPolicy();
     case 'decrees': return renderDecrees();
     case 'money': return UI.sub.money === 'budget' ? renderMoneyBudget() : renderMoneyActions();
+    case 'build': return renderInfra();
     case 'trade': return UI.sub.trade === 'ports' ? renderTradePorts() : UI.sub.trade === 'partners' ? renderTradePartners() : renderTradeResources();
     case 'people': return UI.sub.people === 'services' ? renderServices() : UI.sub.people === 'pop' ? renderPopulation() : renderPeople();
     case 'chains': return renderChains();
-    case 'progress': return UI.sub.progress === 'cycles' ? renderProgressCycles() : UI.sub.progress === 'news' ? renderNews() : UI.sub.progress === 'charts' ? renderProgressCharts() : renderWhyPanel();
+    case 'progress': return UI.sub.progress === 'medals' ? renderMedals() : UI.sub.progress === 'cycles' ? renderProgressCycles() : UI.sub.progress === 'news' ? renderNews() : UI.sub.progress === 'charts' ? renderProgressCharts() : renderWhyPanel();
   }
 }
 function renderDrawer(){
   const d = DRAWERS5.find(x => x[0] === UI.drawer); if (!d) return '';
   const sub = d[0] === 'decrees' ? fill(t('decreesIntro'), [Math.round(S.pc)]) : t(d[3]);
-  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['why','subWhy'],['medals','subMedals'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
   return `<aside class="drawer"><div class="head"><span class="dic" aria-hidden="true">${d[1]}</span><h2>${t(d[2])}</h2><button class="close" data-act="closeDrawer" aria-label="${t('close')}">✕</button></div>
     <div class="sub">${sub}</div>
     ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
@@ -605,9 +632,9 @@ function renderProgressCharts(){
 
 // ---------- dock ----------
 function renderDock(){
-  const DR = DRAWERS5.filter(d => isOpen({ guide:'guide', policy:'policy', decrees:'decrees', money:'money', trade:'trade', people:'people', chains:'chains', progress:'progress' }[d[0]]));
+  const DR = DRAWERS5.filter(d => isOpen({ guide:'guide', policy:'policy', decrees:'decrees', money:'money', build:'build', trade:'trade', people:'people', chains:'chains', progress:'progress' }[d[0]]));
   const ps = personas(S), sad = Object.values(ps).filter(o => o.net < 0).length, ch = chains(S);
-  const badge = { guide: guideLeft() ? `<span class="badge star">${guideLeft()}</span>` : '', people: sad ? `<span class="badge">${sad}</span>` : '', chains: (ch.sb === 2 || ch.se === 2) ? '<span class="badge">!</span>' : '', progress: UI.newCycle ? '<span class="badge star">★</span>' : '', trade: (S.clogged || 0) > 5 ? '<span class="badge">!</span>' : '' };
+  const badge = { build: infraReady() ? `<span class="badge star">${infraReady()}</span>` : '', guide: guideLeft() ? `<span class="badge star">${guideLeft()}</span>` : '', people: sad ? `<span class="badge">${sad}</span>` : '', chains: (ch.sb === 2 || ch.se === 2) ? '<span class="badge">!</span>' : '', progress: UI.newCycle ? '<span class="badge star">★</span>' : '', trade: (S.clogged || 0) > 5 ? '<span class="badge">!</span>' : '' };
   const btn = ([k, i, l]) => `<button class="dbtn" data-act="drawer" data-v="${k}" aria-pressed="${UI.drawer === k}"><span class="di" aria-hidden="true">${i}</span><span class="dt">${t(l)}</span>${badge[k] || ''}</button>`;
   const sp = [[0, '❚❚', 'pause'], [1, '▶', 'slow'], [2, '▶▶', 'normal'], [3, '▶▶▶', 'fastest']];
   const tr = DR.find(d => d[0] === 'trade'), rest = DR.filter(d => d[0] !== 'trade');
@@ -649,17 +676,14 @@ function render(force){
 }
 
 // ---------- milestone, crisis, endings ----------
-function showStage(st){
-  const gifts = (STAGE_GIFTS[st] || []).map(k => t(k));
-  modal(`<div class="tut-icon" aria-hidden="true">🔓</div><h2>${t('stageTitle')}</h2>
-    <p class="lede">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>
+function showLevelUp(n){
+  const gifts = (LEVEL_GIFTS[n - 1] || []).map(k => t(k)), Lg = legacy(S);
+  const medals = Object.keys(S.medals || {}).length;
+  modal(`<div class="lvup"><div class="lvbadge">${n}</div><div><h2>${fill(t('levelUp'), [n])}</h2>
+      <div class="src">${esc(L2(LEVEL_TITLE[n - 1] || LEVEL_TITLE[0]))}</div></div></div>
+    ${gifts.length ? `<p class="lede">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>` : `<p class="lede">${t('levelNoGift')}</p>`}
+    <div class="row" style="gap:8px;margin:10px 0"><span class="chip">🏅 ${fill(t('medalsHave'), [medals, MEDALS.length])}</span><span class="chip">🏆 ${t('score')} ${Math.round(S.score)} (${Lg.grade})</span><span class="chip">⭐ ${fill(t('xpHave'), [Math.round(S.xp || 0)])}</span></div>
     <div class="row"><button class="btn primary" data-act="close">${t('stageGo')}</button></div>`);
-}
-function showMilestone(){
-  const yrs = S.t / 12, Lg = legacy(S), chs = whyLive();
-  modal(`<div class="row" style="align-items:flex-end;gap:18px"><div class="grade">${Lg.grade}</div><div><h2>${fill(t('milestoneTitle'), [yrs])}</h2><div class="src">${fill(t('milestoneSub'), [esc(whenTxt(S.t))])}</div></div></div>
-    ${scoresBlock()}<h3 class="bh">🔗 ${t('whyNow')}</h3>${renderWhy(chs)}
-    <div class="row" style="margin-top:14px"><button class="btn primary" data-act="close">${t('keepPlaying')} ▶</button></div>`);
 }
 function choose(i){
   const e = EVENTS.find(x => x.id === S.event), o = e.opts[i];
@@ -692,6 +716,9 @@ document.addEventListener('click', ev => {
   const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
   const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv'];
   if (S && S.over && !always.includes(a)) return;
+  // Actions the player found on their own, rather than answering a card. This is what the game
+  // watches to decide how much it should keep holding their hand (see `mentorLevel()`).
+  if (S && SELF_ACTS.includes(a)) S.selfActs = (S.selfActs || 0) + 1;
   if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed'].includes(a)) sfx('tap');
   const T = LANG === 'ar';
   switch(a){
@@ -718,6 +745,8 @@ document.addEventListener('click', ev => {
     case 'grantPop': if (!cooldown('lastGift', 6)) withEffects(t('giftTitle'), () => { const ok = ACT.gift(S); if (ok) S.flags.lastGift = S.t; return ok; }); break;
     case 'relief': if (!cooldown('lastRelief', 6)) withEffects(t('reliefTitle'), () => { const ok = ACT.relief(S); if (ok) S.flags.lastRelief = S.t; return ok; }); break;
     case 'invest': withEffects(L2(INV_TXT[id])[0], () => ACT.invest(S, id)); break;
+    case 'infra': withEffects(fill(t('infraUpTo'), [L2(INFRA_TXT[id])[0], iLvl(S, id) + 1]), () => ACT.infra(S, id)); break;
+    case 'dealWiden': withEffects(fill(t('routeWiden'), [L2(PART_TXT[id])[0]]), () => ACT.dealWiden(S, id)); break;
     case 'svc': withEffects(svcLabel(id), () => ACT.service(S, id)); break;
     case 'portUp': withEffects(`${t('upgrade')}: ${PORT_NAME[LANG][id]}`, () => ACT.portUpgrade(S, id)); break;
     case 'portCon': withEffects(`${t('concession')}: ${PORT_NAME[LANG][id]}`, () => ACT.portConcession(S, id)) && sfx('coin'); break;

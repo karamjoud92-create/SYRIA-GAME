@@ -132,7 +132,7 @@ const mpBaseAdvance = advance;
 advance = function(){ mpBaseAdvance(); if (MP.room) mpSync(false); };
 const mpBaseBegin = begin;
 begin = function(diff, mission){ mpBaseBegin(diff, mission); if (MP.room){ MP.lastScore = null; MP.above = {}; MP.seenOnce = false; mpSync(true); } };
-['showFail', 'showLegacy', 'showMissionEnd', 'showMilestone'].forEach(fn => {
+['showFail', 'showLegacy', 'showMissionEnd', 'showLevelUp'].forEach(fn => {
   if (typeof window[fn] !== 'function') return;
   const base = window[fn];
   window[fn] = function(){ const r = base.apply(this, arguments); if (MP.room) mpSync(true); return r; };

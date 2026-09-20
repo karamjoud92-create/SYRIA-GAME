@@ -22,9 +22,9 @@ paste the printed address into 🏆 → ⚙️ in the game. See `worker/README.m
 
 ## What the game is now
 
-A bilingual country-management game. You are president of post-war Syria from 2027. Time runs month by
-month on a slow clock; a legacy score (0–100, A–F) moves every month. The through-line is **systems**:
-nothing you touch has one effect.
+A bilingual country-management game. You are president of post-war Syria. Time runs month by month on a slow
+clock, shown as a **level and a month count — never a calendar year**; a legacy score (0–100, A–F) moves every
+month. The through-line is **systems**: nothing you touch has one effect.
 
 Built in this session, in order:
 
@@ -41,12 +41,28 @@ Built in this session, in order:
 5. **Schools, clinics, universities**, plus `s.edu` / `s.health`.
 6. **A population** (`s.popM`) that grows and emigrates, split into poor / getting by / rich by
    `classes()` — a result, never a dial. `poor` is previewed on every decision.
-7. **Progressive unlock.** Three panels and one map layer at month 0; the whole game by year 4.
+7. **Progressive unlock.** Three panels and one map layer at month 0; the whole game by month 45.
 8. **Decisions come to you.** The primary way to play is now a card that asks one question and offers two or
    three answers, in the decision-making genre (which is what *Conquer Countries* actually is — Supersonic name
    the genre themselves). The panels are all still there underneath for anyone who wants them.
 9. **The Guide.** A panel open from month 0 that says what to do next, ticks off six first steps as you do
    them, explains why the numbers just moved, and lists the cause-and-effect chains.
+10. **Twelve levels instead of years.** The clock reads `Level 6 · Month 23`. A level arrives on whichever comes
+   first, months or experience, so a passive player still sees the whole game on the old schedule and an active
+   one gets there about twice as fast. Levels 1/3/5/7/9 *are* the old stages at months 0/7/15/27/45.
+11. **Seven infrastructure networks, five levels each.** Grid, water, housing, roads, digital government, rail,
+   airports — a Clash-of-Clans upgrade ladder with a visible cost, build time and payoff, and none of the
+   patience tax. Each level costs ~60% more and takes ~25% longer, and every built level is charged **upkeep
+   every month**, which is what stops "build everything and coast".
+12. **Trade routes have width.** Eleven partners now, three of them (Egypt, India, African markets) opening at
+   higher levels, and every signed route can be widened twice for more influence, dollars and sometimes
+   independence. A route whose condition breaks is worth nothing however wide it is.
+13. **Experience and 24 medals.** Medals pay in experience, never in money — money would make the played game
+   easier than the simulated one and silently break every number in `npm run sim`.
+14. **A mentor that steps back.** The game counts what the player does from the panels against what they do by
+   answering cards and, with their level, decides how often to ask. Four settings, automatic by default,
+   overridable in the Guide. Cards keep two or three real answers at every setting; what shrinks is how often
+   one appears — from nine questions waiting to one.
 
 ## Decisions worth not undoing
 
@@ -62,8 +78,20 @@ Built in this session, in order:
 - **The bar had to touch the *score*, not just trust,** or it did nothing. Two of the six components are
   measured against expectations; the other four stay absolute, because money in the bank and an honest
   ministry are facts while "is life good" is always a comparison.
-- **Unlock is UI-only.** `stageNow()` reads `S.t` and nothing else, so the balance sim and the missions
-  never see it. Keep it that way.
+- **Unlock is UI-only, and experience does not break that.** `levelNow()` reads `S.t` and `S.xp`. The engine
+  *writes* `S.xp` and never reads it back, so the balance sim and the missions still never see a level.
+  `npm run progress` asserts it: a state with 999,999 experience runs identically to one with none.
+- **Level-ups pay in unlocks and medals, never in resources.** A free $100M on level-up would make the UI game
+  measurably easier than every strategy in `tools/sim.js`, and the balance table would quietly stop meaning
+  anything.
+- **Networks have upkeep.** Without it, `infra` scored 75 on Learner with no industry at all and Reconstruction
+  pinned at 100 — a free A by ignoring the economy. With it, `infra` is a 68 on Learner and dies of a default at
+  year 4 on Realistic. That failing line in `npm run sim` is the intended lesson, not a regression.
+- **The mentor shrinks the number of questions, not the number of answers.** A card with one answer is a
+  notification; a card with two is a decision. Never "simplify" a card by removing an option.
+- **Anything the first render touches must already exist.** `5-game.js` ends with the boot IIFE, so a `const` in
+  `7-`/`8-` is in its temporal dead zone when `renderDock()` runs and throws. `INFRA_ORDER` therefore lives in
+  the engine, and `infraReady()` is a function declaration. This cost one debugging round.
 - **A decision card must never offer what the player cannot do.** Same rule as the guide's advice, and it is
   enforced per branch in `decisionDeck()`: affordability *and* `isOpen()`. A card offering a greyed-out option
   is worse than no card.
@@ -74,6 +102,14 @@ Built in this session, in order:
 - **No fogged numbers.** `fog()` returns the exact value. If something should be hidden, hide it.
 
 ## Open, and worth doing next
+
+- **Levels 10–12 hand over nothing new.** They are the mastery tail: the mentor goes quiet and the remaining
+  medals are the only content. If the game grows, that is where new systems belong.
+- **The decision deck now has ten sources** (ports and infrastructure were added; oil policy, facilities/loans,
+  crisis follow-ups and the scoreboard still never surface as questions).
+- **The Build panel can bankrupt a careless player on Realistic.** The card refuses to offer an upgrade without
+  2.5× its cost in reserves, but the panel itself will happily sell you one you cannot run. That is arguably the
+  lesson; if it proves too harsh, the panel should warn rather than block.
 
 - **Provinces are not staged.** All 14 are yours from month 0. Locking them behind "extending state
   authority" fits post-war Syria and would cut the early-game load further, but it needs real engine
@@ -97,13 +133,15 @@ Built in this session, in order:
 ## Resuming
 
 ```
-npm run check     # build + balance sim + missions + scoreboard tests. Run after ANY engine change.
+npm run check     # build + balance sim + missions + progression + scoreboard tests. After ANY engine change.
+npm run levels    # browser: levels, the Build panel, wider trade routes, medals, the mentor
+npm run strings   # browser: every string exists in English and Arabic
 npm run onboard   # browser: does the game still open up slowly, in both languages?
 npm run econ      # browser: sectors, factories, the work layer, the bar
 npm run browser   # browser: two players in one room
 npm run serve     # a local score server on :8787 while working on the scoreboard
 ```
 
-Branch: `claude/multiplayer-game-shared-scores-l72mdf` (the repository's default branch).
+Branch: `claude/intelligent-bohr-8c06n0`.
 Every change in this project was verified in a real browser in English and Arabic before shipping.
 Keep doing that: three of the bugs fixed here were invisible to the unit tests and obvious on screen.

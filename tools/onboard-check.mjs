@@ -38,7 +38,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   await jump(page, 20); await clear(page);
   const dock3 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
   const layers3 = await page.$$eval('.layers button', e => e.length);
-  ok(dock3.length === 8 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
+  ok(dock3.length === 9 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
 
   // --- schools, clinics, universities ---
   await page.evaluate(() => { UI.drawer = 'people'; UI.sub.people = 'services'; render(true); }); await page.waitForTimeout(250);
@@ -76,6 +76,13 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // --- and no tildes anywhere ---
   const hud = await page.$eval('#hud', e => e.innerText);
   ok(!hud.includes('~'), `${tag}: no "~" left on the dashboard`);
+  // --- the clock is levels and months, never a calendar year ---
+  ok(!/\b(20[2-9]\d|204\d)\b/.test(hud), `${tag}: no calendar year on the dashboard (${hud.split('\n')[0]})`);
+  ok(await page.$('.lvchip'), `${tag}: the dashboard shows a level`);
+  await page.evaluate(() => { UI.drawer = 'progress'; UI.sub.progress = 'news'; render(true); }); await page.waitForTimeout(250);
+  const news = await page.$eval('.drawer .body', e => e.innerText);
+  ok(!/\b(20[2-9]\d|204\d)\b/.test(news), `${tag}: no calendar year in the news either`);
+  await clear(page);
   await page.screenshot({ path: `tools/shot-onboard-${tag}.png` });
 }
 await b.close();

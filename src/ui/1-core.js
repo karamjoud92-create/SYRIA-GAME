@@ -1,5 +1,5 @@
 // ===== Transition: UI v3 (part A) =====
-const KEY = 'transition-syria-v6';
+const KEY = 'transition-syria-v7';
 let S, D, LANG = 'en';
 const UI = { tab:'policy', right:'province', sel:'damascus', layer:'unrest', active:'campaign', queue:[] };
 let STORE = { active:'campaign', campaign:null, mission:null };
