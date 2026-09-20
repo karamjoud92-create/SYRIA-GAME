@@ -503,19 +503,19 @@ const START_YEAR = 2027, MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
 
 const PROVS = [
   // id, name, popM, base unrest target, start unrest, damage $B, jobless %, power mod, col,row, neighbors
-  { id:'idlib', name:'Idlib', pop:3.0, base:30, u:48, dmg:8, jobless:58, pmod:0, c:1, r:0, nb:['aleppo','hama','latakia'] },
-  { id:'aleppo', name:'Aleppo', pop:4.2, base:30, u:50, dmg:25, jobless:62, pmod:0, c:2, r:0, nb:['idlib','hama','raqqa'] },
+  { id:'idlib', name:'Idlib', pop:3.0, base:30, u:48, dmg:8, jobless:58, pmod:0, c:1, r:0, smug:1, nb:['aleppo','hama','latakia'] },
+  { id:'aleppo', name:'Aleppo', pop:4.2, base:30, u:50, dmg:25, jobless:62, pmod:0, c:2, r:0, smug:1, nb:['idlib','hama','raqqa'] },
   { id:'raqqa', name:'Raqqa', pop:0.8, base:34, u:52, dmg:7, jobless:66, pmod:-1, c:3, r:0, nb:['aleppo','hasakeh','deir','hama','homs'] },
-  { id:'hasakeh', name:'Hasakeh', pop:1.2, base:36, u:50, dmg:3, jobless:56, pmod:-1, c:4, r:0, nb:['raqqa','deir'] },
+  { id:'hasakeh', name:'Hasakeh', pop:1.2, base:36, u:50, dmg:3, jobless:56, pmod:-1, c:4, r:0, smug:1, nb:['raqqa','deir'] },
   { id:'latakia', name:'Latakia', pop:1.2, base:32, u:46, dmg:2, jobless:44, pmod:1, c:0, r:1, nb:['idlib','hama','tartus'] },
   { id:'hama', name:'Hama', pop:1.6, base:28, u:42, dmg:6, jobless:50, pmod:0, c:1, r:1, nb:['idlib','aleppo','latakia','homs','raqqa','tartus'] },
-  { id:'deir', name:'Deir ez-Zor', pop:1.0, base:38, u:56, dmg:9, jobless:66, pmod:-1, c:3, r:1, nb:['raqqa','hasakeh','homs'] },
+  { id:'deir', name:'Deir ez-Zor', pop:1.0, base:38, u:56, dmg:9, jobless:66, pmod:-1, c:3, r:1, smug:1, nb:['raqqa','hasakeh','homs'] },
   { id:'tartus', name:'Tartus', pop:0.9, base:28, u:40, dmg:1, jobless:42, pmod:1, c:0, r:2, nb:['latakia','hama','homs'] },
-  { id:'homs', name:'Homs', pop:1.5, base:30, u:44, dmg:14, jobless:55, pmod:0, c:2, r:1, nb:['hama','tartus','rif','deir','raqqa'] },
+  { id:'homs', name:'Homs', pop:1.5, base:30, u:44, dmg:14, jobless:55, pmod:0, c:2, r:1, smug:1, nb:['hama','tartus','rif','deir','raqqa'] },
   { id:'damascus', name:'Damascus', pop:2.0, base:24, u:36, dmg:5, jobless:40, pmod:2, c:1, r:2, nb:['rif','quneitra','daraa'] },
   { id:'rif', name:'Rural Damascus', pop:3.0, base:30, u:47, dmg:22, jobless:58, pmod:0, c:2, r:2, nb:['damascus','homs','daraa','suwayda'] },
   { id:'quneitra', name:'Quneitra', pop:0.1, base:34, u:45, dmg:1, jobless:60, pmod:0, c:0, r:3, nb:['damascus','daraa'] },
-  { id:'daraa', name:'Daraa', pop:1.0, base:34, u:50, dmg:4, jobless:56, pmod:0, c:1, r:3, nb:['quneitra','damascus','rif','suwayda'] },
+  { id:'daraa', name:'Daraa', pop:1.0, base:34, u:50, dmg:4, jobless:56, pmod:0, c:1, r:3, smug:1, nb:['quneitra','damascus','rif','suwayda'] },
   { id:'suwayda', name:'Suwayda', pop:0.4, base:40, u:58, dmg:1, jobless:58, pmod:-1, c:2, r:3, nb:['daraa','rif'] },
 ];
 const PROV_BY = Object.fromEntries(PROVS.map(p => [p.id, p]));
@@ -573,7 +573,7 @@ const POLICY_OPTS = {
   tax:      [['lax','Lax'],['standard','Standard'],['aggressive','Aggressive']],
   security: [['light','Light'],['balanced','Balanced'],['heavy','Heavy']],
   print:    [[0,'None'],[5,'5bn'],[15,'15bn'],[30,'30bn']],
-  capex:    [[0,'$0'],[20,'$20M'],[40,'$40M']],
+  capex:    [[0,'$0'],[20,'$20M'],[40,'$40M'],[60,'$60M']],
   recon:    [[0,'0'],[5,'5bn'],[10,'10bn'],[20,'20bn']],
   intervene:[[0,'$0'],[25,'$25M'],[50,'$50M']],
   crackdown:[[false,'Off'],[true,'On']],
@@ -647,7 +647,7 @@ function tourismIncome(s){
 // A workshop with no power is a shed. Diesel keeps a fraction of it going; a full shift needs
 // the grid. Extraction is deliberately not in here — a wellhead runs on its own power, which is
 // exactly why pumping oil survives a blackout and making things does not. Same shape as tourism.
-const industryPower = s => clamp(nationalHours(s) / 14, 0.2, 1);
+const industryPower = s => clamp(Math.pow(clamp(nationalHours(s) / 12, 0, 1), 0.6), 0.22, 1);
 function industryExports(s){ let e = 0; Object.keys(IND).forEach(k => e += IND[k].exp * indLvl(s, k)); return e * industryPower(s); }
 const PARTNERS = {
   turkey:{ flag:'🇹🇷', pc:15, sov:1, ok:s => s.provs.aleppo.u < 65 && s.provs.idlib.u < 65 },
@@ -793,6 +793,7 @@ function step(state, dt = MONTH, policyOverride){
   addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx);
   if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
+  if (P.crackdown) addS('borders', -1.2 * Math.pow(pIdx, 0.7));
   addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
   { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
     if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
@@ -891,7 +892,7 @@ function step(state, dt = MONTH, policyOverride){
   const healthT = clamp(28 + 56 * svcCover(s, 'clinics') + (hrs - 8) * 0.7 - Math.max(0, nu - 55) * 0.30 - Math.max(0, s.infl - 25) * 0.13, 5, 100);
   s.health = clamp(s.health + (healthT - s.health) * relax(0.26, dt), 0, 100);
   const revolts = PROVS.filter(p => tierOf(s.provs[p.id].u) === 'revolt').length;
-  let gain = { 0:-0.8, 20:0.5, 40:1 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (hasDecree(s, 'braingain') ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
+  let gain = { 0:-0.8, 20:0.5, 40:1, 60:1.3 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (hasDecree(s, 'braingain') ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
     + indLvl(s, 'telecom') * IND.telecom.capGain + clamp((38 - joblessNat(s)) * 0.04, -0.8, 1.2)
     + (s.edu - 30) * 0.018 + (s.health - 30) * 0.012;
   if (gain > 0 && s.corr > 60) gain *= 0.5;
@@ -902,13 +903,13 @@ function step(state, dt = MONTH, policyOverride){
   const reconB = P.recon * dt / s.parallel * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
   const privB = (s.trust > 40 ? (s.trust - 40) * s.cap * 0.0004 : 0) * dt;
   const totalDmg = PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) || 1;
-  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0, foreign:0 };
+  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0, foreign:0, smuggling:0 };
   let wsum = 0, maxContagion = 0;
   PROVS.forEach(p => {
     const pv = s.provs[p.id], blackout = 24 - provHours(s, p.id);
     const parts = { trust:(50 - s.trust) * 0.4, pay:clamp((s.expWage - rw) * 0.5, -10, 15), power:blackout * 0.8 - 10,
       subsidies:{ full:-4, partial:0, removed:9 }[P.bread] + { full:-2, partial:0, market:5 }[P.fuel], security:{ light:5, balanced:0, heavy:-7 }[P.security],
-      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5, foreign:gripNow * 8 };
+      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5, foreign:gripNow * 8, smuggling:(P.crackdown && p.smug ? 5 : 0) };
     const tgt = clamp(p.base + Object.values(parts).reduce((a, b) => a + b, 0), 12, 100);
     let contagion = 0; p.nb.forEach(n => contagion += Math.max(0, s.provs[n].u - 60) * 0.06);
     maxContagion = Math.max(maxContagion, contagion);
@@ -1401,7 +1402,7 @@ const POL = {
     ar:{ name:'جباية الضرائب', q:'إلى أي حد تلاحق من لا يدفع الضريبة؟', opts:{ lax:'متساهلة', standard:'عادية', aggressive:'صارمة' }, hint:{ lax:'تساهل مع التجار. نقد أقل يدخل.', standard:'جباية عادية.', aggressive:'نقد أكثر بكثير، لكن التجار يتذمّرون وبعض الموظفين يأخذون رشاوى.' } } },
   security:{ icon:'👮', en:{ name:'Police and army on the streets', q:'How many security forces should patrol?', opts:{ light:'Few', balanced:'Normal', heavy:'Many' }, hint:{ light:'Cheap and people feel free, but anger can grow into riots.', balanced:'A normal presence.', heavy:'Stops riots, but costs money and people trust you less.' } },
     ar:{ name:'الشرطة والجيش في الشوارع', q:'كم من قوات الأمن تنتشر؟', opts:{ light:'قليلة', balanced:'عادية', heavy:'كثيفة' }, hint:{ light:'رخيصة ويشعر الناس بالحرية، لكن الغضب قد يتحوّل إلى شغب.', balanced:'انتشار عادي.', heavy:'توقف الشغب، لكنها مكلفة ويثق بك الناس أقل.' } } },
-  capex:{ icon:'⚡', en:{ name:'Build power stations', q:'How many dollars go into electricity each season? New power arrives 2 seasons later.', opts:{ 0:'$0', 20:'$20M', 40:'$40M' }, hint:{ 0:'Nothing. The grid slowly breaks down.', 20:'Steady progress. More power arrives in 2 seasons.', 40:'Fast progress. The best long-term move, but you wait 2 seasons to see it.' } },
+  capex:{ icon:'⚡', en:{ name:'Build power stations', q:'How many dollars go into electricity each season? New power arrives 2 seasons later.', opts:{ 0:'$0', 20:'$20M', 40:'$40M', 60:'$60M' }, hint:{ 0:'Nothing. The grid slowly breaks down.', 20:'Steady progress. More power arrives in 2 seasons.', 40:'Fast progress. The best long-term move, but you wait 2 seasons to see it.', 60:'All-out. What a country full of working factories actually needs.' } },
     ar:{ name:'بناء محطات الكهرباء', q:'كم دولاراً يذهب إلى الكهرباء كل موسم؟ الكهرباء الجديدة تصل بعد موسمين.', opts:{ 0:'0$', 20:'20 مليون$', 40:'40 مليون$' }, hint:{ 0:'لا شيء. الشبكة تتهالك ببطء.', 20:'تقدّم ثابت. كهرباء إضافية بعد موسمين.', 40:'تقدّم سريع. أفضل خطوة للمستقبل، لكنك تنتظر موسمين لترى النتيجة.' } } },
   recon:{ icon:'🏗️', en:{ name:'Rebuild homes and roads', q:'How much cash goes to rebuilding each season?', opts:{ 0:'None', 5:'5bn', 10:'10bn', 20:'20bn' }, hint:{ 0:'No government rebuilding. Only private investors rebuild, if people trust you.', 5:'A little rebuilding in the worst-hit places.', 10:'Real rebuilding. Anger slowly drops in damaged provinces.', 20:'Big rebuilding push. Expensive.' } },
     ar:{ name:'إعادة بناء البيوت والطرق', q:'كم من النقد يذهب لإعادة الإعمار كل موسم؟', opts:{ 0:'لا شيء', 5:'5 مليار', 10:'10 مليار', 20:'20 مليار' }, hint:{ 0:'لا إعمار حكومي. المستثمرون فقط يعيدون البناء إذا وثق الناس بك.', 5:'إعمار قليل في أكثر الأماكن تضرّراً.', 10:'إعمار حقيقي. الغضب ينخفض ببطء في المحافظات المدمّرة.', 20:'حملة إعمار كبيرة. مكلفة.' } } },
@@ -1409,15 +1410,15 @@ const POL = {
     ar:{ name:'طباعة النقود', q:'هل تطبع ليرات جديدة لدفع الفواتير؟', opts:{ 0:'لا', 5:'5 مليار', 15:'15 مليار', 30:'30 مليار' }, hint:{ 0:'لا طباعة. الأسعار أهدأ.', 5:'طباعة قليلة. الأسعار ترتفع أسرع قليلاً.', 15:'كثيرة. سعر الدولار يقفز والرواتب تشتري أقل.', 30:'طباعة طارئة. خطيرة جداً.' } } },
   intervene:{ icon:'🛡️', en:{ name:'Protect the lira', q:'Sell dollars to stop the lira falling?', opts:{ 0:'None', 25:'$25M', 50:'$50M' }, hint:{ 0:'Let the market decide.', 25:'Spend $25M to hold the dollar price down.', 50:'Spend $50M. Works, but burns your dollars.' } },
     ar:{ name:'حماية الليرة', q:'هل تبيع دولارات لمنع هبوط الليرة؟', opts:{ 0:'لا', 25:'25 مليون$', 50:'50 مليون$' }, hint:{ 0:'دع السوق يقرّر.', 25:'أنفق 25 مليون دولار لكبح سعر الدولار.', 50:'أنفق 50 مليون دولار. ينجح لكنه يستنزف دولاراتك.' } } },
-  crackdown:{ icon:'🚧', en:{ name:'Stop smugglers at the borders', q:'Crack down on smuggling?', opts:{ false:'No', true:'Yes' }, hint:{ false:'Smugglers keep operating.', true:'More customs money and less corruption.' } },
-    ar:{ name:'ملاحقة المهرّبين على الحدود', q:'هل تشدّد على التهريب؟', opts:{ false:'لا', true:'نعم' }, hint:{ false:'المهرّبون يستمرّون.', true:'رسوم جمركية أكثر وفساد أقل.' } } },
+  crackdown:{ icon:'🚧', en:{ name:'Stop smugglers at the borders', q:'Crack down on smuggling?', opts:{ false:'No', true:'Yes' }, hint:{ false:'Smugglers keep operating, and the border towns stay quiet.', true:'More customs money and less corruption — and anger in the provinces that live off the crossings.' } },
+    ar:{ name:'ملاحقة المهرّبين على الحدود', q:'هل تشدّد على التهريب؟', opts:{ false:'لا', true:'نعم' }, hint:{ false:'المهرّبون يستمرّون، ومدن الحدود تبقى هادئة.', true:'رسوم جمركية أكثر وفساد أقل — وغضب في المحافظات التي تعيش من المعابر.' } } },
 };
-const POL_VALUES = { bread:['full','partial','removed'], fuel:['full','partial','market'], tax:['lax','standard','aggressive'], security:['light','balanced','heavy'], capex:[0,20,40], recon:[0,5,10,20], print:[0,5,15,30], intervene:[0,25,50], crackdown:[false,true] };
+const POL_VALUES = { bread:['full','partial','removed'], fuel:['full','partial','market'], tax:['lax','standard','aggressive'], security:['light','balanced','heavy'], capex:[0,20,40,60], recon:[0,5,10,20], print:[0,5,15,30], intervene:[0,25,50], crackdown:[false,true] };
 
 const LEDGER = {
-  en:{ choices:'Your choices this season', oligarch:'Oligarch settlements', taxes:'Taxes', customs:'Border fees', projRev:'Project income', fuelSales:'Fuel sales', wages:'Salaries', bread:'Cheap bread', fuelSub:'Cheap fuel', security:'Police and army', running:'Running government', recon:'Rebuilding', integrity:'Integrity Commission', interest:'Interest on debt', printed:'Printed money',
+  en:{ choices:'Your choices this season', oligarch:'Oligarch settlements', taxes:'Taxes', customs:'Border fees', projRev:'Project income', fuelSales:'Fuel sales', wages:'Salaries', bread:'Cheap bread', fuelSub:'Cheap fuel', security:'Police and army', running:'Running government', borders:'Guarding the borders', recon:'Rebuilding', integrity:'Integrity Commission', interest:'Interest on debt', printed:'Printed money',
     remit:'Money sent home by Syrians abroad', phos:'Mining exports', transit:'Trade and ports', oil:'Oil', overflight:'Planes flying over', exports:'Factory exports', imports:'Imports for the economy', wheat:'Buying wheat', fuel:'Buying fuel', debt:'Paying old debts', grid:'Power stations', intervene:'Protecting the lira', demining:'Demining teams', loan_imf:'IMF loan', loan_bridge:'Bank loan', foreignCut:'Taken by foreign partners' },
-  ar:{ choices:'قراراتك هذا الموسم', oligarch:'تسويات الأثرياء', taxes:'الضرائب', customs:'رسوم الحدود', projRev:'دخل المشاريع', fuelSales:'مبيعات الوقود', wages:'الرواتب', bread:'دعم الخبز', fuelSub:'دعم الوقود', security:'الشرطة والجيش', running:'تشغيل الحكومة', recon:'إعادة الإعمار', integrity:'هيئة النزاهة', interest:'فوائد الدين', printed:'نقود مطبوعة',
+  ar:{ choices:'قراراتك هذا الموسم', oligarch:'تسويات الأثرياء', taxes:'الضرائب', customs:'رسوم الحدود', projRev:'دخل المشاريع', fuelSales:'مبيعات الوقود', wages:'الرواتب', bread:'دعم الخبز', fuelSub:'دعم الوقود', security:'الشرطة والجيش', running:'تشغيل الحكومة', borders:'حراسة الحدود', recon:'إعادة الإعمار', integrity:'هيئة النزاهة', interest:'فوائد الدين', printed:'نقود مطبوعة',
     remit:'حوالات السوريين في الخارج', phos:'صادرات التعدين', transit:'التجارة والموانئ', oil:'النفط', overflight:'عبور الطائرات', exports:'صادرات المصانع', imports:'مستوردات الاقتصاد', wheat:'شراء القمح', fuel:'شراء الوقود', debt:'سداد الديون القديمة', grid:'محطات الكهرباء', intervene:'حماية الليرة', demining:'فرق نزع الألغام', loan_imf:'قرض صندوق النقد', loan_bridge:'قرض مصرفي', foreignCut:'ما يأخذه الشركاء الأجانب' },
 };
 
@@ -1669,13 +1670,13 @@ const WHY = {
   en:{ fxUp:'Dollar +{0}%', fxDown:'Dollar {0}%', payDown:'Salary lost ${0}', payUp:'Salary gained ${0}', trustDown:'Trust −{0}', trustUp:'Trust +{0}', angerUp:'Anger +{0}', angerDown:'Anger −{0}',
     print:'You printed {0}bn lira', reserves:'Few dollars left in the bank', reservesGood:'Plenty of dollars in the bank', deficit:'Government cash below zero', lowTrust:'People don’t trust the government', highTrust:'People trust the government', intervene:'You sold dollars to protect the lira', shock:'A crisis shook the lira', base:'Normal price rises',
     t_bread:'Bread policy', t_fuel:'Fuel policy', t_pay:'Salaries vs what people expect', t_power:'Electricity', t_prices:'Prices', t_security:'Police on the streets', t_tax:'Tough tax collection', t_anger:'Angry provinces', t_jobs:'Work', t_bar:'People expect more than they used to', t_debt:'Government cash deep below zero', t_decrees:'Your decrees', t_foreign:'Foreign hands on the country',
-    a_trust:'Low trust', a_pay:'Low salaries', a_power:'Blackouts', a_subsidies:'Subsidy cuts', a_security:'Security level', a_damage:'War damage', a_jobs:'People with no work', a_bar:'People expect more than they used to', a_prices:'Rising prices', a_local:'Local grievances', a_neighbors:'Anger spreading from neighbors', a_foreign:'Foreigners deciding for Syria', b_trust:'People trust you', b_pay:'Better salaries', b_power:'Better electricity', b_subsidies:'Subsidies', b_security:'Police on the streets', b_damage:'Rebuilding', b_jobs:'Factories are hiring', b_bar:'Expectations', b_prices:'Stable prices', b_local:'Local deals and projects', b_neighbors:'Calm neighbors', b_foreign:'Decisions back in Syrian hands',
+    a_trust:'Low trust', a_pay:'Low salaries', a_power:'Blackouts', a_subsidies:'Subsidy cuts', a_security:'Security level', a_damage:'War damage', a_jobs:'People with no work', a_bar:'People expect more than they used to', a_prices:'Rising prices', a_local:'Local grievances', a_neighbors:'Anger spreading from neighbors', a_foreign:'Foreigners deciding for Syria', a_smuggling:'The border crackdown', b_trust:'People trust you', b_pay:'Better salaries', b_power:'Better electricity', b_subsidies:'Subsidies', b_security:'Police on the streets', b_damage:'Rebuilding', b_jobs:'Factories are hiring', b_bar:'Expectations', b_prices:'Stable prices', b_local:'Local deals and projects', b_neighbors:'Calm neighbors', b_foreign:'Decisions back in Syrian hands', b_smuggling:'The crossings left alone',
     cashDown:'Government cash −{0}bn', cashUp:'Government cash +{0}bn', usdDown:'Dollars −${0}M', usdUp:'Dollars +${0}M', biggestCost:'Biggest cost: {0}', biggestIncome:'Biggest income: {0}',
     powerUp:'Electricity +{0}h', gridArrived:'New power stations came online', noneYet:'Nothing dramatic this season. Small changes add up, though.' },
   ar:{ fxUp:'الدولار +{0}%', fxDown:'الدولار {0}%', payDown:'الراتب خسر {0}$', payUp:'الراتب ربح {0}$', trustDown:'الثقة −{0}', trustUp:'الثقة +{0}', angerUp:'الغضب +{0}', angerDown:'الغضب −{0}',
     print:'طبعتَ {0} مليار ليرة', reserves:'دولارات قليلة في المصرف', reservesGood:'دولارات كثيرة في المصرف', deficit:'نقد الحكومة تحت الصفر', lowTrust:'الناس لا يثقون بالحكومة', highTrust:'الناس يثقون بالحكومة', intervene:'بعتَ دولارات لحماية الليرة', shock:'أزمة هزّت الليرة', base:'ارتفاع الأسعار الطبيعي',
     t_bread:'سياسة الخبز', t_fuel:'سياسة الوقود', t_pay:'الرواتب مقارنة بتوقعات الناس', t_power:'الكهرباء', t_prices:'الأسعار', t_security:'الانتشار الأمني', t_tax:'الجباية الصارمة', t_anger:'المحافظات الغاضبة', t_jobs:'العمل', t_bar:'الناس صاروا يتوقعون أكثر', t_debt:'نقد الحكومة تحت الصفر بكثير', t_decrees:'مراسيمك', t_foreign:'أيدٍ أجنبية على البلاد',
-    a_trust:'ثقة منخفضة', a_pay:'رواتب منخفضة', a_power:'التقنين', a_subsidies:'خفض الدعم', a_security:'مستوى الأمن', a_damage:'دمار الحرب', a_jobs:'ناس بلا عمل', a_bar:'الناس صاروا يتوقعون أكثر', a_prices:'ارتفاع الأسعار', a_local:'مظالم محلية', a_neighbors:'الغضب ينتقل من الجيران', a_foreign:'الأجانب يقررون عن سوريا', b_trust:'الناس يثقون بك', b_pay:'رواتب أفضل', b_power:'كهرباء أفضل', b_subsidies:'الدعم', b_security:'الانتشار الأمني', b_damage:'إعادة الإعمار', b_jobs:'المصانع توظّف', b_bar:'التوقعات', b_prices:'استقرار الأسعار', b_local:'اتفاقات ومشاريع محلية', b_neighbors:'جيران هادئون', b_foreign:'القرار عاد إلى أيدٍ سورية',
+    a_trust:'ثقة منخفضة', a_pay:'رواتب منخفضة', a_power:'التقنين', a_subsidies:'خفض الدعم', a_security:'مستوى الأمن', a_damage:'دمار الحرب', a_jobs:'ناس بلا عمل', a_bar:'الناس صاروا يتوقعون أكثر', a_prices:'ارتفاع الأسعار', a_local:'مظالم محلية', a_neighbors:'الغضب ينتقل من الجيران', a_foreign:'الأجانب يقررون عن سوريا', a_smuggling:'التشديد على الحدود', b_trust:'الناس يثقون بك', b_pay:'رواتب أفضل', b_power:'كهرباء أفضل', b_subsidies:'الدعم', b_security:'الانتشار الأمني', b_damage:'إعادة الإعمار', b_jobs:'المصانع توظّف', b_bar:'التوقعات', b_prices:'استقرار الأسعار', b_local:'اتفاقات ومشاريع محلية', b_neighbors:'جيران هادئون', b_foreign:'القرار عاد إلى أيدٍ سورية', b_smuggling:'المعابر دون تشديد',
     cashDown:'نقد الحكومة −{0} مليار', cashUp:'نقد الحكومة +{0} مليار', usdDown:'الدولارات −{0} مليون$', usdUp:'الدولارات +{0} مليون$', biggestCost:'أكبر مصروف: {0}', biggestIncome:'أكبر دخل: {0}',
     powerUp:'الكهرباء +{0} ساعة', gridArrived:'دخلت محطات جديدة الخدمة', noneYet:'لا شيء دراماتيكي هذا الموسم، لكن التغييرات الصغيرة تتراكم.' },
 };
@@ -1865,8 +1866,8 @@ GLOSS.power.en.fix = 'Invest in power stations (Policies). New power arrives 12 
 GLOSS.power.ar.fix = 'استثمر في محطات الكهرباء (السياسات). الكهرباء الجديدة تصل بعد 12 شهراً. الاقتصاد النامي يحتاج كهرباء أكثر.';
 GLOSS.score = { icon:'🏆', en:{ name:'Legacy score', short:'Score', what:'One number for how well the country is doing, from 0 to 100.', why:'It’s how history will judge you. It changes every month.', fix:'Keep the peace, raise living standards, rebuild, fight corruption, keep money in the bank, and don’t give away too much independence.' },
   ar:{ name:'نقاط الإرث', short:'النقاط', what:'رقم واحد يقيس حال البلاد، من 0 إلى 100.', why:'هكذا سيحكم عليك التاريخ. يتغيّر كل شهر.', fix:'حافظ على السلم، ارفع مستوى المعيشة، أعد الإعمار، حارب الفساد، احتفظ بالمال، ولا تتنازل عن استقلال كثير.' } };
-POL.capex.en = { name:'Build power stations', q:'How many dollars go into electricity? New power arrives 12 months later.', opts:{ 0:'$0', 20:'$40M/yr', 40:'$80M/yr' }, hint:{ 0:'Nothing. The grid slowly breaks down.', 20:'Steady progress. New power starts arriving in 12 months.', 40:'Fast progress. The best long-term move, but you wait a year to see it.' } };
-POL.capex.ar = { name:'بناء محطات الكهرباء', q:'كم دولاراً يذهب إلى الكهرباء؟ الكهرباء الجديدة تصل بعد 12 شهراً.', opts:{ 0:'0$', 20:'40 مليون$/سنة', 40:'80 مليون$/سنة' }, hint:{ 0:'لا شيء. الشبكة تتهالك ببطء.', 20:'تقدّم ثابت. الكهرباء الجديدة تبدأ بالوصول بعد 12 شهراً.', 40:'تقدّم سريع. أفضل خطوة للمستقبل، لكنك تنتظر سنة لترى النتيجة.' } };
+POL.capex.en = { name:'Build power stations', q:'How many dollars go into electricity? New power arrives 12 months later.', opts:{ 0:'$0', 20:'$40M/yr', 40:'$80M/yr', 60:'$120M/yr' }, hint:{ 0:'Nothing. The grid slowly breaks down.', 20:'Steady progress. New power starts arriving in 12 months.', 40:'Fast progress. The best long-term move, but you wait a year to see it.', 60:'All-out. A country full of working factories needs this much and uses all of it.' } };
+POL.capex.ar = { name:'بناء محطات الكهرباء', q:'كم دولاراً يذهب إلى الكهرباء؟ الكهرباء الجديدة تصل بعد 12 شهراً.', opts:{ 0:'0$', 20:'40 مليون$/سنة', 40:'80 مليون$/سنة', 60:'120 مليون$/سنة' }, hint:{ 0:'لا شيء. الشبكة تتهالك ببطء.', 20:'تقدّم ثابت. الكهرباء الجديدة تبدأ بالوصول بعد 12 شهراً.', 40:'تقدّم سريع. أفضل خطوة للمستقبل، لكنك تنتظر سنة لترى النتيجة.', 60:'أقصى ما يمكن. بلد مليء بالمصانع العاملة يحتاج هذا القدر ويستهلكه كله.' } };
 POL.recon.en.q = 'How much cash goes to rebuilding?'; POL.recon.en.opts = { 0:'None', 5:'10bn/yr', 10:'20bn/yr', 20:'40bn/yr' };
 POL.recon.ar.q = 'كم من النقد يذهب لإعادة الإعمار؟'; POL.recon.ar.opts = { 0:'لا شيء', 5:'10 مليار/سنة', 10:'20 مليار/سنة', 20:'40 مليار/سنة' };
 POL.print.en.opts = { 0:'None', 5:'10bn/yr', 15:'30bn/yr', 30:'60bn/yr' }; POL.print.ar.opts = { 0:'لا', 5:'10 مليار/سنة', 15:'30 مليار/سنة', 30:'60 مليار/سنة' };

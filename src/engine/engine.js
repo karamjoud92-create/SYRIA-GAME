@@ -3,19 +3,19 @@ const START_YEAR = 2027, MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
 
 const PROVS = [
   // id, name, popM, base unrest target, start unrest, damage $B, jobless %, power mod, col,row, neighbors
-  { id:'idlib', name:'Idlib', pop:3.0, base:30, u:48, dmg:8, jobless:58, pmod:0, c:1, r:0, nb:['aleppo','hama','latakia'] },
-  { id:'aleppo', name:'Aleppo', pop:4.2, base:30, u:50, dmg:25, jobless:62, pmod:0, c:2, r:0, nb:['idlib','hama','raqqa'] },
+  { id:'idlib', name:'Idlib', pop:3.0, base:30, u:48, dmg:8, jobless:58, pmod:0, c:1, r:0, smug:1, nb:['aleppo','hama','latakia'] },
+  { id:'aleppo', name:'Aleppo', pop:4.2, base:30, u:50, dmg:25, jobless:62, pmod:0, c:2, r:0, smug:1, nb:['idlib','hama','raqqa'] },
   { id:'raqqa', name:'Raqqa', pop:0.8, base:34, u:52, dmg:7, jobless:66, pmod:-1, c:3, r:0, nb:['aleppo','hasakeh','deir','hama','homs'] },
-  { id:'hasakeh', name:'Hasakeh', pop:1.2, base:36, u:50, dmg:3, jobless:56, pmod:-1, c:4, r:0, nb:['raqqa','deir'] },
+  { id:'hasakeh', name:'Hasakeh', pop:1.2, base:36, u:50, dmg:3, jobless:56, pmod:-1, c:4, r:0, smug:1, nb:['raqqa','deir'] },
   { id:'latakia', name:'Latakia', pop:1.2, base:32, u:46, dmg:2, jobless:44, pmod:1, c:0, r:1, nb:['idlib','hama','tartus'] },
   { id:'hama', name:'Hama', pop:1.6, base:28, u:42, dmg:6, jobless:50, pmod:0, c:1, r:1, nb:['idlib','aleppo','latakia','homs','raqqa','tartus'] },
-  { id:'deir', name:'Deir ez-Zor', pop:1.0, base:38, u:56, dmg:9, jobless:66, pmod:-1, c:3, r:1, nb:['raqqa','hasakeh','homs'] },
+  { id:'deir', name:'Deir ez-Zor', pop:1.0, base:38, u:56, dmg:9, jobless:66, pmod:-1, c:3, r:1, smug:1, nb:['raqqa','hasakeh','homs'] },
   { id:'tartus', name:'Tartus', pop:0.9, base:28, u:40, dmg:1, jobless:42, pmod:1, c:0, r:2, nb:['latakia','hama','homs'] },
-  { id:'homs', name:'Homs', pop:1.5, base:30, u:44, dmg:14, jobless:55, pmod:0, c:2, r:1, nb:['hama','tartus','rif','deir','raqqa'] },
+  { id:'homs', name:'Homs', pop:1.5, base:30, u:44, dmg:14, jobless:55, pmod:0, c:2, r:1, smug:1, nb:['hama','tartus','rif','deir','raqqa'] },
   { id:'damascus', name:'Damascus', pop:2.0, base:24, u:36, dmg:5, jobless:40, pmod:2, c:1, r:2, nb:['rif','quneitra','daraa'] },
   { id:'rif', name:'Rural Damascus', pop:3.0, base:30, u:47, dmg:22, jobless:58, pmod:0, c:2, r:2, nb:['damascus','homs','daraa','suwayda'] },
   { id:'quneitra', name:'Quneitra', pop:0.1, base:34, u:45, dmg:1, jobless:60, pmod:0, c:0, r:3, nb:['damascus','daraa'] },
-  { id:'daraa', name:'Daraa', pop:1.0, base:34, u:50, dmg:4, jobless:56, pmod:0, c:1, r:3, nb:['quneitra','damascus','rif','suwayda'] },
+  { id:'daraa', name:'Daraa', pop:1.0, base:34, u:50, dmg:4, jobless:56, pmod:0, c:1, r:3, smug:1, nb:['quneitra','damascus','rif','suwayda'] },
   { id:'suwayda', name:'Suwayda', pop:0.4, base:40, u:58, dmg:1, jobless:58, pmod:-1, c:2, r:3, nb:['daraa','rif'] },
 ];
 const PROV_BY = Object.fromEntries(PROVS.map(p => [p.id, p]));
@@ -73,7 +73,7 @@ const POLICY_OPTS = {
   tax:      [['lax','Lax'],['standard','Standard'],['aggressive','Aggressive']],
   security: [['light','Light'],['balanced','Balanced'],['heavy','Heavy']],
   print:    [[0,'None'],[5,'5bn'],[15,'15bn'],[30,'30bn']],
-  capex:    [[0,'$0'],[20,'$20M'],[40,'$40M']],
+  capex:    [[0,'$0'],[20,'$20M'],[40,'$40M'],[60,'$60M']],
   recon:    [[0,'0'],[5,'5bn'],[10,'10bn'],[20,'20bn']],
   intervene:[[0,'$0'],[25,'$25M'],[50,'$50M']],
   crackdown:[[false,'Off'],[true,'On']],
@@ -147,7 +147,7 @@ function tourismIncome(s){
 // A workshop with no power is a shed. Diesel keeps a fraction of it going; a full shift needs
 // the grid. Extraction is deliberately not in here — a wellhead runs on its own power, which is
 // exactly why pumping oil survives a blackout and making things does not. Same shape as tourism.
-const industryPower = s => clamp(nationalHours(s) / 14, 0.2, 1);
+const industryPower = s => clamp(Math.pow(clamp(nationalHours(s) / 12, 0, 1), 0.6), 0.22, 1);
 function industryExports(s){ let e = 0; Object.keys(IND).forEach(k => e += IND[k].exp * indLvl(s, k)); return e * industryPower(s); }
 const PARTNERS = {
   turkey:{ flag:'🇹🇷', pc:15, sov:1, ok:s => s.provs.aleppo.u < 65 && s.provs.idlib.u < 65 },
@@ -293,6 +293,7 @@ function step(state, dt = MONTH, policyOverride){
   addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx);
   if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
+  if (P.crackdown) addS('borders', -1.2 * Math.pow(pIdx, 0.7));
   addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
   { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
     if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
@@ -391,7 +392,7 @@ function step(state, dt = MONTH, policyOverride){
   const healthT = clamp(28 + 56 * svcCover(s, 'clinics') + (hrs - 8) * 0.7 - Math.max(0, nu - 55) * 0.30 - Math.max(0, s.infl - 25) * 0.13, 5, 100);
   s.health = clamp(s.health + (healthT - s.health) * relax(0.26, dt), 0, 100);
   const revolts = PROVS.filter(p => tierOf(s.provs[p.id].u) === 'revolt').length;
-  let gain = { 0:-0.8, 20:0.5, 40:1 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (hasDecree(s, 'braingain') ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
+  let gain = { 0:-0.8, 20:0.5, 40:1, 60:1.3 }[P.capex] + (hrs > 8 ? 0.5 : 0) + (hasDecree(s, 'braingain') ? 1 : 0) + (s.trust > 55 ? 0.5 : 0) + (dealOn(s, 'gulf') ? 0.5 : 0)
     + indLvl(s, 'telecom') * IND.telecom.capGain + clamp((38 - joblessNat(s)) * 0.04, -0.8, 1.2)
     + (s.edu - 30) * 0.018 + (s.health - 30) * 0.012;
   if (gain > 0 && s.corr > 60) gain *= 0.5;
@@ -402,13 +403,13 @@ function step(state, dt = MONTH, policyOverride){
   const reconB = P.recon * dt / s.parallel * (1 + indLvl(s, 'cement') * IND.cement.reconBoost);
   const privB = (s.trust > 40 ? (s.trust - 40) * s.cap * 0.0004 : 0) * dt;
   const totalDmg = PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) || 1;
-  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0, foreign:0 };
+  const newU = {}, ap = { trust:0, pay:0, power:0, subsidies:0, security:0, damage:0, jobs:0, services:0, prices:0, local:0, neighbors:0, foreign:0, smuggling:0 };
   let wsum = 0, maxContagion = 0;
   PROVS.forEach(p => {
     const pv = s.provs[p.id], blackout = 24 - provHours(s, p.id);
     const parts = { trust:(50 - s.trust) * 0.4, pay:clamp((s.expWage - rw) * 0.5, -10, 15), power:blackout * 0.8 - 10,
       subsidies:{ full:-4, partial:0, removed:9 }[P.bread] + { full:-2, partial:0, market:5 }[P.fuel], security:{ light:5, balanced:0, heavy:-7 }[P.security],
-      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5, foreign:gripNow * 8 };
+      damage:Math.min(12, pv.dmg / p.pop * 0.8), jobs:(pv.jobless - 55) * 0.17, services:-(s.health - 30) * 0.08 - (s.edu - 30) * 0.04, prices:(s.infl - 20) * 0.15, local:pv.mod + s.bar * 5, foreign:gripNow * 8, smuggling:(P.crackdown && p.smug ? 5 : 0) };
     const tgt = clamp(p.base + Object.values(parts).reduce((a, b) => a + b, 0), 12, 100);
     let contagion = 0; p.nb.forEach(n => contagion += Math.max(0, s.provs[n].u - 60) * 0.06);
     maxContagion = Math.max(maxContagion, contagion);

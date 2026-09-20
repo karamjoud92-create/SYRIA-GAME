@@ -105,6 +105,23 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(war.burn.recon < war.calm.recon,
     `${tag}: the score counts what is standing, not the effort (burning ${war.burn.recon.toFixed(0)} < calm ${war.calm.recon.toFixed(0)}, though it repaired nearly as much)`);
 
+  // 7. the border crackdown is a decision, not a button: it used to be better on score, trust,
+  //    anger, corruption AND cash at once, with no cost written anywhere
+  const cr = await page.evaluate(() => {
+    const run = on => { let s = newGame(7, 'learner'); s.reserves = 4000;
+      for (let i = 0; i < 120; i++){ const P = s.policy; P.crackdown = on; P.fuel = 'market'; P.tax = 'aggressive';
+        P.capex = s.reserves > 450 ? 40 : 20;
+        s = step(s); s.reserves = Math.max(s.reserves, 600); }
+      const border = ['idlib','aleppo','hasakeh','deir','homs','daraa'].reduce((a, k) => a + s.provs[k].u, 0) / 6;
+      const cost = (s.last.ledger.syp.find(r => r[0] === 'borders') || [0, 0])[1];
+      return { cash: s.treasury, corr: s.corr, border, cost }; };
+    return { on: run(true), off: run(false) };
+  });
+  ok(cr.on.cash > cr.off.cash && cr.on.corr < cr.off.corr,
+    `${tag}: cracking down still pays (cash ${cr.off.cash.toFixed(0)} -> ${cr.on.cash.toFixed(0)}bn, corruption ${cr.off.corr.toFixed(0)} -> ${cr.on.corr.toFixed(0)})`);
+  ok(cr.on.border > cr.off.border + 3 && cr.on.cost < 0,
+    `${tag}: and it costs you the crossings (border anger ${cr.off.border.toFixed(0)} -> ${cr.on.border.toFixed(0)}, plus a bill to man them)`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

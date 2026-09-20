@@ -30,6 +30,9 @@ const trader=(s,m)=>{ smart(s,m);
 };
 // builds an economy out of factories and people rather than out of holes in the ground
 const builder=(s,m)=>{ smart(s,m);
+  // Factories are no use unlit, and a full industrial economy wants more power than it did
+  // empty. Since industryPower() exists, the grid has to keep up with the mills.
+  if (E.nationalHours(s) < 14 && s.reserves > 600) s.policy.capex = 60;
   // a state that teaches and treats its people, and can move what it makes
   if (s.reserves>200){ for(const id of ['schools','clinics','unis']) E.ACT.service(s,id); }
   if (s.reserves>260){ for(const id of ['textiles','food','pharma','logistics','coldchain','packaging','cement','telecom','tourism']) E.ACT.invest(s,id); }
