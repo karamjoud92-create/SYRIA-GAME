@@ -598,7 +598,10 @@ function legacy(s){
   const bar = s.bar || 0;
   const comp = {
     Stability: clamp(100 - nu - bar * 8, 0, 100),
-    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100, 0, 100),
+    // Living standards are not one salary. The state wage is what the president sets, but how
+    // well people actually live also depends on whether they have work at all — a country at
+    // 4% out of work is not living the same life as one at 60% on the same government pay.
+    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100 * (0.35 + 0.65 * (1 - joblessNat(s) / 100)), 0, 100),
     Reconstruction: clamp((1 - PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) / 108) * 100 * 2.5, 0, 100),
     Institutions: clamp(100 - s.corr, 0, 100),
     Solvency: clamp(s.reserves / 1500 * 60 + (1 - s.debt / 15000) * 40, 0, 100),

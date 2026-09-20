@@ -136,6 +136,16 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   const card = await page.evaluate(() => { const t = INV_TXT.refinery[LANG === 'ar' ? 'ar' : 'en']; return t[1]; });
   ok(tag === 'en' ? /oil policy/i.test(card) : /سياسة النفط/.test(card), `${tag}: the card names the policy it depends on`);
 
+  // 9. living standards are not one salary: two countries on identical government pay, one
+  //    with nearly everyone working and one with nobody, used to score exactly the same
+  const lv = await page.evaluate(() => {
+    const mk = jl => { let s = newGame(7, 'learner'); s.wage = 9000; s.parallel = 125;
+      PROVS.forEach(p => s.provs[p.id].jobless = jl); return legacy(s).comp.Livelihoods; };
+    return { working: mk(5), idle: mk(60), wage: 9000 / 125 };
+  });
+  ok(lv.working > lv.idle * 1.3,
+    `${tag}: on the same $${lv.wage.toFixed(0)} salary, work counts (5% idle scores ${lv.working.toFixed(0)}, 60% idle scores ${lv.idle.toFixed(0)})`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }
