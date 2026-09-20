@@ -500,6 +500,13 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 <script>
 // ===== Transition: engine (pure, no DOM) =====
 const START_YEAR = 2027, MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
+// Syria's population at the start. Before this existed, popM was read in exactly two places —
+// svcNeed and its own growth line — so a country of 14M and one of 32M paid the same bread
+// bill, the same salaries and the same running costs, collected the same tax, and got the same
+// percentage of its people into work from one factory. Emigration was the game's central drama
+// and changed nothing but school coverage.
+const POP0 = 21.9;
+const popRatio = s => (s.popM || POP0) / POP0;
 
 const PROVS = [
   // id, name, popM, base unrest target, start unrest, damage $B, jobless %, power mod, col,row, neighbors
@@ -622,10 +629,10 @@ const IND = {
 const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
 // Jobs a province gets from the sectors: full weight where they are built, a share elsewhere.
 function indJobsAt(s, id){
-  let j = 0;
+  let j = 0;   // jobs are a count; what it is a share OF depends on how many people there are
   Object.keys(IND).forEach(k => { const n = indLvl(s, k); if (n) j += INVEST[k].jobs * n * (IND[k].prov.includes(id) ? 1 : 0.3); });
   ['oilwells','refinery','gasfield','phosphate','farm','offshore'].forEach(k => { const n = (s.invests && s.invests[k]) || 0; if (n) j += INVEST[k].jobs * n * 0.4; });
-  return j;
+  return j / popRatio(s);
 }
 function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].jobless * p.pop; w += p.pop; }); return tot / w; }
 
@@ -717,7 +724,7 @@ const monthOf = s => ((s.t % 12) + 12) % 12;
 const yearNow = s => START_YEAR + Math.floor(s.t / 12);
 function seasonNow(s){ const m = monthOf(s); return m >= 3 && m <= 8 ? 'H1' : 'H2'; }   // Apr–Sep harvest, Oct–Mar winter
 const realWage = s => s.wage / s.parallel;
-const demandNow = s => s.demand * (1 + Math.max(0, s.cap - 20) / 160);
+const demandNow = s => s.demand * (1 + Math.max(0, s.cap - 20) / 160) * popRatio(s);
 function nationalHours(s){ return clamp(22 * Math.pow((s.mw + (s.mwImport || 0)) / demandNow(s), 1.3), 0.5, 23); }
 function provHours(s, id){ return clamp(nationalHours(s) + PROV_BY[id].pmod + s.provs[id].power, 0, 24); }
 function natUnrest(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].u * p.pop; w += p.pop; }); return tot / w; }
@@ -753,7 +760,7 @@ function step(state, dt = MONTH, policyOverride){
   const addS = (k, v) => { v *= dt; if (Math.abs(v) > 1e-4) L.syp.push([k, v]); s.treasury += v; };
   const addU = (k, v) => { v *= dt; if (Math.abs(v) > 1e-3) L.usd.push([k, v]); s.reserves += v; };
   if (policyOverride) s.policy = clone(policyOverride);
-  const P = s.policy, season = seasonNow(s);
+  const P = s.policy, season = seasonNow(s), popR = popRatio(s);
   const months = dt * 6;
   const endT = s.t + months;
 
@@ -787,17 +794,17 @@ function step(state, dt = MONTH, policyOverride){
   // --- lira budget ---
   const capMult = 1 + (s.cap - 20) * 0.0125, pIdx = s.parallel / BASE_FX;
   const taxMult = { lax:0.85, standard:1, aggressive:1.2 }[P.tax];
-  addS('taxes', 20 * (s.comp / 35) * capMult * taxMult * Math.pow(pIdx, 0.8));
+  addS('taxes', 20 * (s.comp / 35) * capMult * taxMult * Math.pow(pIdx, 0.8) * popR);
   addS('customs', 6 * capMult * (P.crackdown ? 1.3 : 1) * pIdx * (1 - s.corr / 250));
   let projRev = 0; PROVS.forEach(p => { if (built(s, p.id)) projRev += PROJECTS[p.id].rev * (1 - projLeak(s, p.id)); });
   if (projRev) addS('projRev', projRev * Math.pow(pIdx, 0.6));
   if (P.fuel === 'market') addS('fuelSales', 3 * pIdx);
-  addS('wages', -(s.head * 1e6 * s.wage * 6) / 1e9);
-  addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx);
-  if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
+  addS('wages', -(s.head * 1e6 * s.wage * 6) / 1e9 * popR);
+  addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx * popR);
+  if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx * popR);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
   if (P.crackdown) addS('borders', -1.2 * Math.pow(pIdx, 0.7));
-  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
+  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9) * popR);
   { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
     if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
     if (svcU) addU('medicine', -svcU); }
@@ -875,7 +882,7 @@ function step(state, dt = MONTH, policyOverride){
   const rw = realWage(s), hrs = nationalHours(s), nu = natUnrest(s);
   // THE BAR. Every good year raises what counts as good enough, and it never drops back.
   // Nobody thanks you in 2040 for the electricity that made you a hero in 2029.
-  const barFrom = s.diff === 'realistic' ? 38 : 44, barOver = s.diff === 'realistic' ? 36 : 40;
+  const barFrom = s.diff === 'realistic' ? 38 : 41, barOver = s.diff === 'realistic' ? 36 : 37;
   s.bar = clamp(Math.max(s.bar || 0, ((s.score || 40) - barFrom) / barOver), 0, 1);
   s.expWage = 25 + Math.max(0, s.cap - 20) * 0.6 + s.bar * 32;
   const tp = { base:45, decrees:(s.trustMod || 0), bread:{ full:6, partial:0, removed:-10 }[P.bread], fuel:{ full:4, partial:0, market:-6 }[P.fuel],
@@ -938,7 +945,9 @@ function step(state, dt = MONTH, policyOverride){
 
   s.trust = clamp(s.trust, 0, 100); s.corr = clamp(s.corr, 5, 100); s.sov = clamp(s.sov, 0, 100);
   { const leave = clamp((joblessNat(s) - 42) * 0.016 + (s.expWage - rw) * 0.010 + (nu - 48) * 0.012 - (s.trust - 45) * 0.006, -0.5, 1.6);
-    s.popM = clamp(s.popM * (1 + (0.006 - leave / 100) * dt * 2), 12, 40); }
+    // dt is in half-years, so a year is dt/2. This read `* dt * 2` — four times too fast, which
+    // is why every strategy that survived twenty years ended pinned at the 40M ceiling.
+    s.popM = clamp(s.popM * (1 + (0.006 - leave / 100) * dt / 2), 12, 40); }
   s.cls = classes(s);
   s.t = endT;
   s.score = legacy(s).avg;
@@ -1100,11 +1109,13 @@ function legacy(s){
   // one that still lets foreigners run its ports is not.
   const bar = s.bar || 0;
   const comp = {
-    Stability: clamp(100 - nu - bar * 8, 0, 100),
+    // A country people are leaving is not at peace, and nothing in the score used to notice.
+    // Only bites below where you started; a country people come back to is doing something right.
+    Stability: clamp(100 - nu - bar * 8 - Math.max(0, 1 - s.popM / POP0) * 75, 0, 100),
     // Living standards are not one salary. The state wage is what the president sets, but how
     // well people actually live also depends on whether they have work at all — a country at
     // 4% out of work is not living the same life as one at 60% on the same government pay.
-    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100 * (0.35 + 0.65 * (1 - joblessNat(s) / 100)), 0, 100),
+    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100 * (0.35 + 0.65 * (1 - joblessNat(s) / 100)) * clamp(s.popM / POP0, 0.4, 1), 0, 100),
     Reconstruction: clamp((1 - PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) / 108) * 100 * 2.5, 0, 100),
     Institutions: clamp(100 - s.corr, 0, 100),
     Solvency: clamp(s.reserves / 1500 * 60 + (1 - s.debt / 15000) * 40, 0, 100),
@@ -1248,7 +1259,7 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, popRatio, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
 
 const MAP = {"W":800,"H":734.0,"paths":{"quneitra":"M14.4,586.1L20.7,589.7L18.8,594.0L20.0,598.2L22.1,595.8L28.9,597.1L27.6,610.5L30.9,614.9L26.9,629.8L31.7,640.6L25.3,639.5L26.3,646.2L4.1,670.8L13.3,658.6L15.2,648.7L19.8,641.5L16.3,634.8L15.1,618.9L10.6,617.0L12.8,605.6L10.1,603.9L9.6,597.0L5.4,593.5L9.5,587.6L4.9,584.4L10.4,580.7L11.7,573.8L17.6,570.2L17.6,573.8L12.8,580.0L14.4,586.1Z","homs":"M80.3,395.8L70.4,386.2L64.7,395.1L46.7,394.7L47.5,389.3L55.7,374.4L66.1,363.5L67.8,356.1L70.9,355.0L70.5,358.8L74.2,362.5L77.5,359.5L83.7,362.2L92.8,347.4L95.8,347.8L95.2,351.3L100.6,354.9L138.3,343.7L143.5,346.6L150.2,360.9L166.3,351.1L170.9,353.0L176.1,348.6L184.1,353.7L188.6,345.7L193.2,345.6L195.1,342.7L208.3,342.4L213.3,345.8L214.9,332.9L222.6,328.0L242.1,323.1L251.9,327.7L255.9,338.7L272.8,355.3L276.3,352.1L280.6,339.5L303.0,326.4L302.8,317.9L309.8,303.3L310.0,284.5L356.0,286.0L423.1,304.0L435.2,313.8L446.6,334.9L447.4,349.8L535.0,476.4L311.7,614.2L262.7,574.1L231.4,556.1L223.3,544.9L219.2,534.5L192.0,509.5L184.2,495.4L175.7,493.9L161.8,485.5L137.9,453.6L128.3,457.3L113.1,454.8L105.8,457.6L100.9,448.4L103.2,443.0L95.6,435.2L96.4,425.0L87.3,418.9L85.4,414.5L73.6,414.7L71.7,411.6L79.4,405.8L80.0,399.6L85.7,399.4L86.2,394.8L80.3,395.8Z","tartus":"M46.7,394.7L29.6,391.8L17.3,351.6L21.3,337.3L19.8,324.5L28.7,311.5L25.0,302.2L36.3,308.3L57.4,305.3L63.7,307.8L64.2,333.5L60.8,337.0L49.7,340.2L50.6,344.1L64.5,345.4L70.9,355.0L66.9,356.9L66.1,363.5L55.7,374.4L47.5,389.3L46.7,394.7Z","rif":"M80.3,480.4L90.4,479.1L92.0,474.0L105.8,457.6L113.1,454.8L128.3,457.3L137.9,453.6L161.8,485.5L175.7,493.9L184.2,495.4L192.0,509.5L219.2,534.5L223.3,544.9L231.4,556.1L262.7,574.1L311.7,614.2L213.0,678.8L187.6,653.5L184.4,641.3L175.6,640.7L169.4,637.1L162.8,626.5L148.8,622.0L141.4,607.9L132.3,600.5L101.9,605.0L101.3,600.3L94.7,590.2L84.2,597.1L79.1,604.4L67.0,598.3L61.5,590.8L58.9,600.3L37.0,607.3L28.6,603.4L28.1,596.6L22.1,595.8L20.0,598.2L18.8,594.0L20.7,589.7L14.4,586.1L13.4,578.0L17.6,573.8L17.6,570.2L23.6,565.7L25.2,556.1L35.6,552.5L37.9,547.5L23.8,539.6L27.1,529.5L39.3,513.8L49.9,508.8L53.2,511.9L61.1,508.5L76.2,512.8L77.5,507.8L70.7,505.7L65.4,500.1L80.3,480.4ZM70.2,550.8L73.5,551.1L75.5,553.7L75.6,558.1L74.5,561.3L71.7,564.1L71.3,565.9L69.0,565.5L61.7,561.8L59.0,563.6L58.4,562.1L60.9,559.4L58.1,558.0L56.2,558.2L55.3,555.6L59.9,552.9L63.5,552.8L70.2,550.8Z","hasakeh":"M780.0,0.0L781.5,5.4L789.8,5.8L796.3,12.5L795.0,22.5L800.0,38.5L732.7,106.2L680.8,118.4L667.7,142.1L662.9,185.2L675.7,214.9L677.6,224.4L677.5,249.1L671.5,259.6L634.4,257.1L607.4,248.8L502.3,146.5L488.0,120.7L469.5,112.0L458.7,112.4L450.9,103.3L447.1,92.6L486.0,85.3L511.8,75.9L537.0,64.5L563.9,47.0L577.4,43.8L599.4,32.9L622.0,29.6L658.6,38.1L692.1,36.5L755.8,21.9L780.0,0.0Z","raqqa":"M416.3,97.4L447.1,92.6L450.9,103.3L458.7,112.4L468.9,111.9L480.5,116.6L488.0,120.7L490.7,126.1L471.1,213.9L469.8,224.5L475.1,227.6L423.1,304.0L356.0,286.0L310.0,284.5L277.1,249.9L280.0,227.8L295.4,199.5L283.9,186.1L281.2,173.4L292.2,158.0L324.8,151.3L345.1,137.9L351.1,128.3L354.2,112.3L353.7,100.6L344.8,104.4L342.6,99.3L343.1,97.0L350.7,95.1L350.1,85.1L360.9,92.4L397.8,91.3L416.3,97.4Z","aleppo":"M300.7,61.0L337.4,71.9L350.1,85.1L351.7,91.6L350.2,95.7L342.6,97.2L344.0,103.9L352.3,100.1L354.4,102.5L351.8,125.8L344.0,139.1L324.8,151.3L292.2,158.0L281.2,173.4L283.9,186.1L295.4,199.5L280.0,227.8L276.3,247.8L302.0,276.7L240.5,275.3L222.7,265.6L195.1,266.7L169.0,253.9L164.6,248.4L160.2,236.0L165.1,231.8L165.3,228.0L153.6,220.2L140.1,198.5L139.2,189.5L126.2,182.7L120.6,175.5L133.2,162.6L134.1,158.0L125.4,145.4L111.3,149.3L103.9,146.5L104.6,139.3L99.7,134.3L97.4,126.3L101.2,116.1L105.8,84.6L110.6,76.3L110.2,72.8L149.2,83.6L155.7,90.5L155.2,100.0L159.9,103.2L166.0,98.7L182.6,97.6L207.1,101.2L232.1,86.8L252.0,82.7L288.5,64.5L300.7,61.0Z","idlib":"M104.6,162.1L113.8,159.3L111.3,149.3L124.8,145.3L134.1,158.0L133.2,162.6L120.6,175.5L126.2,182.7L139.2,189.5L140.1,198.5L152.6,218.8L165.6,228.6L160.2,236.0L164.6,248.4L169.0,253.9L179.5,259.7L171.6,271.4L166.0,274.7L162.7,281.7L164.6,284.3L170.1,281.3L170.4,289.8L163.5,293.8L155.0,293.5L155.2,280.8L153.2,278.1L146.3,286.9L142.0,288.0L132.9,279.4L111.2,283.1L97.8,280.7L91.8,275.2L84.5,276.5L80.5,267.2L82.8,236.3L75.1,235.1L72.4,231.1L65.2,231.5L63.9,229.8L67.8,226.6L66.9,224.0L51.4,224.1L54.3,205.4L56.9,201.1L65.6,200.1L66.6,194.9L69.0,193.9L76.3,194.9L76.4,169.6L78.4,164.1L76.7,162.1L86.8,164.8L93.2,160.7L104.6,162.1Z","latakia":"M39.4,213.7L51.9,220.1L52.7,224.8L67.9,225.4L61.9,231.5L61.0,237.4L57.2,241.9L60.2,252.3L57.5,278.2L63.7,307.8L57.4,305.3L36.3,308.3L25.0,302.2L23.1,298.3L24.7,293.4L23.5,279.3L11.4,266.0L5.7,266.6L6.6,261.2L0.0,255.2L6.6,250.8L5.7,242.7L9.2,240.7L14.1,231.0L13.5,224.8L9.0,216.1L17.7,215.7L22.6,206.1L30.9,204.7L33.7,213.2L39.4,213.7Z","suwayda":"M213.0,678.8L131.8,733.5L116.2,733.0L111.8,729.6L95.4,727.6L96.7,709.7L92.8,703.8L94.2,699.2L88.3,695.4L81.6,695.4L81.4,688.1L87.4,682.2L76.0,676.2L77.0,658.4L73.8,649.0L74.3,641.6L84.6,633.4L98.6,633.1L97.4,625.5L92.3,625.1L90.1,616.3L90.3,609.8L93.9,606.1L132.3,600.5L141.4,607.9L148.8,622.0L162.8,626.5L169.4,637.1L175.6,640.7L184.4,641.3L187.6,653.5L213.0,678.8Z","daraa":"M26.5,678.7L5.6,670.3L26.3,646.2L25.3,639.5L31.7,640.6L26.9,629.8L30.9,614.9L27.6,610.5L28.6,603.4L36.3,607.4L50.9,603.6L58.9,600.3L61.5,590.8L67.0,598.3L79.1,604.4L84.2,597.1L95.1,590.6L101.3,600.3L101.9,605.0L91.2,608.4L90.1,616.3L92.3,625.1L97.3,625.3L98.8,632.8L83.7,633.8L74.5,641.2L73.7,648.2L77.0,658.4L76.0,676.2L87.4,682.2L81.4,688.1L81.4,695.1L88.3,695.4L94.2,699.2L92.8,703.8L96.7,709.7L95.4,727.6L78.1,723.3L54.6,702.6L41.2,704.1L34.0,690.8L33.7,683.9L27.9,683.6L26.5,678.7Z","deir":"M671.5,259.6L665.8,268.1L657.4,313.8L659.0,370.8L633.0,424.2L626.7,430.4L597.2,438.4L535.0,476.4L447.4,349.8L447.0,336.2L439.0,318.6L423.1,304.0L475.1,227.6L469.8,224.5L471.1,213.9L490.7,126.1L502.3,146.5L607.4,248.8L634.4,257.1L671.5,259.6Z","hama":"M179.5,259.7L196.0,266.9L222.7,265.6L235.1,273.7L250.7,276.8L302.0,276.7L310.0,284.5L309.2,305.8L302.8,317.9L302.5,327.1L280.6,339.5L276.3,352.1L272.4,355.4L255.9,338.7L251.9,327.7L242.5,323.1L222.6,328.0L214.9,332.9L213.3,345.8L208.3,342.4L195.1,342.7L193.2,345.6L188.6,345.7L184.1,353.7L176.1,348.6L170.9,353.0L166.3,351.1L150.2,360.9L143.5,346.6L139.5,343.8L100.6,354.9L95.2,351.3L95.8,347.8L92.8,347.4L87.4,353.9L84.7,361.9L77.5,359.5L74.2,362.5L64.5,345.4L50.6,344.1L49.7,340.2L61.3,336.8L65.1,330.1L63.4,302.1L57.5,278.2L60.2,252.3L57.3,241.3L63.9,229.8L82.8,236.3L80.5,267.2L84.5,276.5L91.8,275.2L97.8,280.7L117.3,283.4L132.9,279.4L142.0,288.0L146.3,286.9L153.2,278.1L155.2,280.8L154.6,293.2L163.5,293.8L170.6,289.4L169.8,281.0L162.8,283.4L165.4,275.7L171.6,271.4L179.5,259.7Z","damascus":"M70.2,550.8L73.5,551.1L75.5,553.7L75.6,558.1L74.5,561.3L71.7,564.1L71.3,565.9L69.0,565.5L61.7,561.8L59.0,563.6L58.4,562.1L60.9,559.4L58.1,558.0L56.2,558.2L55.3,555.6L59.9,552.9L63.5,552.8L70.2,550.8Z"},"cent":{"quneitra":[21.6,620.2],"homs":[308.9,449.8],"tartus":[42.3,348.9],"rif":[134.4,566.1],"hasakeh":[583.3,129.0],"raqqa":[383.7,196.0],"aleppo":[205.5,168.7],"idlib":[102.7,219.4],"latakia":[31.0,256.8],"suwayda":[138.4,666.0],"daraa":[45.7,658.9],"deir":[545.1,295.4],"hama":[186.2,298.1],"damascus":[67.6,558.8]}};
 

@@ -197,6 +197,42 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(sv.on.upkeep < sv.on.tax * 0.3,
     `${tag}: and a state can afford to run them (${sv.on.upkeep.toFixed(1)}bn upkeep against ${sv.on.tax.toFixed(1)}bn of tax and customs)`);
 
+  // 12. how many people live here used to change nothing but school coverage
+  const pop = await page.evaluate(() => {
+    const run = n => { let s = newGame(7, 'learner'); s.ind = { textiles:3, food:3, pharma:3 };
+      for (let i = 0; i < 12; i++){ s.popM = n; s = step(s); }
+      const l = k => (s.last.ledger.syp.find(r => r[0] === k) || [0, 0])[1] / s.last.dt;
+      return { bread: l('bread'), wages: l('wages'), tax: l('taxes'), hours: nationalHours(s), jobless: joblessNat(s) }; };
+    // a country that is actually run: people stay and slowly come back
+    let grow = newGame(7, 'learner'); grow.reserves = 6000; grow.treasury = 600;
+    for (let i = 0; i < 240; i++){ const P = grow.policy; P.fuel = 'market'; P.tax = 'aggressive';
+      P.capex = grow.reserves > 450 ? 40 : 20;
+      if (realWage(grow) < grow.expWage - 4 && grow.treasury > 10) ACT.wage(grow, 10);
+      grow = step(grow); grow.reserves = Math.max(grow.reserves, 600); }
+    return { few: run(14), many: run(32), after20: grow.popM };
+  });
+  ok(Math.abs(pop.many.bread) > Math.abs(pop.few.bread) * 1.5 && pop.many.tax > pop.few.tax * 1.5,
+    `${tag}: a bigger country costs more and pays more tax (bread ${pop.few.bread.toFixed(1)} -> ${pop.many.bread.toFixed(1)}bn, tax ${pop.few.tax.toFixed(1)} -> ${pop.many.tax.toFixed(1)}bn)`);
+  ok(pop.many.jobless > pop.few.jobless + 5 && pop.many.hours < pop.few.hours,
+    `${tag}: the same factories cover less of it, and it wants more power (${pop.few.jobless.toFixed(0)}% idle at ${pop.few.hours.toFixed(1)}h vs ${pop.many.jobless.toFixed(0)}% at ${pop.many.hours.toFixed(1)}h)`);
+  ok(pop.after20 > 22 && pop.after20 < 30,
+    `${tag}: twenty years of it being run well grows the country believably (${pop.after20.toFixed(1)}M from 21.9M, not pinned at the 40M ceiling)`);
+
+  // 13. and losing your people is not a way to win
+  const flee = await page.evaluate(() => {
+    const play = bleed => { let s = newGame(7, 'learner'); s.reserves = 6000; s.treasury = 600;
+      for (let i = 0; i < 180; i++){ const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive'; P.crackdown = true;
+        P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 20 ? 10 : 0;
+        if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
+        if (i % 4 === 0) for (const k of ['schools','clinics','unis'])
+          if (((s.svc && s.svc[k]) || 0) < svcNeed(s, k)) ACT.service(s, k);
+        s = step(s); if (bleed) s.popM = Math.max(12, s.popM * 0.994); }
+      return { pop: s.popM, score: s.score }; };
+    return { stay: play(false), leave: play(true) };
+  });
+  ok(flee.leave.score <= flee.stay.score,
+    `${tag}: half the country leaving is not worth points (${flee.stay.pop.toFixed(1)}M scores ${flee.stay.score.toFixed(1)}, ${flee.leave.pop.toFixed(1)}M scores ${flee.leave.score.toFixed(1)})`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

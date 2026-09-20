@@ -1,5 +1,12 @@
 // ===== Transition: engine (pure, no DOM) =====
 const START_YEAR = 2027, MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
+// Syria's population at the start. Before this existed, popM was read in exactly two places —
+// svcNeed and its own growth line — so a country of 14M and one of 32M paid the same bread
+// bill, the same salaries and the same running costs, collected the same tax, and got the same
+// percentage of its people into work from one factory. Emigration was the game's central drama
+// and changed nothing but school coverage.
+const POP0 = 21.9;
+const popRatio = s => (s.popM || POP0) / POP0;
 
 const PROVS = [
   // id, name, popM, base unrest target, start unrest, damage $B, jobless %, power mod, col,row, neighbors
@@ -122,10 +129,10 @@ const IND = {
 const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
 // Jobs a province gets from the sectors: full weight where they are built, a share elsewhere.
 function indJobsAt(s, id){
-  let j = 0;
+  let j = 0;   // jobs are a count; what it is a share OF depends on how many people there are
   Object.keys(IND).forEach(k => { const n = indLvl(s, k); if (n) j += INVEST[k].jobs * n * (IND[k].prov.includes(id) ? 1 : 0.3); });
   ['oilwells','refinery','gasfield','phosphate','farm','offshore'].forEach(k => { const n = (s.invests && s.invests[k]) || 0; if (n) j += INVEST[k].jobs * n * 0.4; });
-  return j;
+  return j / popRatio(s);
 }
 function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].jobless * p.pop; w += p.pop; }); return tot / w; }
 
@@ -217,7 +224,7 @@ const monthOf = s => ((s.t % 12) + 12) % 12;
 const yearNow = s => START_YEAR + Math.floor(s.t / 12);
 function seasonNow(s){ const m = monthOf(s); return m >= 3 && m <= 8 ? 'H1' : 'H2'; }   // Apr–Sep harvest, Oct–Mar winter
 const realWage = s => s.wage / s.parallel;
-const demandNow = s => s.demand * (1 + Math.max(0, s.cap - 20) / 160);
+const demandNow = s => s.demand * (1 + Math.max(0, s.cap - 20) / 160) * popRatio(s);
 function nationalHours(s){ return clamp(22 * Math.pow((s.mw + (s.mwImport || 0)) / demandNow(s), 1.3), 0.5, 23); }
 function provHours(s, id){ return clamp(nationalHours(s) + PROV_BY[id].pmod + s.provs[id].power, 0, 24); }
 function natUnrest(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].u * p.pop; w += p.pop; }); return tot / w; }
@@ -253,7 +260,7 @@ function step(state, dt = MONTH, policyOverride){
   const addS = (k, v) => { v *= dt; if (Math.abs(v) > 1e-4) L.syp.push([k, v]); s.treasury += v; };
   const addU = (k, v) => { v *= dt; if (Math.abs(v) > 1e-3) L.usd.push([k, v]); s.reserves += v; };
   if (policyOverride) s.policy = clone(policyOverride);
-  const P = s.policy, season = seasonNow(s);
+  const P = s.policy, season = seasonNow(s), popR = popRatio(s);
   const months = dt * 6;
   const endT = s.t + months;
 
@@ -287,17 +294,17 @@ function step(state, dt = MONTH, policyOverride){
   // --- lira budget ---
   const capMult = 1 + (s.cap - 20) * 0.0125, pIdx = s.parallel / BASE_FX;
   const taxMult = { lax:0.85, standard:1, aggressive:1.2 }[P.tax];
-  addS('taxes', 20 * (s.comp / 35) * capMult * taxMult * Math.pow(pIdx, 0.8));
+  addS('taxes', 20 * (s.comp / 35) * capMult * taxMult * Math.pow(pIdx, 0.8) * popR);
   addS('customs', 6 * capMult * (P.crackdown ? 1.3 : 1) * pIdx * (1 - s.corr / 250));
   let projRev = 0; PROVS.forEach(p => { if (built(s, p.id)) projRev += PROJECTS[p.id].rev * (1 - projLeak(s, p.id)); });
   if (projRev) addS('projRev', projRev * Math.pow(pIdx, 0.6));
   if (P.fuel === 'market') addS('fuelSales', 3 * pIdx);
-  addS('wages', -(s.head * 1e6 * s.wage * 6) / 1e9);
-  addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx);
-  if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
+  addS('wages', -(s.head * 1e6 * s.wage * 6) / 1e9 * popR);
+  addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx * popR);
+  if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx * popR);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
   if (P.crackdown) addS('borders', -1.2 * Math.pow(pIdx, 0.7));
-  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
+  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9) * popR);
   { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
     if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
     if (svcU) addU('medicine', -svcU); }
@@ -375,7 +382,7 @@ function step(state, dt = MONTH, policyOverride){
   const rw = realWage(s), hrs = nationalHours(s), nu = natUnrest(s);
   // THE BAR. Every good year raises what counts as good enough, and it never drops back.
   // Nobody thanks you in 2040 for the electricity that made you a hero in 2029.
-  const barFrom = s.diff === 'realistic' ? 38 : 44, barOver = s.diff === 'realistic' ? 36 : 40;
+  const barFrom = s.diff === 'realistic' ? 38 : 41, barOver = s.diff === 'realistic' ? 36 : 37;
   s.bar = clamp(Math.max(s.bar || 0, ((s.score || 40) - barFrom) / barOver), 0, 1);
   s.expWage = 25 + Math.max(0, s.cap - 20) * 0.6 + s.bar * 32;
   const tp = { base:45, decrees:(s.trustMod || 0), bread:{ full:6, partial:0, removed:-10 }[P.bread], fuel:{ full:4, partial:0, market:-6 }[P.fuel],
@@ -438,7 +445,9 @@ function step(state, dt = MONTH, policyOverride){
 
   s.trust = clamp(s.trust, 0, 100); s.corr = clamp(s.corr, 5, 100); s.sov = clamp(s.sov, 0, 100);
   { const leave = clamp((joblessNat(s) - 42) * 0.016 + (s.expWage - rw) * 0.010 + (nu - 48) * 0.012 - (s.trust - 45) * 0.006, -0.5, 1.6);
-    s.popM = clamp(s.popM * (1 + (0.006 - leave / 100) * dt * 2), 12, 40); }
+    // dt is in half-years, so a year is dt/2. This read `* dt * 2` — four times too fast, which
+    // is why every strategy that survived twenty years ended pinned at the 40M ceiling.
+    s.popM = clamp(s.popM * (1 + (0.006 - leave / 100) * dt / 2), 12, 40); }
   s.cls = classes(s);
   s.t = endT;
   s.score = legacy(s).avg;
@@ -600,11 +609,13 @@ function legacy(s){
   // one that still lets foreigners run its ports is not.
   const bar = s.bar || 0;
   const comp = {
-    Stability: clamp(100 - nu - bar * 8, 0, 100),
+    // A country people are leaving is not at peace, and nothing in the score used to notice.
+    // Only bites below where you started; a country people come back to is doing something right.
+    Stability: clamp(100 - nu - bar * 8 - Math.max(0, 1 - s.popM / POP0) * 75, 0, 100),
     // Living standards are not one salary. The state wage is what the president sets, but how
     // well people actually live also depends on whether they have work at all — a country at
     // 4% out of work is not living the same life as one at 60% on the same government pay.
-    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100 * (0.35 + 0.65 * (1 - joblessNat(s) / 100)), 0, 100),
+    Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100 * (0.35 + 0.65 * (1 - joblessNat(s) / 100)) * clamp(s.popM / POP0, 0.4, 1), 0, 100),
     Reconstruction: clamp((1 - PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) / 108) * 100 * 2.5, 0, 100),
     Institutions: clamp(100 - s.corr, 0, 100),
     Solvency: clamp(s.reserves / 1500 * 60 + (1 - s.debt / 15000) * 40, 0, 100),
@@ -748,4 +759,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, popRatio, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
