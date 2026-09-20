@@ -3202,6 +3202,7 @@ const DRAWERS5 = [
 // ---------- opening up slowly ----------
 // A new president does not get fourteen provinces and twelve industries on day one. Each stage
 // hands over one more part of the job, so the player learns it before the next thing arrives.
+const GAME_MONTHS = 240;                        // twenty years, then history has its say
 const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
 function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
 const UNLOCK = {
@@ -3259,6 +3260,7 @@ function tick(){
   advance();
 }
 function advance(){
+  if (S.over) return;                           // a finished presidency does not keep running
   const prevScore = S.score, prev = S, prevStage = stageNow();
   S = step(S); syncD();
   UI.flash = {};
@@ -3276,6 +3278,7 @@ function advance(){
   if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
   if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
+  if (!S.mission && S.t >= GAME_MONTHS){ S.over = { won:true }; setSpeed(0); persist(); render(true); sfx('year'); return showLegacy(); }
   if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('year'); return showMilestone(); }
   if (UI.queue && UI.queue.length){ persist(); render(true); sfx('cycle'); const [, id] = UI.queue.shift(); return showCycle(id, true); }
   S.event = drawEvent(S);
