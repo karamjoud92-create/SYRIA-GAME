@@ -135,7 +135,7 @@ function renderProvince(){
   return `<aside class="pcard" aria-label="${esc(PN(id))}"><div class="head"><div><h2>${esc(PN(id))}</h2><span class="tierpill" style="background:${TIER_COL[tier]}">${tierName(tier)}</span></div>
       <button class="close" data-act="closeProv" aria-label="${t('close')}">✕</button></div>
     <div class="body"><p class="muted" style="margin:0 0 10px;font-size:13px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
-      <div class="meters">${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
+      <div class="meters">${meter('🔥', t('anger'), Math.round(pv.u), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
         ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}</div>
       <div class="quest${pv.project === true ? ' done' : ''}"><div class="qt">🏗️ ${t('bigProject')}</div><h4>${esc(tx[0])}</h4>
         <p><b>${t('problem')}</b> ${esc(tx[1])}</p><div class="reward">${good.map(([g]) => `<span class="chip up">${esc(g)}</span>`).join('')}</div>

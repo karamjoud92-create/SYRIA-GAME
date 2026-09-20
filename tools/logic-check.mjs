@@ -37,6 +37,29 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(stopped, `${tag}: and a finished presidency does not keep running`);
   const dock = await page.evaluate(() => !!document.querySelector('[data-act=restart]'));
   ok(dock, `${tag}: the dock offers another go`);
+  // 2. a decree signed in the first month works exactly as well as one signed later.
+  //    s.decrees[id] stores the month it was signed, and month 0 is a real month.
+  const m0 = await page.evaluate(() => {
+    const sign = t => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 900; s.treasury = 300;
+      for (let i = 0; i < t; i++) s = step(s);
+      ACT.decree(s, 'integrity');
+      for (let i = 0; i < 24; i++) s = step(s); return s.corr; };
+    return { now: sign(0), later: sign(1) };
+  });
+  ok(Math.abs(m0.now - m0.later) < 0.5, `${tag}: a decree signed in month 0 works (corruption ${m0.now.toFixed(1)} vs ${m0.later.toFixed(1)} a month later)`);
+
+  // 3. the statistics office does what its name says, and the game no longer claims
+  //    the dashboard is guessing when it is not
+  const st = await page.evaluate(() => {
+    const leak = on => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 3000; s.treasury = 300;
+      if (on) ACT.decree(s, 'stats'); ACT.project(s, 'aleppo', 'tender');
+      return s.pipe.find(p => p.kind === 'proj').leak; };
+    return { off: leak(false), on: leak(true) };
+  });
+  ok(st.on < st.off * 0.7, `${tag}: honest books mean less project money vanishes (${(st.off * 100).toFixed(1)}% -> ${(st.on * 100).toFixed(1)}%)`);
+  const body = await page.evaluate(() => document.body.innerText);
+  ok(!/\(~\)|estimates|تقديرية/.test(body), `${tag}: nothing tells the player the numbers are estimates`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

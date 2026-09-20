@@ -5,7 +5,7 @@ function mix(a, b, x){ return `color-mix(in srgb, ${b} ${Math.round(clamp(x, 0, 
 function layerOf(id){
   const pv = S.provs[id];
   switch(UI.layer){
-    case 'unrest': return { fill:TIER_COL[tierOf(pv.u)], val:S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5) };
+    case 'unrest': return { fill:TIER_COL[tierOf(pv.u)], val:Math.round(pv.u) };
     case 'power': { const h = provHours(S, id); return { fill:mix('#3a3f55', '#f2c94c', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
     case 'damage': return { fill:mix('#6f9d8f', '#8e2f36', pv.dmg / 20), val:(AR() ? '' : '$') + pv.dmg.toFixed(pv.dmg < 10 ? 1 : 0) + (AR() ? ' مليار$' : 'B') };
     case 'jobs': return { fill:mix('#6f9d8f', '#c8612f', (pv.jobless - 15) / 60), val:Math.round(pv.jobless) + '%' };
@@ -50,7 +50,7 @@ function renderMap(){
       ${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}
     </div></div>
     <svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g>${paths}</g>${selPath}${labels}${inset}${star}</svg>
-    <div class="legend">${legend}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span><span>⭐ ${t('legCapital')}</span>${S.flags.stats ? '' : `<span class="muted">~ ${t('noStats')}</span>`}</div>`;
+    <div class="legend">${legend}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span><span>⭐ ${t('legCapital')}</span></div>`;
 }
 
 // ---------- province dossier ----------
@@ -79,7 +79,7 @@ function renderProvince(){
   const note = id === 'rif' ? t('rifNote') : id === 'damascus' ? t('damNote') : '';
   return `<div class="dossier"><div class="row spread"><h2>${esc(PN(id))}</h2><span class="tier" style="background:${TIER_COL[tier]}">${tierName(tier)}</span></div>
     <p class="muted" style="margin:2px 0 12px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
-    ${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)) + ' / 100', pv.u, TIER_COL[tier])}
+    ${meter('🔥', t('anger'), Math.round(pv.u) + ' / 100', pv.u, TIER_COL[tier])}
     ${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
     ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}
     ${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}
@@ -107,7 +107,7 @@ function personas(s){
     const inc = [['crop', crop]], exp = [['diesel', diesel], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]];
     const why = drought ? 'why_drought' : diesel > 15 ? 'why_power' : s.provs.hasakeh.jobless > 45 ? 'why_nojobs' : null; out.khaled = { inc, exp, why: why === 'why_power' ? null : why }; }
   // Hiba
-  { const pv = s.provs.rif, homeBack = !!s.decrees.restitution;
+  { const pv = s.provs.rif, homeBack = hasDecree(s, 'restitution');
     const inc = [['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250)]];
     const rent = homeBack ? 0 : 18 + 22 * (pv.dmg / pv.dmg0);
     const exp = [['rent', rent], ['food', 28 * (1 + infl / 200)], ['bread', breadC], ['generator', (24 - h('rif')) * 0.8], ['transport', trans]];
@@ -149,7 +149,7 @@ function chains(s){
   ];
   const eastAll = (s.provs.deir.u + s.provs.hasakeh.u + s.provs.raqqa.u) / 3;
   const energy = [
-    ['oilfields', lvl(eastAll > 70, !(s.decrees.tribal || s.decrees.northeast) || eastAll > 55), 'r_oil'],
+    ['oilfields', lvl(eastAll > 70, !(hasDecree(s, 'tribal') || hasDecree(s, 'northeast')) || eastAll > 55), 'r_oil'],
     ['fuelimp', lvl(R < 100, R < 250), 'r_fimp'],
     ['refinery', built(s, 'homs') ? 0 : 1, 'r_ref'],
     ['plants', lvl(s.mw / s.demand < 0.25, s.mw / s.demand < 0.5), 'r_pl'],

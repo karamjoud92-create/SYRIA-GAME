@@ -113,7 +113,7 @@ function missionsScreen(){
 function gloss(k){
   const g = GLOSS[k], G = L2(g);
   modal(`<div class="tut-icon" aria-hidden="true">${g.icon}</div><h2>${G.name}</h2><p class="lede">${esc(G.what)}</p><p><b>${t('why')}</b> ${esc(G.why)}</p><p><b>${t('how')}</b> ${esc(G.fix)}</p>
-  ${!S.flags.stats && ['fx','pay','trust','anger'].includes(k) ? `<p class="tipbox">${t('noStats')}</p>` : ''}<button class="btn primary" data-act="close">${t('gotIt')}</button>`);
+  <button class="btn primary" data-act="close">${t('gotIt')}</button>`);
 }
 function menu(){
   modal(`<h2>${t('menu')}</h2><p class="muted" style="margin:0 0 16px">${t('menuSaved')}</p>

@@ -187,7 +187,7 @@ function personas(s){
   { const drought = s.flags.droughtUntil && s.t < s.flags.droughtUntil;
     const crop = 95 * (drought ? 0.45 : 1) * (1 - s.provs.hasakeh.jobless / 260) * (built(s, 'hasakeh') ? 1.25 : 1) * { full:1.15, partial:1, removed:0.9 }[P.bread] * (1 - Math.max(0, s.provs.hasakeh.u - 60) / 100) * (s.res.farm > 1 ? 1 + (s.res.farm - 1) * 0.1 : 1);
     out.khaled = { inc:[['crop', crop]], exp:[['diesel', { full:8, partial:14, market:22 }[P.fuel]], ['seeds', 15 * (1 + infl / 150)], ['food', 30 * (1 + infl / 200)], ['bread', breadC * 0.6], ['generator', (24 - h('hasakeh')) * 0.6]], why: drought ? 'why_drought' : s.provs.hasakeh.jobless > 45 ? 'why_nojobs' : null }; }
-  { const pv = s.provs.rif, back = !!s.decrees.restitution;
+  { const pv = s.provs.rif, back = hasDecree(s, 'restitution');
     out.hiba = { inc:[['labor', 55 * (1 + (s.cap - 20) / 120) * (1 - pv.u / 250) * clamp(1.3 - pv.jobless / 90, 0.45, 1.15)]], exp:[['rent', back ? 0 : 18 + 22 * (pv.dmg / pv.dmg0)], ['food', 28 * (1 + infl / 200)], ['bread', breadC], ['generator', (24 - h('rif')) * 0.8], ['transport', trans]], why: pv.jobless > 48 ? 'why_nojobs' : back ? 'why_homeback' : 'why_home' }; }
   { const hd = h('damascus'), bribe = s.corr * 0.35;
     out.samer = { inc:[['shop', 75 * (1 + (s.cap - 20) / 100) * clamp(hd / 12, 0.45, 1.4) * (P.tax === 'aggressive' ? 0.9 : 1)]], exp:[['generator', (24 - hd) * 1.8], ['bribes', bribe], ['stock', 20 * (1 + infl / 100)], ['rent', 28], ['food', 30 * (1 + infl / 200)]], why: (24 - hd) * 1.8 > 25 ? 'why_power' : bribe > 18 ? 'why_bribes' : infl > 10 ? 'why_fx' : null }; }
@@ -201,7 +201,7 @@ function chains(s){
   const bread = [['farms', lvl(east > 70 || (drought && east > 55), east > 55 || drought), 'r_farms'], ['silos', built(s, 'hasakeh') ? 0 : 1, 'r_silos'], ['ports', lvl(R < 120, R < 300 || clog), 'r_ports'],
     ['mills', lvl(hrs < 3, hrs < 6), 'r_mills'], ['trucks', lvl(R < 100, s.provs.deir.u > 65 || (s.policy.fuel === 'market' && R < 250)), 'r_trucks'], ['bakeries', s.policy.bread === 'removed' ? 1 : 0, 'r_bak'], ['families', lvl(rw < 15, rw < 25), 'r_fam']];
   const eastAll = (s.provs.deir.u + s.provs.hasakeh.u + s.provs.raqqa.u) / 3, dem = s.demand * (1 + Math.max(0, s.cap - 20) / 160);
-  const energy = [['oilfields', lvl(eastAll > 70, !(s.decrees.tribal || s.decrees.northeast) || eastAll > 55), 'r_oil'], ['fuelimp', lvl(R < 100, R < 250), 'r_fimp'], ['refinery', built(s, 'homs') || s.res.refinery > 25 ? 0 : 1, 'r_ref'],
+  const energy = [['oilfields', lvl(eastAll > 70, !(hasDecree(s, 'tribal') || hasDecree(s, 'northeast')) || eastAll > 55), 'r_oil'], ['fuelimp', lvl(R < 100, R < 250), 'r_fimp'], ['refinery', built(s, 'homs') || s.res.refinery > 25 ? 0 : 1, 'r_ref'],
     ['plants', lvl(s.mw / dem < 0.25, s.mw / dem < 0.5), 'r_pl'], ['gridlines', s.policy.capex >= 20 ? 0 : 1, 'r_grid'], ['homes', lvl(hrs < 6, hrs < 12), 'r_homes']];
   const status = ch => { const b = ch.filter(x => x[1] === 2).length, w = ch.filter(x => x[1] === 1).length; return b >= 2 ? 2 : (b || w >= 2) ? 1 : 0; };
   return { bread, energy, sb:status(bread), se:status(energy) };
@@ -247,7 +247,7 @@ function detectCycles(){
 
 // ---------- HUD ----------
 function renderHUD(P){
-  const rw = realWage(S), nu = natUnrest(S), st = S.flags.stats, pw = nationalHours(S), jb = joblessNat(S);
+  const rw = realWage(S), nu = natUnrest(S), pw = nationalHours(S), jb = joblessNat(S);
   const total = S.mission ? S.mission.end - S.mission.start : 60, done = S.mission ? S.t - S.mission.start : S.t % 60;
   const C = 2 * Math.PI * 22, frac = clamp(done / total, 0, 1);
   const ring = `<div class="ring"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22" fill="var(--board-2)" stroke="var(--board-2)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="ic">${seasonNow(S) === 'H1' ? '🌾' : '❄️'}</span></div>`;
@@ -259,13 +259,13 @@ function renderHUD(P){
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
       ${res('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
-      ${res('fx', st ? S.parallel.toFixed(0) : fog(S.parallel, 5), S.parallel, P.parallel, false, sign((P.parallel / S.parallel - 1) * 100, 0) + '%')}
+      ${res('fx', S.parallel.toFixed(0), S.parallel, P.parallel, false, sign((P.parallel / S.parallel - 1) * 100, 0) + '%')}
       ${res('pay', usd(rw), rw, realWage(P), true, sign(realWage(P) - rw, 1))}
     </div>
     <div class="tray" role="group">
-      ${res('trust', st ? Math.round(S.trust) : fog(S.trust, 5), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
-      ${res('anger', st ? Math.round(nu) : fog(nu, 5), nu, natUnrest(P), false, sign(natUnrest(P) - nu, 1))}
-      ${res('jobs', (st ? Math.round(jb) : fog(jb, 5)) + '%', jb, joblessNat(P), false, sign(joblessNat(P) - jb, 1))}
+      ${res('trust', Math.round(S.trust), S.trust, P.trust, true, sign(P.trust - S.trust, 1))}
+      ${res('anger', Math.round(nu), nu, natUnrest(P), false, sign(natUnrest(P) - nu, 1))}
+      ${res('jobs', Math.round(jb) + '%', jb, joblessNat(P), false, sign(joblessNat(P) - jb, 1))}
       ${res('power', pw.toFixed(1) + (AR() ? 'س' : 'h'), pw, nationalHours(P), true, sign(nationalHours(P) - pw, 1))}
       ${res('sov', Math.round(S.sov), S.sov, P.sov, true, sign(P.sov - S.sov, 1))}
     </div>
@@ -355,7 +355,7 @@ function renderProvince(){
   const note = id === 'rif' ? t('rifNote') : id === 'damascus' ? t('damNote') : '';
   return `<aside class="pcard"><div class="head"><div><h2>${esc(PN(id))}</h2><span class="tierpill" style="background:${TIER_COL[tier]}">${tierName(tier)}</span></div><button class="close" data-act="closeProv" aria-label="${t('close')}">✕</button></div>
     <div class="body"><p class="muted" style="margin:0 0 10px;font-size:13px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
-      <div class="meters">${meter('🔥', t('anger'), (S.flags.stats ? Math.round(pv.u) : fog(pv.u, 5)), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
+      <div class="meters">${meter('🔥', t('anger'), Math.round(pv.u), pv.u, TIER_COL[tier])}${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
         ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}</div>
       <div class="quest${pv.project === true ? ' done' : ''}"><div class="qt">🏗️ ${t('bigProject')}</div><h4>${esc(tx[0])}</h4><p><b>${t('problem')}</b> ${esc(tx[1])}</p>
         <div class="reward">${good.map(g => `<span class="chip up">${esc(g)}</span>`).join('')}</div>
