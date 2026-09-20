@@ -17,6 +17,11 @@ const DRAWERS5 = [
 // A new president does not get fourteen provinces and twelve industries on day one. Each stage
 // hands over one more part of the job, so the player learns it before the next thing arrives.
 const GAME_MONTHS = 240;                        // twenty years, then history has its say
+// A presidency in real time: one game month an hour, so twenty years is ten days. The country
+// keeps running while the tab is shut; you come back to what happened, not to a paused screen.
+const LIVE_MS_PER_MONTH = 3600 * 1000;
+const LIVE_CATCHUP_MAX = 240;                   // never simulate more than a whole presidency at once
+const LIVE_QUEUE_MAX = 3;                       // crises that waited for you, rather than being decided
 const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
 function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
 const UNLOCK = {
@@ -49,10 +54,36 @@ function restore(){
   try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!o) return false; STORE = o; UI.active = o.active || 'campaign';
     const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
 }
+// Months owed since the tab was closed. Nothing here decides anything for the player: crises
+// that would have fired are queued and asked on return, never answered on their behalf.
+function monthsOwed(){
+  if (!S || !S.live || S.over) return 0;
+  return Math.min(LIVE_CATCHUP_MAX, Math.floor((Date.now() - (S.realAt || Date.now())) / LIVE_MS_PER_MONTH));
+}
+function catchUp(){
+  const owed = monthsOwed(); if (owed < 1) return null;
+  const before = snap(S), notes = [], queued = S.pending || [];
+  let done = 0, fail = null;
+  for (let i = 0; i < owed; i++){
+    S = step(S); done++;
+    S.last.notes.forEach(n => { notes.push(n); S.log.push([S.t, ...n]); });
+    S.history.push(snap(S)); if (S.history.length > 480) S.history.shift();
+    fail = checkFail(S); if (fail){ S.over = { fail:fail.id }; break; }
+    if (S.t >= GAME_MONTHS && !S.mission){ S.over = { won:true }; break; }
+    if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; break; }
+    if (queued.length < LIVE_QUEUE_MAX){ const id = drawEvent(S); if (id) queued.push(id); }
+  }
+  S.realAt = (S.realAt || Date.now()) + done * LIVE_MS_PER_MONTH;
+  S.pending = queued;
+  if (S.log.length > 80) S.log = S.log.slice(-80);
+  syncD(); persist();
+  return { months:done, before, notes, queued:queued.length, fail:S.over };
+}
 function begin(diff, mission){
   setSpeed(0);
   UI.active = mission ? 'mission' : 'campaign';
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
+  if (UI.live){ S.live = true; S.realAt = Date.now(); S.pending = []; }
   UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
 }
 function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
@@ -67,7 +98,17 @@ const cooldown = (key, months = ACT_COOLDOWN) => S.flags[key] !== undefined && S
 // ---------- clock ----------
 function setSpeed(v){
   UI.speed = v; if (TIMER) clearInterval(TIMER); TIMER = null;
+  if (S && S.live){ TIMER = setInterval(liveTick, 15000); return; }   // the wall decides, not a button
   if (v > 0) TIMER = setInterval(tick, SPEEDS[v]);
+}
+// In a live game the clock is the real one. Poll often enough to feel prompt, advance only
+// when an hour of real time has actually passed.
+function liveTick(){
+  if (!S || !S.live || S.over) return;
+  if (monthsOwed() < 1){ renderLiveClock(); return; }
+  if ($('#modal').innerHTML.trim()) return;
+  S.realAt = (S.realAt || Date.now()) + LIVE_MS_PER_MONTH;
+  advance();
 }
 function tick(){
   if (!S || S.over || document.hidden || $('#modal').innerHTML.trim()) return;
@@ -629,7 +670,9 @@ function renderDock(){
   return `<div class="dgroup">${rest.slice(0, 3).map(btn).join('')}</div>${tr ? `<div class="dgroup trade">${btn(tr)}</div>` : ''}${rest.length > 3 ? `<div class="dgroup">${rest.slice(3).map(btn).join('')}</div>` : ''}
     <span class="spacer"></span>
     <button class="influence" data-act="drawer" data-v="decrees"><span class="st" aria-hidden="true">⭐</span><span><span class="n">${Math.round(S.pc)}</span><span class="l">${t('influenceLbl')}</span></span></button>
-    ${S.over ? `<button class="endturn" data-act="restart">${t('playAgain')}</button>` : `<div class="clock" role="group" aria-label="${t('play')}">${sp.map(([v, ic, l]) => `<button class="cbtn${v === 0 ? ' pause' : ''}" data-act="speed" data-v="${v}" aria-pressed="${UI.speed === v}" aria-label="${t(l)}" title="${t(l)}"><span dir="ltr">${ic}</span></button>`).join('')}</div>`}`;
+    ${S.over ? `<button class="endturn" data-act="restart">${t('playAgain')}</button>`
+      : S.live ? `<div class="liveclock" role="status"><span class="lc" aria-hidden="true">⏳</span><span><span class="n" id="liveclock">${liveLeftTxt()}</span><span class="l">${t('nextMonth')}</span></span></div>`
+      : `<div class="clock" role="group" aria-label="${t('play')}">${sp.map(([v, ic, l]) => `<button class="cbtn${v === 0 ? ' pause' : ''}" data-act="speed" data-v="${v}" aria-pressed="${UI.speed === v}" aria-label="${t(l)}" title="${t(l)}"><span dir="ltr">${ic}</span></button>`).join('')}</div>`}`;
 }
 
 // ---------- render (stable containers, partial updates) ----------
@@ -690,6 +733,54 @@ function renderScorePanel(){
       ${S.debt > 0 && room > 0 ? `<button class="btn primary" data-act="drawer" data-v="money">${t('repayTitle')} →</button>` : ''}</div></div>`;
 }
 
+UI.live = false;   // opt-in: the fast clock stays the default so a single sitting still works
+function startScreen(){
+  const pick = (k, on) => `<button class="opt mode${on ? ' on' : ''}" data-act="livemode" data-v="${k}" aria-pressed="${on}"><b>${t(k + 'Mode')}</b><span class="t">${t(k + 'ModeTxt')}</span></button>`;
+  modal(`<div class="row spread"><div class="tut-icon" aria-hidden="true">\u{1F54A}\u{FE0F}</div><button class="btn" data-act="lang">\u{1F310} ${t('language')}</button></div>
+  <h2>${t('title')}</h2><div class="src">${t('subtitle')}</div>
+  <p class="lede">${t('howPlay')}</p>${pick('live', UI.live)}${pick('fast', !UI.live)}
+  <p class="lede" style="margin-top:16px">${t('pickDiff')}</p>
+  <button class="opt" data-act="newgame" data-v="learner"><b>${t('learner')}</b><span class="t">${t('learnerTxt')}</span></button>
+  <button class="opt" data-act="newgame" data-v="realistic"><b>${t('realistic')}</b><span class="t">${t('realisticTxt')}</span></button>
+  <button class="opt" data-act="missions"><b>${t('missionsBtn')}</b><span class="t">${t('missionsTxt')}</span></button>
+  <button class="opt" data-act="loadcode"><b>\u{1F4E5} ${t('loadCode')}</b></button>
+  <p class="muted" style="font-size:13px;margin:14px 0 0">${t('disclaimer')}</p>`);
+}
+
+// ---------- coming back to a country that kept running ----------
+const liveLeft = () => Math.max(0, LIVE_MS_PER_MONTH - (Date.now() - (S.realAt || Date.now())));
+function liveLeftTxt(){
+  const m = Math.ceil(liveLeft() / 60000);
+  return m >= 60 ? fill(t('inHours'), [Math.round(m / 60)]) : fill(t('inMins'), [Math.max(1, m)]);
+}
+function renderLiveClock(){ const el = $('#liveclock'); if (el) el.textContent = liveLeftTxt(); }
+function showAway(r){
+  const a = r.before, c = snap(S), A = AR();
+  const rows = [
+    ['\u{1F3C6}', t('score'), a.score, c.score, 1, v => v.toFixed(0)],
+    ['\u{1F91D}', L2(GLOSS.trust).name, a.trust, c.trust, 1, v => v.toFixed(0)],
+    ['\u{1F525}', L2(GLOSS.anger).name, a.anger, c.anger, -1, v => v.toFixed(0)],
+    ['\u{1F3E6}', L2(GLOSS.usd).name, a.usd, c.usd, 1, usdM],
+    ['\u{1F4A1}', L2(GLOSS.power).name, a.power, c.power, 1, v => v.toFixed(1) + (A ? 'س' : 'h')],
+    ['\u{1F4BC}', L2(GLOSS.jobs).name, a.jobs, c.jobs, -1, v => v.toFixed(0) + '%'],
+  ].filter(x => Math.abs(x[3] - x[2]) > 0.05);
+  const done = (r.notes || []).filter(n => ['projDone','investDone','portDone','gridDone','svcDone'].includes(n[0])).slice(0, 5);
+  modal(`<div class="tut-icon" aria-hidden="true">\u{1F305}</div><h2>${t('awayTitle')}</h2>
+    <div class="src">${fill(t('awaySub'), [monthsTxt(r.months), esc(whenTxt(S.t))])}</div>
+    <div class="scores" style="margin-top:14px">${rows.map(([ic, name, from, to, good, fmt]) => {
+      const up = (to - from) * good > 0;
+      return `<div><div class="row spread"><span>${ic} ${esc(name)}</span><b class="${up ? 'good' : 'bad'}">${up ? '↑' : '↓'} ${esc(fmt(to))}</b></div>
+        <div class="small muted" style="margin:0">${esc(fmt(from))} → ${esc(fmt(to))}</div></div>`; }).join('')}</div>
+    ${done.length ? `<h3 class="bh">✅ ${t('awayDone')}</h3>${done.map(n => `<div class="pipe"><span>${esc(noteText([S.t, ...n]))}</span></div>`).join('')}` : ''}
+    ${r.queued ? `<p class="tipbox">⚠️ ${fill(t('awayWaiting'), [r.queued])}</p>` : ''}
+    <div class="row"><button class="btn primary" data-act="awayGo">${r.queued ? t('awaySee') : t('keepPlaying')} ▶</button></div>`);
+}
+// A crisis that fired while you were away waits for you. It is never answered on your behalf.
+function nextPending(){
+  if (!S.pending || !S.pending.length){ closeModal(); render(true); return; }
+  S.event = S.pending.shift(); persist(); render(true); sfx('crisis'); showEvent();
+}
+
 // ---------- milestone, crisis, endings ----------
 function showStage(st){
   const gifts = (STAGE_GIFTS[st] || []).map(k => t(k));
@@ -732,7 +823,7 @@ document.addEventListener('pointerup', () => { UI.pdown = false; if (UI.dirty &&
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
-  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore'];
+  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore','awayGo','livemode'];
   if (S && S.over && !always.includes(a)) return;
   if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed','showScore'].includes(a)) sfx('tap');
   const T = LANG === 'ar';
@@ -742,6 +833,8 @@ document.addEventListener('click', ev => {
     case 'speed': setSpeed(+v); if (+v > 0) guideTick('start'); break;
     case 'drawer': UI.drawer = UI.drawer === v ? null : v; if (v === 'progress') UI.newCycle = false; if (v === 'money') guideTick('money'); if (UI.drawer && isPhone()) UI.provOpen = false; break;
     case 'closeDrawer': UI.drawer = null; break;
+    case 'awayGo': return nextPending();
+    case 'livemode': UI.live = v === 'live'; return startScreen();
     case 'showScore': if (!isOpen('progress')) return gloss('score');   // the panel is not hers yet
       UI.drawer = 'progress'; UI.sub.progress = 'score'; if (isPhone()) UI.provOpen = false; break;
     case 'closeProv': UI.provOpen = false; break;
@@ -798,6 +891,13 @@ document.addEventListener('keydown', ev => {
   if (!l) l = (navigator.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
   setLang(l);
   if (isPhone()) UI.advOpen = false;
-  if (restore()){ render(true); if (S.over){ S.over.fail ? showFail(S.over.fail) : showMissionEnd(); } else if (S.event) showEvent(); }
+  if (restore()){
+    const away = catchUp();
+    render(true); setSpeed(UI.speed);
+    if (away && away.months) return showAway(away);
+    if (S.over){ return S.over.fail ? showFail(S.over.fail) : S.over.won ? showLegacy() : showMissionEnd(); }
+    if (S.pending && S.pending.length) return nextPending();
+    if (S.event) showEvent();
+  }
   else { S = startGame(undefined, 'learner'); S.history = [snap(S)]; S.log = []; syncD(); render(true); startScreen(); }
 })();

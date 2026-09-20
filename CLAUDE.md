@@ -24,6 +24,9 @@ fast: a player should be able to think, and should not have to wait two years to
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
+- `npm run live`   → real-time play: the start screen offers live or all-at-once, a live game runs on
+  the wall clock, seven hours away is seven months of country, you are told what happened, no crisis
+  is ever answered on your behalf, and a very long absence ends the presidency. Both languages.
 - `npm run logic`  → the claims the game makes about itself: the presidency ends at twenty years,
   a month-0 decree works, factories stop in the dark but wellheads do not, revolt destroys things,
   the border crackdown costs something, a refinery pays back, extraction earns more per dollar while
@@ -111,6 +114,12 @@ fast: a player should be able to think, and should not have to wait two years to
   key>'` and is filtered out by `usable()`; `advisorsOpen()` hides ministers whose brief has not opened. This
   was wrong twice — the guide told a brand-new player to build schools, then to fund power stations, both of
   them months away from existing. `npm run guide` now fails if it happens again.
+- **Live play** (`LIVE_MS_PER_MONTH`, `catchUp()`, `showAway()` in `src/ui/5-game.js`). A game started
+  in live mode runs on the wall clock: one game month per real hour, recorded in `S.realAt`. On open,
+  `catchUp()` steps the months owed, collects what finished, and `showAway()` reports it. **Crises that
+  fire while the player is away are queued in `S.pending`, never answered for them** — they are asked
+  on return, up to `LIVE_QUEUE_MAX`. Catch-up is capped at a whole presidency. `UI.live` is opt-in and
+  defaults false, so the speed buttons and every existing browser test are untouched.
 - **Progressive unlock** (`STAGE_AT`, `UNLOCK`, `isOpen()` in `src/ui/5-game.js`). The game opens in stages at
   months 0 / 7 / 15 / 27 / 45: three panels, three policy dials and one map layer to start, the whole game by
   year 4. Gate new UI by adding a key to `UNLOCK` and wrapping the control in `isOpen('key')` — and add it to
