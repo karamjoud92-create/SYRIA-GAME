@@ -36,22 +36,31 @@ function levelProgress(){
 const xpToNext = () => levelNow() >= MAX_LEVEL ? 0 : Math.max(0, LEVEL_XP[levelNow()] - (S.xp || 0));
 // kept so older code that still says "stage" keeps working: stages 0..4 are levels 1, 3, 5, 7, 9
 function stageNow(){ return [1, 3, 5, 7, 9].filter(n => levelNow() >= n).length - 1; }
+// Spread so that no level is a cliff and none is empty. Level 5 used to hand over nine things at
+// once — three panels, two dials, a map layer, ports, partners and the railway — while levels 4, 6
+// and 8 handed over two, two and nothing. The months each level arrives at are unchanged, so a
+// player who taps nothing still sees the same game on the same schedule; only the grouping moved.
+//
+// A subtab's key must never open BEFORE the panel it lives in, or the game says a thing is
+// available while there is no way to reach it. `medals` was set to 2 and lives inside `progress`,
+// which was 5: for three levels it was neither reachable nor listed as locked. `npm run audit`
+// now fails on that.
 const UNLOCK = {
-  guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
-  build:2, medals:2, layerBuild:2, infraGrid:2, infraWater:2, infraHousing:2,
-  families:1,
+  guide:1, policy:1, money:1, people:1, families:1, layerUnrest:1, projects:1,
+  build:2, layerBuild:2, infraGrid:2, infraWater:2, infraHousing:2,
   decrees:3, layerPower:3, polTax:3, polPrint:3,
-  infraRoads:4, infraEgov:4,
-  trade:5, progress:5, chains:5, layerDamage:5, polCapex:5, polRecon:5, ports:5, partners:5, infraRail:5,
-  routes:6, infraAir:6,
-  services:7, sectors:7, layerJobs:7, polIntervene:7, polCrackdown:7,
-  supply:9, unis:9,
+  progress:4, medals:4, infraRoads:4, infraEgov:4,
+  trade:5, ports:5, layerDamage:5, polCapex:5,
+  partners:6, routes:6, infraRail:6,
+  services:7, sectors:7, layerJobs:7, polRecon:7,
+  chains:8, polIntervene:8, infraAir:8,
+  supply:9, unis:9, polCrackdown:9,
 };
 const isOpen = f => levelNow() >= (UNLOCK[f] === undefined ? 1 : UNLOCK[f]);
 // what each level hands over, for the announcement. Index 0 is level 1.
-const LEVEL_GIFTS = [[], ['dBuild', 'layerBuild'], ['dDecrees', 'layerPower'], ['infraRoads', 'infraEgov'],
-  ['dTrade', 'dProgress'], ['routesGift', 'infraAir'], ['subServices', 'sectorTitle'], ['moreRoutes'],
-  ['extractTitle', 'svcUnis'], ['mentorOff'], ['veteran'], ['veteran']];
+const LEVEL_GIFTS = [[], ['dBuild', 'layerBuild'], ['dDecrees', 'layerPower'], ['dProgress', 'subMedals'],
+  ['dTrade', 'subPorts'], ['subPartners', 'lockRoutes'], ['subServices', 'sectorTitle'], ['dSupply', 'infraAir'],
+  ['lockSupply', 'svcUnis'], ['mentorOff'], ['veteran'], ['veteran']];
 
 // ---------- time words ----------
 function monthsTxt(n){
@@ -506,6 +515,14 @@ function renderTradePartners(){
 // ---------- the guide ----------
 // A new president should never be staring at a screen wondering what a button does. This panel
 // always answers two questions: what should I do now, and why did that just change?
+// The first six steps teach months 0 to 3. After that a player used to be handed a new panel every
+// few months with nothing walking them into it — their first upgrade, their first factory, their
+// first trade route all arrived unannounced. Each later step appears only once the thing it points
+// at has opened (`need`), which is the same rule the adviser lines follow: never point at a control
+// the player has not been given.
+//
+// The later steps read their own completion out of the state rather than waiting for a click
+// handler, so answering a decision card counts exactly the same as using the panel.
 const GUIDE_TASKS = [
   { id:'start',   icon:'▶️' },
   { id:'gloss',   icon:'🔎' },
@@ -513,22 +530,32 @@ const GUIDE_TASKS = [
   { id:'prov',    icon:'🗺️' },
   { id:'project', icon:'🏗️' },
   { id:'money',   icon:'💰', go:'money' },
+  { id:'infra',   icon:'🔨', go:'build',  need:'build',    done:s => Object.keys(INFRA).some(k => iLvl(s, k) > 0) || s.pipe.some(q => q.kind === 'infra') },
+  { id:'medals',  icon:'🏅', go:'progress', sub:['progress','medals'], need:'medals' },
+  { id:'port',    icon:'⚓', go:'trade',  need:'ports',    sub:['trade','ports'],     done:s => s.ports.latakia.lvl > 1 || s.ports.tartus.lvl > 1 || s.pipe.some(q => q.kind === 'port') },
+  { id:'deal',    icon:'🤝', go:'trade',  need:'partners', sub:['trade','partners'],  done:s => Object.keys(s.deals).length > 0 },
+  { id:'school',  icon:'🏫', go:'people', need:'services', sub:['people','services'], done:s => (s.svc.schools || 0) > 0 || s.pipe.some(q => q.kind === 'svc') },
+  { id:'factory', icon:'🏭', go:'trade',  need:'sectors',  sub:['trade','resources'], done:s => Object.keys(IND).some(k => indLvl(s, k) > 0) || s.pipe.some(q => q.kind === 'invest') },
 ];
-const guideDone = id => !!(S && S.flags && S.flags['g_' + id]);
+// a step counts as done by a flag the click handlers set, or by the state saying it happened
+const guideDone = id => { const x = GUIDE_TASKS.find(q => q.id === id);
+  return !!(S && S.flags && S.flags['g_' + id]) || !!(x && x.done && S && x.done(S)); };
+// and it is only shown once the thing it points at exists
+const guideTasks = () => GUIDE_TASKS.filter(x => !x.need || isOpen(x.need));
 function guideTick(id){ if (S && S.flags && !S.flags['g_' + id]){ S.flags['g_' + id] = true; persist(); } }
-const guideLeft = () => GUIDE_TASKS.filter(x => !guideDone(x.id)).length;
+const guideLeft = () => guideTasks().filter(x => !guideDone(x.id)).length;
 
 function renderGuide(){
   const left = guideLeft(), A = AR();
   let h = '';
   if (left){
-    const next = GUIDE_TASKS.find(x => !guideDone(x.id));
+    const shown = guideTasks(), next = shown.find(x => !guideDone(x.id));
     h += `<h3 class="bh" style="margin-top:0">🧭 ${t('guideSteps')} <span class="chip">${fill(t('guideLeft'), [left])}</span></h3>`;
-    h += GUIDE_TASKS.map(x => {
+    h += shown.map(x => {
       const ok = guideDone(x.id), isNext = !ok && x.id === next.id;
       return `<div class="gstep${ok ? ' done' : ''}${isNext ? ' now' : ''}">
         <span class="gmark" aria-hidden="true">${ok ? '✅' : isNext ? x.icon : '⚪'}</span>
-        <div><b>${esc(t('gt_' + x.id))}</b>${isNext ? `<p>${esc(t('gw_' + x.id))}</p>${x.go ? `<button class="btn small primary" data-act="advgo" data-go="${x.go}">${t('showMe')}</button>` : ''}` : ''}</div></div>`;
+        <div><b>${esc(t('gt_' + x.id))}</b>${isNext ? `<p>${esc(t('gw_' + x.id))}</p>${x.go ? `<button class="btn small primary" data-act="advgo" data-go="${x.go}" data-sub="${x.sub ? x.sub.join(',') : ''}">${t('showMe')}</button>` : ''}` : ''}</div></div>`;
     }).join('');
   } else {
     h += `<p class="mpnote" style="margin-top:0">✅ ${t('guideDone')}</p>`;
@@ -737,7 +764,7 @@ document.addEventListener('click', ev => {
     case 'drawer': UI.drawer = UI.drawer === v ? null : v; if (v === 'progress') UI.newCycle = false; if (v === 'money') guideTick('money'); if (UI.drawer && isPhone()) UI.provOpen = false; break;
     case 'closeDrawer': UI.drawer = null; break;
     case 'closeProv': UI.provOpen = false; break;
-    case 'subtab': UI.sub[b.dataset.d] = v; break;
+    case 'subtab': UI.sub[b.dataset.d] = v; if (b.dataset.d === 'progress' && v === 'medals') guideTick('medals'); break;
     case 'adv': if (UI.advOpen && UI.adv === v) UI.advOpen = false; else { UI.adv = v; UI.advOpen = true; } break;
     case 'advhide': UI.advOpen = false; break;
     case 'layer': UI.layer = v; break;

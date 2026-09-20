@@ -44,6 +44,19 @@ for (const [tag, vp, loc] of [['desktop-en', { width:1280, height:900 }, 'en-US'
                shut: shut.length, hasBtn: !!document.querySelector('.lockbtn') };
     });
     checks++;
+    // ...and the mirror of it: nothing may be open while being unreachable. A subtab whose key
+    // opens before its panel is worse than a locked one — it is not in the 🔒 list either, so the
+    // game neither offers it nor admits it is missing.
+    const orphan = await page.evaluate(() => {
+      const inside = { medals:'progress', why:'progress', charts:'progress', cycles:'progress', news:'progress',
+        resources:'trade', ports:'trade', partners:'trade', families:'people', services:'people', pop:'people',
+        actions:'money', budget:'money' };
+      // only keys with a gate of their own: a subtab absent from UNLOCK is simply ungated and
+      // correctly inherits its panel's level, which is not a bug.
+      return Object.entries(inside).filter(([k, panel]) => UNLOCK[k] !== undefined && UNLOCK[k] < (UNLOCK[panel] || 1))
+        .map(([k, p2]) => `${k} opens at L${UNLOCK[k]} inside ${p2} which opens at L${UNLOCK[p2] || 1}`);
+    });
+    if (orphan.length) note(`${tag} L${real}`, `open but unreachable: ${orphan.join(', ')}`);
     if (disc.missing.length) note(`${tag} L${real}`, `locked but named nowhere a player can see: ${disc.missing.join(', ')}`);
     if (disc.shut && !disc.hasBtn) note(`${tag} L${real}`, `${disc.shut} things are locked but there is no 🔒 button to reveal them`);
     if (!disc.shut && disc.hasBtn) note(`${tag} L${real}`, 'nothing is locked yet the 🔒 button is still shown');

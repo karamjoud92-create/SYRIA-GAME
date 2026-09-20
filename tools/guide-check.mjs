@@ -80,6 +80,31 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
     ok(named.length === 0 && (!go || panels.includes(go)),
        `${tag}: month ${month} advice is reachable (${panels.length} panels open${named.length ? ', names locked ' + named.join(',') : ''})`);
   }
+
+  // The first steps used to stop at month 3 and the player was handed a new panel every few months
+  // with nothing walking them into it. Each later step appears only once its panel has opened —
+  // the same rule the adviser lines follow — and counts itself done from the state, so answering a
+  // decision card ticks it exactly as using the panel does.
+  const XP = [0, 0, 200, 500, 900, 1400, 2000, 2700, 3400, 4300, 5600, 7800, 11000];
+  const stepsAt = async lvl => { await page.evaluate(x => { begin('learner', null); S.xp = x;
+      if (document.querySelector('#modal .scrim')) closeModal(); render(true); }, XP[lvl]);
+    await page.waitForTimeout(110);
+    return page.evaluate(() => guideTasks().map(x => x.id)); };
+  const s1 = await stepsAt(1), s7 = await stepsAt(7);
+  ok(s1.length === 6, `${tag}: a new player still gets exactly six first steps (${s1.length})`);
+  ok(s7.length > s1.length, `${tag}: and more arrive as the game opens up (${s1.length} → ${s7.length} by level 7)`);
+  // no step may point at something that has not opened yet
+  const bad = await page.evaluate(() => guideTasks().filter(x => x.need && !isOpen(x.need)).map(x => x.id));
+  ok(bad.length === 0, `${tag}: no step points at a panel the player has not been given (${bad.join(',') || 'none'})`);
+  // and doing the thing ticks the step, however the player did it
+  await page.evaluate(() => { S.reserves = 9000; S.pc = 300; render(true); });
+  for (const [id, run] of [['infra', 'ACT.infra(S,"grid")'], ['port', 'ACT.portUpgrade(S,"latakia")'],
+      ['deal', 'ACT.deal(S,"jordan")'], ['school', 'ACT.service(S,"schools")'], ['factory', 'ACT.invest(S,"textiles")']]) {
+    const before = await page.evaluate(i => guideDone(i), id);
+    await page.evaluate(r => { eval(r); render(true); }, run);
+    const after = await page.evaluate(i => guideDone(i), id);
+    ok(!before && after, `${tag}: doing it ticks the "${id}" step off (${before} → ${after})`);
+  }
 }
 await b.close();
 if (errs.length) { console.error('\nPAGE ERRORS:\n' + errs.join('\n')); fails += errs.length; }
