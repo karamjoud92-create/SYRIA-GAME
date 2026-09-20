@@ -60,6 +60,19 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   const body = await page.evaluate(() => document.body.innerText);
   ok(!/\(~\)|estimates|تقديرية/.test(body), `${tag}: nothing tells the player the numbers are estimates`);
 
+  // 4. the twice-a-year rule on raises, gifts and relief is the engine's, not the button's
+  const cd = await page.evaluate(() => {
+    const spam = fn => { let s = newGame(7, 'learner'); let n = 0;
+      for (let i = 0; i < 10; i++) if (fn(s)) n++; return n; };
+    let back = newGame(7, 'learner'); ACT.gift(back);
+    for (let i = 0; i < 6; i++) back = step(back);
+    return { gift: spam(s => ACT.gift(s)), wage: spam(s => ACT.wage(s, 25)),
+      relief: spam(s => ACT.relief(s)), returns: ACT.gift(back) };
+  });
+  ok(cd.gift === 1 && cd.wage === 1 && cd.relief === 1,
+    `${tag}: ten calls in one instant land once each (gift ${cd.gift}, raise ${cd.wage}, relief ${cd.relief})`);
+  ok(cd.returns, `${tag}: and they come back six months later`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

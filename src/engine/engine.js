@@ -175,6 +175,10 @@ const eastAnger = s => (s.provs.deir.u + s.provs.hasakeh.u + s.provs.raqqa.u) / 
 const dealOn = (s, id) => s.deals[id] && s.deals[id].on;
 // A decree signed in month 0 stores 0, which is falsy. Never test these for truthiness.
 const hasDecree = (s, id) => s.decrees[id] !== undefined;
+// Raises, cash gifts and relief imports can each be done twice a year. The rule belongs here,
+// not in a click handler: anything else that calls ACT.* would otherwise walk straight past it.
+const ACT_COOLDOWN = 6;   // months
+const onCooldown = (s, key) => s.flags[key] !== undefined && s.t - s.flags[key] < ACT_COOLDOWN;
 
 function newGame(seed, diff = 'learner', mission = null){
   const easy = diff === 'learner' || !!mission;
@@ -497,9 +501,12 @@ const ACT = {
     if (f.ring) s.grant += first; else if (f.grid) s.pipe.push({ due:s.t + 8, kind:'mw', mw:first * 5 }); else s.reserves += first;
     s.log.push([s.t, 'facSign', id]); return true;
   },
-  wage(s, pct){ s.wage *= 1 + pct / 100; s.trust += pct / 10; s.log.push([s.t, 'wage', pct]); return true; },
-  gift(s){ if (s.treasury < -100) return false; s.treasury -= 7; s.pc += 8; s.log.push([s.t, 'grantPop']); return true; },
-  relief(s){ if (s.reserves < 40) return false; s.reserves -= 40; s.pc += 6; s.trust += 2; s.log.push([s.t, 'relief']); return true; },
+  wage(s, pct){ if (onCooldown(s, 'lastRaise')) return false;
+    s.wage *= 1 + pct / 100; s.trust += pct / 10; s.flags.lastRaise = s.t; s.log.push([s.t, 'wage', pct]); return true; },
+  gift(s){ if (onCooldown(s, 'lastGift') || s.treasury < -100) return false;
+    s.treasury -= 7; s.pc += 8; s.flags.lastGift = s.t; s.log.push([s.t, 'grantPop']); return true; },
+  relief(s){ if (onCooldown(s, 'lastRelief') || s.reserves < 40) return false;
+    s.reserves -= 40; s.pc += 6; s.trust += 2; s.flags.lastRelief = s.t; s.log.push([s.t, 'relief']); return true; },
   // Buying the hook back out of your own mouth, at a worse price than they sold it to you.
   // Clearing debt is worth a point per SOV_PER_USD; the loan that made it cost you far more.
   repay(s, want){
@@ -727,4 +734,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

@@ -62,7 +62,7 @@ function loadCode(code){
 }
 function pcLeft(){ return S.pc; }
 function usdLeft(){ return S.reserves; }
-const cooldown = (key, months) => S.flags[key] !== undefined && S.t - S.flags[key] < months;
+const cooldown = (key, months = ACT_COOLDOWN) => S.flags[key] !== undefined && S.t - S.flags[key] < months;
 
 // ---------- clock ----------
 function setSpeed(v){
@@ -758,9 +758,9 @@ document.addEventListener('click', ev => {
     case 'decree': withEffects(L2(DEC_TXT[id])[0], () => ACT.decree(S, id)); break;
     case 'proj': if (withEffects(`${PN(id)}: ${L2(PROJ_TXT[id])[0]}`, () => ACT.project(S, id, b.dataset.mode))) guideTick('project'); break;
     case 'fac': withEffects(L2(FAC_TXT[id])[0], () => ACT.facility(S, id)) && sfx('coin'); break;
-    case 'wage': if (!cooldown('lastRaise', 6)) withEffects(`${t('raiseTitle')} +${v}%`, () => { ACT.wage(S, +v); S.flags.lastRaise = S.t; return true; }); break;
-    case 'grantPop': if (!cooldown('lastGift', 6)) withEffects(t('giftTitle'), () => { const ok = ACT.gift(S); if (ok) S.flags.lastGift = S.t; return ok; }); break;
-    case 'relief': if (!cooldown('lastRelief', 6)) withEffects(t('reliefTitle'), () => { const ok = ACT.relief(S); if (ok) S.flags.lastRelief = S.t; return ok; }); break;
+    case 'wage': withEffects(`${t('raiseTitle')} +${v}%`, () => ACT.wage(S, +v)); break;
+    case 'grantPop': withEffects(t('giftTitle'), () => ACT.gift(S)); break;
+    case 'relief': withEffects(t('reliefTitle'), () => ACT.relief(S)); break;
     case 'repay': withEffects(t('repayTitle'), () => ACT.repay(S, +v)) && sfx('coin'); break;
     case 'invest': withEffects(L2(INV_TXT[id])[0], () => ACT.invest(S, id)); break;
     case 'svc': withEffects(svcLabel(id), () => ACT.service(S, id)); break;

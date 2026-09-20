@@ -54,7 +54,7 @@ function decisionDeck(){
     out.push({ id:'wage', icon:'👷', weight:60, why:t('decWage'), title:t('raiseTitle'),
       text:fill(t('raiseText'), [realWage(S).toFixed(0), (S.expWage || 25).toFixed(0)]),
       opts:[10, 25].map(v => ({ label:'+' + v + '%', sub:'', chips:[],
-        run:() => withEffects(`${t('raiseTitle')} +${v}%`, () => { ACT.wage(S, v); S.flags.lastRaise = S.t; return true; }) })) });
+        run:() => withEffects(`${t('raiseTitle')} +${v}%`, () => ACT.wage(S, v)) })) });
   }
 
   // 4. schools and clinics behind the population
