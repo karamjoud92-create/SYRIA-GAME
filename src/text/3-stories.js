@@ -30,17 +30,17 @@ const FAIL_TXT = {
 const LEGACY_TXT = {
   en:{ names:{ Stability:'🕊️ Peace', Livelihoods:'👷 Living standards', Reconstruction:'🏗️ Rebuilding', Institutions:'🧾 Honest government', Solvency:'🏦 Money', Sovereignty:'🧭 Independence' },
     lower:{ Stability:'peace', Livelihoods:'living standards', Reconstruction:'rebuilding', Institutions:'honest government', Solvency:'money', Sovereignty:'independence' },
-    verdict:{ A:'Historians call you the president who rebuilt Syria.', B:'The country is whole and working. Not rich yet, but on its way.', C:'You held the country together. The next president has a lot left to do.', D:'Syria survived, just barely.', F:'You lasted 20 years. That is the best that can be said.' } },
+    verdict:{ A:'Historians call you the president who rebuilt Syria.', B:'The country is whole and working. Not rich yet, but on its way.', C:'You held the country together. The next president has a lot left to do.', D:'Syria survived, just barely.', F:'You lasted 240 months. That is the best that can be said.' } },
   ar:{ names:{ Stability:'🕊️ السلم', Livelihoods:'👷 مستوى المعيشة', Reconstruction:'🏗️ إعادة الإعمار', Institutions:'🧾 نزاهة الحكومة', Solvency:'🏦 المال', Sovereignty:'🧭 الاستقلال' },
     lower:{ Stability:'السلم', Livelihoods:'مستوى المعيشة', Reconstruction:'إعادة الإعمار', Institutions:'نزاهة الحكومة', Solvency:'المال', Sovereignty:'الاستقلال' },
-    verdict:{ A:'يسمّيك المؤرخون الرئيس الذي أعاد بناء سوريا.', B:'البلاد موحّدة وتعمل. ليست غنية بعد، لكنها على الطريق.', C:'حافظتَ على وحدة البلاد. أمام الرئيس القادم عمل كثير.', D:'نجت سوريا بصعوبة.', F:'بقيتَ عشرين عاماً. هذا أفضل ما يمكن قوله.' } },
+    verdict:{ A:'يسمّيك المؤرخون الرئيس الذي أعاد بناء سوريا.', B:'البلاد موحّدة وتعمل. ليست غنية بعد، لكنها على الطريق.', C:'حافظتَ على وحدة البلاد. أمام الرئيس القادم عمل كثير.', D:'نجت سوريا بصعوبة.', F:'بقيتَ 240 شهراً. هذا أفضل ما يمكن قوله.' } },
 };
 
 const MISSION_TXT = {
-  winter:{ icon:'❄️', en:['Keep the lights on','It’s winter 2027 and the grid is failing. Reach 7 hours of electricity a day within 8 seasons, with no province in revolt.','Lesson: power stations take time. Invest early, before you see results.'],
-    ar:['أبقِ الأنوار مضاءة','إنه شتاء 2027 والشبكة تنهار. اوصل إلى 7 ساعات كهرباء يومياً خلال 8 مواسم دون تمرّد أي محافظة.','الدرس: محطات الكهرباء تحتاج وقتاً. استثمر مبكراً قبل أن ترى النتائج.'] },
-  lira:{ icon:'💱', en:['Save the lira','The last government printed money like crazy. A dollar costs 260 lira and prices rise 90% a year. Within 8 seasons, get the dollar under 340 lira and yearly price rises under 30%.','Lesson: printing money is a trap. Breaking out of it hurts at first.'],
-    ar:['أنقِذ الليرة','الحكومة السابقة طبعت النقود بجنون. الدولار بـ260 ليرة والأسعار ترتفع 90% سنوياً. خلال 8 مواسم، اجعل الدولار تحت 340 ليرة والتضخم تحت 30%.','الدرس: طباعة النقود فخ، والخروج منه مؤلم في البداية.'] },
+  winter:{ icon:'❄️', en:['Keep the lights on','It’s winter and the grid is failing. Reach 7 hours of electricity a day within 8 seasons, with no province in revolt.','Lesson: power stations take time. Invest early, before you see results.'],
+    ar:['أبقِ الأنوار مضاءة','إنه الشتاء والشبكة تنهار. اوصل إلى 7 ساعات كهرباء يومياً خلال 8 مواسم دون تمرّد أي محافظة.','الدرس: محطات الكهرباء تحتاج وقتاً. استثمر مبكراً قبل أن ترى النتائج.'] },
+  lira:{ icon:'💱', en:['Save the lira','The last government printed money like crazy. A dollar costs 260 lira and prices rise 90% every 12 months. Within 8 seasons, get the dollar under 340 lira and price rises under 30%.','Lesson: printing money is a trap. Breaking out of it hurts at first.'],
+    ar:['أنقِذ الليرة','الحكومة السابقة طبعت النقود بجنون. الدولار بـ260 ليرة والأسعار ترتفع 90% كل 12 شهراً. خلال 8 مواسم، اجعل الدولار تحت 340 ليرة والتضخم تحت 30%.','الدرس: طباعة النقود فخ، والخروج منه مؤلم في البداية.'] },
   bread:{ icon:'🌾', en:['Feed the country','Drought has hit the northeast. Wheat imports will cost double for 8 seasons. Finish with trust at 40+, at least $250M in the bank, and Hasakeh’s anger below 55.','Lesson: food is a supply chain. Farms, silos, fuel and dollars all have to work.'],
     ar:['أطعِم البلاد','ضرب الجفاف الشمال الشرقي. استيراد القمح سيكلّف الضعف لثمانية مواسم. أنهِ المهمة بثقة 40+ و250 مليون$ على الأقل في المصرف وغضب الحسكة تحت 55.','الدرس: الغذاء سلسلة إمداد. المزارع والصوامع والوقود والدولار كلها يجب أن تعمل.'] },
   capital:{ icon:'🏙️', en:['Calm the capital','Rural Damascus is close to revolt and the city is restless. Within 8 seasons, get Rural Damascus under 50 and Damascus city under 45.','Lesson: the capital and its countryside are different places with different problems.'],
@@ -48,10 +48,10 @@ const MISSION_TXT = {
 };
 
 const PERSONA_TXT = {
-  rana:{ icon:'👩‍🏫', prov:'aleppo', en:['Rana, 34','Teacher in Aleppo, two kids'], ar:['رنا، 34 عاماً','معلّمة في حلب، ولديها طفلان'] },
-  khaled:{ icon:'👨‍🌾', prov:'hasakeh', en:['Abu Khaled, 52','Wheat farmer in Hasakeh'], ar:['أبو خالد، 52 عاماً','مزارع قمح في الحسكة'] },
-  hiba:{ icon:'🧕', prov:'rif', en:['Hiba, 27','Returned from Lebanon to Rural Damascus'], ar:['هبة، 27 عاماً','عادت من لبنان إلى ريف دمشق'] },
-  samer:{ icon:'🧑‍💼', prov:'damascus', en:['Samer, 41','Runs a phone repair shop in Damascus'], ar:['سامر، 41 عاماً','يدير محل تصليح هواتف في دمشق'] },
+  rana:{ icon:'👩‍🏫', prov:'aleppo', en:['Rana, 34','Teacher in Aleppo, two kids'], ar:['رنا، 34','معلّمة في حلب، ولديها طفلان'] },
+  khaled:{ icon:'👨‍🌾', prov:'hasakeh', en:['Abu Khaled, 52','Wheat farmer in Hasakeh'], ar:['أبو خالد، 52','مزارع قمح في الحسكة'] },
+  hiba:{ icon:'🧕', prov:'rif', en:['Hiba, 27','Returned from Lebanon to Rural Damascus'], ar:['هبة، 27','عادت من لبنان إلى ريف دمشق'] },
+  samer:{ icon:'🧑‍💼', prov:'damascus', en:['Samer, 41','Runs a phone repair shop in Damascus'], ar:['سامر، 41','يدير محل تصليح هواتف في دمشق'] },
 };
 const PERSONA_LINES = {
   en:{ salary:'Salary', side:'Tutoring on the side', brother:'Money from her brother in Germany', crop:'Selling the wheat crop', labor:'Day labor on building sites', shop:'Shop profits',

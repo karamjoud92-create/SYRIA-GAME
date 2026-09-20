@@ -1,5 +1,5 @@
 // ===== Transition: engine (pure, no DOM) =====
-const START_YEAR = 2027, MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
+const MAX_TURNS = 40, BASE_FX = 125, DEMAND0 = 8500;
 
 const PROVS = [
   // id, name, popM, base unrest target, start unrest, damage $B, jobless %, power mod, col,row, neighbors
@@ -133,9 +133,9 @@ function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[
 // Oil and phosphate pay in dollars. Lira comes from people in steady work, shops that have
 // customers, and factories that file accounts. A state with no formal economy has no budget,
 // however many dollars sit in the central bank — which is the whole problem with rent.
-// Measured against the country as it is handed over in January 2027, so the base is exactly 1
+// Measured against the country as it is handed over on day one, so the base is exactly 1
 // on day one: this changes how the tax base *grows*, never what you start with.
-const JOBLESS0 = 55.4, POP0 = 21.9, HOURS0 = 4.0;
+const JOBLESS0 = 55.4, POP0 = 21.9, HOURS0 = 4.0;   // the country at month 0
 const firmsBuilt = s => Object.keys(IND).reduce((a, k) => a + indLvl(s, k), 0);   // 0..27 sector levels running
 function domesticBase(s){
   const work = clamp((JOBLESS0 - joblessNat(s)) / 42, -0.3, 1);        // people moving into, or out of, steady work
@@ -205,7 +205,6 @@ function startGame(seed, diff, mission){
 
 // ---------- time helpers ----------
 const monthOf = s => ((s.t % 12) + 12) % 12;
-const yearNow = s => START_YEAR + Math.floor(s.t / 12);
 function seasonNow(s){ const m = monthOf(s); return m >= 3 && m <= 8 ? 'H1' : 'H2'; }   // Apr–Sep harvest, Oct–Mar winter
 const realWage = s => s.wage / s.parallel;
 const demandNow = s => s.demand * (1 + Math.max(0, s.cap - 20) / 160);
@@ -376,7 +375,7 @@ function step(state, dt = MONTH, policyOverride){
   // --- society ---
   const rw = realWage(s), hrs = nationalHours(s), nu = natUnrest(s);
   // THE BAR. Every good year raises what counts as good enough, and it never drops back.
-  // Nobody thanks you in 2040 for the electricity that made you a hero in 2029.
+  // Nobody thanks you at month 160 for the electricity that made you a hero at month 30.
   const barFrom = s.diff === 'realistic' ? 38 : 44, barOver = s.diff === 'realistic' ? 36 : 40;
   s.bar = clamp(Math.max(s.bar || 0, ((s.score || 40) - barFrom) / barOver), 0, 1);
   s.expWage = 25 + Math.max(0, s.cap - 20) * 0.6 + s.bar * 32;
@@ -577,9 +576,28 @@ function checkFail(s){
   return null;
 }
 
+// ---------- levels ----------
+// Ten levels, earned by the legacy score and lost the same way. The bands are fitted to how real
+// games actually score: every game starts on level 3 (35-37), doing nothing sinks to 1-2 and then
+// fails, steady play reaches 7-9, and only a country that builds its own industry touches 10.
+// Hysteresis: you must clear a boundary by a point to rise, and drop 1.5 below your floor to fall,
+// so the level does not flicker while the score hovers on a line.
+const LEVELS = [[0, 22], [23, 28], [29, 38], [39, 44], [45, 50], [51, 57], [58, 63], [64, 69], [70, 75], [76, 100]];
+function levelRaw(score){ let lv = 1; LEVELS.forEach(([lo], i) => { if (score >= lo) lv = i + 1; }); return lv; }
+function levelOf(score, prev){
+  const raw = levelRaw(score);
+  if (!prev || prev < 1 || prev > 10) return raw;
+  if (raw > prev) return score >= LEVELS[raw - 1][0] + 1 ? raw : prev;
+  if (raw < prev) return score <= LEVELS[prev - 1][0] - 1.5 ? raw : prev;
+  return prev;
+}
+// the colour family a level belongs to, so the old grade styles keep working
+const levelTone = lv => lv >= 9 ? 'A' : lv >= 7 ? 'B' : lv >= 5 ? 'C' : lv >= 4 ? 'D' : 'F';
+const GAME_MONTHS = 240;
+
 function legacy(s){
   const nu = natUnrest(s);
-  // Two of the six are graded against what people now expect, not against 2027. Money in the
+  // Two of the six are graded against what people now expect, not against month 0. Money in the
   // bank and an honest ministry are facts; whether life feels good is always a comparison.
   const bar = s.bar || 0;
   const comp = {
@@ -728,4 +746,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, domesticBase, firmsBuilt, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, domesticBase, firmsBuilt, LEVELS, levelRaw, levelOf, levelTone, GAME_MONTHS, MONTH, monthOf };

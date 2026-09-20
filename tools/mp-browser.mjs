@@ -125,8 +125,8 @@ for (let i = 0; i < 10; i++){
 ok(/Offline/.test(sub), `a dead server shows as offline (saw: ${sub.trim()}, state: ${await A.evaluate(() => MP.state)})`);
 await tap(A, '[data-act=speed][data-v="2"]');
 await A.waitForTimeout(1500);
-const year = await A.innerText('.turn .yr');
-ok(/\d{4}/.test(year), `the game keeps running with no server (${year.replace(/\n/g, ' ')})`);
+const clock = await A.innerText('.turn .yr');
+ok(/\d+/.test(clock) && !/\b20\d\d\b/.test(clock), `the game keeps running with no server, and the clock counts months not years (${clock.replace(/\n/g, ' ')})`);
 
 // --- a phone, with the board open ---
 const P = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ar' });

@@ -212,7 +212,7 @@ function showLegacy(){
   const Lg = legacy(S), c = Lg.comp, LT = LEGACY_TXT[LANG];
   const weak = Object.entries(c).sort((a, b) => a[1] - b[1])[0][0], strong = Object.entries(c).sort((a, b) => b[1] - a[1])[0][0];
   const hist = { Solvency:'lebanon', Livelihoods:'germany', Stability:'rwanda', Institutions:'iraq', Reconstruction:'germany', Sovereignty:'lebanon' }[weak];
-  modal(`<div class="row" style="align-items:flex-end;gap:20px"><div class="grade">${Lg.grade}</div><div><h2>${fill(t('madeIt'), [START_YEAR + 20])}</h2><div class="src">${t('twenty')}</div></div></div>
+  modal(`<div class="row" style="align-items:flex-end;gap:20px"><div class="grade">${Lg.grade}</div><div><h2>${t('madeIt')}</h2><div class="src">${t('twenty')}</div></div></div>
   <p class="lede" style="margin-top:14px">${LT.verdict[Lg.grade]} ${fill(t('didBest'), [LT.lower[strong], LT.lower[weak]])}</p>${scoresBlock()}${histCard(hist)}
   <div class="row"><button class="btn primary" data-act="restart">${t('playAgain')}</button><button class="btn" data-act="close">${t('lookMap')}</button></div>`);
 }

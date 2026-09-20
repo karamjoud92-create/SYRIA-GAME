@@ -120,6 +120,32 @@ the state without growing the tax base. That last one is the rentier trap, and i
 No save bump: `policy.fxWindow` is backfilled in `syncD()`, because `esc(undefined)` renders the literal
 word "undefined" and every v6 save in a player's browser lacks the key.
 
+### Levels instead of years, and the game finally ends
+
+Every calendar date is gone from what the player reads: the header clock is a month name for the season and a
+month number for the clock, the news log says "Month 26", missions are "48-month challenges", rates are "every
+12 months", and durations are in months. `tools/years-check.js` enforces it in both languages and runs inside
+`npm run check`; the only years it allows are the real-world citations. Internal names went with it (`sfx('year')`
+→ `sfx('level')`, `.toast.year` → `.toast.level`) so nothing is left to trip over.
+
+Progress is now a **level, 1 to 10, earned by score and lost the same way.** `LEVELS` in the engine holds the
+bands; they were fitted to measured play, not guessed: both difficulties start on level 3 (scores 35–37), passive
+play sinks to 2 and fails, `smart` lands 6–8, `builder` lands 9 and touches 10 on good seeds. `levelOf()` carries
+hysteresis so a score hovering on a line does not flip the level every month — a full builder game changes level
+about seven times. The badge shows the level number where the grade letter was and the level name where "Legacy
+score" was; the month-60 report cards and the ending lead with it. Level-ups toast in gold, level-downs in red.
+The A–F grade survives underneath (`levelTone()` maps levels onto its colours, the scoreboard wire still carries
+it, so old and new builds can share a room).
+
+**The game had no ending.** `showLegacy` was only called from `commit()` in `ui/4-modals.js`, gated on
+`S.turn > MAX_TURNS` — `S.turn` does not exist in the continuous-time state, and `commit()` is never called by
+the live layer. A winning run sailed past month 240 ("20 years in office · Report card, Jan 2047") and kept going
+forever. `advance()` now ends the game at `GAME_MONTHS` with a revived `showLegacy` that reports the final level.
+`npm run levels` drives a real game to 240 in both languages and asserts it.
+
+Port sizes were called "Level 1 of 3", which would have collided with the new levels on screen; they are
+"Size 1 of 3" now.
+
 ## Open, and worth doing next
 
 - **Provinces are not staged.** All 14 are yours from month 0. Locking them behind "extending state

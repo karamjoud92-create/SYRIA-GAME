@@ -31,14 +31,14 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // --- the stages open up ---
   await jump(page, 8); await clear(page);
   const dock1 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
-  ok(dock1.includes('decrees'), `${tag}: decrees open in year 1 (${dock1.length} panels)`);
+  ok(dock1.includes('decrees'), `${tag}: decrees open in the first 12 months (${dock1.length} panels)`);
   await jump(page, 10); await clear(page);
   const dock2 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
-  ok(dock2.includes('trade') && dock2.includes('progress'), `${tag}: trade and progress open in year 2 (${dock2.length} panels)`);
+  ok(dock2.includes('trade') && dock2.includes('progress'), `${tag}: trade and progress open by month 24 (${dock2.length} panels)`);
   await jump(page, 20); await clear(page);
   const dock3 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
   const layers3 = await page.$$eval('.layers button', e => e.length);
-  ok(dock3.length === 8 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
+  ok(dock3.length === 8 && layers3 === 4, `${tag}: by month 48 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
 
   // --- schools, clinics, universities ---
   await page.evaluate(() => { UI.drawer = 'people'; UI.sub.people = 'services'; render(true); }); await page.waitForTimeout(250);
@@ -60,7 +60,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // --- four advisors, and a way to shut them up ---
   await clear(page);
   const faces = await page.$$eval('.portrait', e => e.length);
-  ok(faces === 4, `${tag}: four advisors by year 4 (${faces})`);
+  ok(faces === 4, `${tag}: four advisors by month 48 (${faces})`);
   await page.click('.advhide'); await page.waitForTimeout(200);
   ok(!(await page.$('.bubble')), `${tag}: the hide button silences them`);
 

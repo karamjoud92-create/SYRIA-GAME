@@ -5,7 +5,7 @@ let TIMER = null, TOAST_ID = 0;
 D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:0 };
 // A save made before a dial existed carries no value for it. Fill it in on load, or the
 // panel renders the word "undefined" where the hint should be.
-const syncD = () => { if (S){ if (S.policy && S.policy.fxWindow === undefined) S.policy.fxWindow = 0; D.policy = S.policy; } };
+const syncD = () => { if (S){ if (S.policy && S.policy.fxWindow === undefined) S.policy.fxWindow = 0; if (!S.level) S.level = levelOf(S.score); D.policy = S.policy; } };
 
 const DRAWERS5 = [
   ['guide', '🧭', 'dGuide', 'guideSub'],
@@ -35,10 +35,10 @@ const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['
 function monthsTxt(n){
   n = Math.round(n);
   if (n <= 0) return t('soon');
-  if (n % 12 === 0) return n === 12 ? t('years1') : fill(t('yearsN'), [n / 12]);
   return n === 1 ? t('months1') : fill(t('monthsN'), [n]);
 }
-const whenTxt = tt => `${MONTHS[LANG][((tt % 12) + 12) % 12]} ${START_YEAR + Math.floor(tt / 12)}`;
+// A moment in the game is a month number, never a calendar date: the clock counts levels, not years.
+const whenTxt = tt => fill(t('monthNo'), [tt]);
 const seasonsTxt = n => monthsTxt(n);
 const gradeOf = v => v >= 75 ? 'A' : v >= 62 ? 'B' : v >= 50 ? 'C' : v >= 38 ? 'D' : 'F';
 
@@ -75,8 +75,9 @@ function tick(){
   advance();
 }
 function advance(){
-  const prevScore = S.score, prev = S, prevStage = stageNow();
+  const prevScore = S.score, prev = S, prevStage = stageNow(), prevLevel = S.level || levelOf(S.score);
   S = step(S); syncD();
+  S.level = levelOf(S.score, prevLevel);
   UI.flash = {};
   [['cash', s => s.treasury, 1.5, true], ['usd', s => s.reserves, 12, true], ['fx', s => s.parallel, 1.5, false], ['pay', s => realWage(s), 0.3, true], ['trust', s => s.trust, 0.35, true], ['anger', s => natUnrest(s), 0.35, false], ['power', s => nationalHours(s), 0.08, true]]
     .forEach(([k, g, thr, goodUp]) => { const d = g(S) - g(prev); if (Math.abs(d) >= thr) UI.flash[k] = (d > 0) === goodUp ? 'up' : 'down'; });
@@ -91,8 +92,11 @@ function advance(){
   if (fail){ S.over = { fail:fail.id }; setSpeed(0); persist(); render(true); sfx('fail'); return showFail(fail.id); }
   if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
-  if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
-  if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('year'); return showMilestone(); }
+  if (!S.mission && S.t >= GAME_MONTHS){ S.over = { won:true }; setSpeed(0); persist(); render(true); sfx('level'); return showLegacy(); }
+  if (S.level > prevLevel){ toast(fill(t('levelUp'), [S.level, levelName(S.level)]), 'level'); sfx('level'); }
+  else if (S.level < prevLevel){ toast(fill(t('levelDown'), [S.level, levelName(S.level)]), 'bad'); sfx('bad'); }
+  if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [S.t, Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'level'); sfx('level'); }
+  if (!S.mission && S.t > 0 && S.t % 60 === 0){ persist(); render(true); sfx('level'); return showMilestone(); }
   if (UI.queue && UI.queue.length){ persist(); render(true); sfx('cycle'); const [, id] = UI.queue.shift(); return showCycle(id, true); }
   S.event = drawEvent(S);
   persist(); render();
@@ -140,7 +144,7 @@ function renderEffect(){
 function toast(text, kind){
   if (!text) return; const id = ++TOAST_ID;
   UI.toasts.push({ id, text, kind }); if (UI.toasts.length > 4) UI.toasts.shift();
-  renderToasts(); setTimeout(() => { UI.toasts = UI.toasts.filter(x => x.id !== id); renderToasts(); }, kind === 'year' ? 7000 : 5000);
+  renderToasts(); setTimeout(() => { UI.toasts = UI.toasts.filter(x => x.id !== id); renderToasts(); }, kind === 'level' ? 7000 : 5000);
 }
 function renderToasts(){ const el = $('#toasts'); if (el) el.innerHTML = UI.toasts.map(x => `<div class="toast ${x.kind || ''}">${esc(x.text)}</div>`).join(''); }
 
@@ -249,11 +253,11 @@ function renderHUD(P){
   const total = S.mission ? S.mission.end - S.mission.start : 60, done = S.mission ? S.t - S.mission.start : S.t % 60;
   const C = 2 * Math.PI * 22, frac = clamp(done / total, 0, 1);
   const ring = `<div class="ring"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22" fill="var(--board-2)" stroke="var(--board-2)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="ic">${seasonNow(S) === 'H1' ? '🌾' : '❄️'}</span></div>`;
-  const sc = S.score, P6 = P, dsc = P6.score - sc, g = gradeOf(sc);
+  const sc = S.score, P6 = P, dsc = P6.score - sc, lv = S.level || levelOf(sc), g = levelTone(lv);
   const pop = UI.scoreDelta && Math.abs(UI.scoreDelta) >= 0.4 ? `<span class="spop ${UI.scoreDelta > 0 ? 'up' : 'down'}">${sign(UI.scoreDelta, 1)}</span>` : '';
   UI.scoreDelta = 0;
-  return `<div class="turn">${ring}<div><div class="yr">${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div><div class="ss">${UI.speed ? '⏱️ ' + t(['', 'slow', 'normal', 'fastest'][UI.speed]) : '❚❚ ' + t('paused')}</div><div class="mbarwrap"><i class="${UI.speed ? 'run' : ''}" style="animation-duration:${SPEEDS[UI.speed] || 1}ms"></i></div></div></div>
-    <button class="scorebadge g-${g}" data-act="gloss" data-k="score" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
+  return `<div class="turn">${ring}<div><div class="yr">${esc(MONTHS[LANG][monthOf(S)])} · ${esc(fill(t('monthNo'), [S.t]))}</div><div class="ss">${UI.speed ? '⏱️ ' + t(['', 'slow', 'normal', 'fastest'][UI.speed]) : '❚❚ ' + t('paused')}</div><div class="mbarwrap"><i class="${UI.speed ? 'run' : ''}" style="animation-duration:${SPEEDS[UI.speed] || 1}ms"></i></div></div></div>
+    <button class="scorebadge g-${g}" data-act="gloss" data-k="score" aria-label="${fill(t('levelOf10'), [lv])}, ${t('score')}: ${Math.round(sc)}"><span class="sg">${lv}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${esc(levelName(lv))} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
       ${res('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
@@ -339,8 +343,11 @@ function renderProvince(){
   const meter = (icon, k, v, pct, col) => `<div class="meter"><div>${icon} ${k}</div><div class="mv">${v}</div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const A = AR(), good = [];
   if (x.unrest) good.push(`🔥 ${sign(x.unrest)}`); if (x.power) good.push(`💡 +${x.power}${A ? 'س' : 'h'}`); if (x.jobs) good.push(A ? `💼 ${-x.jobs} فرصة عمل` : `💼 ${-x.jobs} jobs`);
-  if (x.rev) good.push(`💵 +${bn(x.rev * 2)}/${A ? 'سنة' : 'yr'}`); if (x.transit) good.push(`🏦 +${usdM(x.transit * 2)}/${A ? 'سنة' : 'yr'}`); if (x.phosphate) good.push(`⛏️ +${usdM(x.phosphate * 2)}/${A ? 'سنة' : 'yr'}`); if (x.oil) good.push(`🛢️ +${usdM(x.oil * 2)}/${A ? 'سنة' : 'yr'}`);
-  if (x.wheat) good.push(`🌾 ${MINUS}${usdM(x.wheat * 2)}/${A ? 'سنة' : 'yr'}`); if (x.mw) good.push(`⚡ +${x.mw} MW`); if (x.cap) good.push(A ? '🏭 اقتصاد أكبر' : '🏭 bigger economy'); if (x.trust) good.push(`🤝 +${x.trust}`);
+  // rates are shown per 12 months; one trailing chip says so once instead of every chip repeating it
+  let rate = false;
+  if (x.rev){ good.push(`💵 +${bn(x.rev * 2)}`); rate = true; } if (x.transit){ good.push(`🏦 +${usdM(x.transit * 2)}`); rate = true; } if (x.phosphate){ good.push(`⛏️ +${usdM(x.phosphate * 2)}`); rate = true; } if (x.oil){ good.push(`🛢️ +${usdM(x.oil * 2)}`); rate = true; }
+  if (x.wheat){ good.push(`🌾 ${MINUS}${usdM(x.wheat * 2)}`); rate = true; } if (x.mw) good.push(`⚡ +${x.mw} MW`); if (x.cap) good.push(A ? '🏭 اقتصاد أكبر' : '🏭 bigger economy'); if (x.trust) good.push(`🤝 +${x.trust}`);
+  if (rate) good.push(`⏱️ ${t('perYear')}`);
   const mF = projMonths(id, 'fast'), mT = projMonths(id, 'tender'), lF = Math.round(x.usd * projLeakRate(S, 'fast')), lT = Math.round(x.usd * projLeakRate(S, 'tender'));
   const pending = (S.pipe || []).find(i => i.kind === 'proj' && i.id === id);
   let action;
@@ -663,8 +670,8 @@ function showStage(st){
     <div class="row"><button class="btn primary" data-act="close">${t('stageGo')}</button></div>`);
 }
 function showMilestone(){
-  const yrs = S.t / 12, Lg = legacy(S), chs = whyLive();
-  modal(`<div class="row" style="align-items:flex-end;gap:18px"><div class="grade">${Lg.grade}</div><div><h2>${fill(t('milestoneTitle'), [yrs])}</h2><div class="src">${fill(t('milestoneSub'), [esc(whenTxt(S.t))])}</div></div></div>
+  const Lg = legacy(S), chs = whyLive(), lv = S.level || levelOf(S.score);
+  modal(`<div class="row" style="align-items:flex-end;gap:18px"><div class="grade">${lv}</div><div><h2>${fill(t('milestoneTitle'), [S.t])}</h2><div class="src">${esc(fill(t('levelOf10'), [lv]))} · ${esc(levelName(lv))} · ${esc(whenTxt(S.t))}</div></div></div>
     ${scoresBlock()}<h3 class="bh">🔗 ${t('whyNow')}</h3>${renderWhy(chs)}
     <div class="row" style="margin-top:14px"><button class="btn primary" data-act="close">${t('keepPlaying')} ▶</button></div>`);
 }
@@ -681,6 +688,14 @@ function showFail(id){
   modal(`<div class="tut-icon" aria-hidden="true">💥</div><h2>${esc(f[0])}</h2><div class="src">${esc(whenTxt(S.t))} · ${fill(t('afterN'), [monthsTxt(S.t - (S.mission ? S.mission.start : 0))])}</div><p class="lede">${esc(fill(f[1], [revolts]))}</p>
   <p class="tipbox">💡 <b>${t('tipLabel')}</b> ${esc(f[2])}</p>${histCard(hist)}${scoresBlock()}
   <div class="row"><button class="btn primary" data-act="restart">${t('tryAgain')}</button><button class="btn" data-act="close">${t('lookMap')}</button></div>`, 'fail');
+}
+function showLegacy(){
+  const Lg = legacy(S), c = Lg.comp, LT = LEGACY_TXT[LANG], lv = S.level || levelOf(S.score);
+  const weak = Object.entries(c).sort((a, b) => a[1] - b[1])[0][0], strong = Object.entries(c).sort((a, b) => b[1] - a[1])[0][0];
+  const hist = { Solvency:'lebanon', Livelihoods:'germany', Stability:'rwanda', Institutions:'iraq', Reconstruction:'germany', Sovereignty:'lebanon' }[weak];
+  modal(`<div class="row" style="align-items:flex-end;gap:20px"><div class="grade">${lv}</div><div><h2>${t('endTitle')}</h2><div class="src">${esc(fill(t('finalLevel'), [lv, levelName(lv)]))} · ${t('twenty')}</div></div></div>
+  <p class="lede" style="margin-top:14px">${LT.verdict[lv >= 10 ? 'A' : lv >= 8 ? 'B' : lv >= 6 ? 'C' : lv >= 4 ? 'D' : 'F']} ${fill(t('didBest'), [LT.lower[strong], LT.lower[weak]])}</p>${scoresBlock()}${histCard(hist)}
+  <div class="row"><button class="btn primary" data-act="restart">${t('playAgain')}</button><button class="btn" data-act="close">${t('lookMap')}</button></div>`);
 }
 function showMissionEnd(){
   const id = S.mission.id, m = L2(MISSION_TXT[id]), won = S.over.mission;

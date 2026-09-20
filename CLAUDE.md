@@ -2,16 +2,26 @@
 
 A bilingual (English/Arabic) country-management game for young Syrians (~15 years old) about how hard it is to run a country:
 systems thinking, public finance, supply chains, trade and trade-offs. The player is the president of post-war Syria.
-Time runs continuously (month by month); every decision shows its effects now and over the next 3 months; a live
-legacy score (0–100, A–F) changes every month. The clock is deliberately slow and the consequences deliberately
-fast: a player should be able to think, and should not have to wait two years to find out whether they were right.
+Time runs continuously (month by month, 240 months in all); every decision shows its effects now and over the next
+3 months; a live legacy score (0–100) changes every month and sets the player's **level, 1 to 10**, which can be lost
+as well as earned. The clock is deliberately slow and the consequences deliberately fast: a player should be able to
+think, and should not have to wait 24 months to find out whether they were right.
+
+**No calendar years, anywhere the player can read.** The clock is a month number and a level, never "2029". Durations
+are in months ("48 months", "every 12 months"), never years — `npm run years` fails the build if a year word comes
+back in either language. The only years allowed are real-world citations: the World Bank 2025 damage figure and the
+history cards (Lebanon 2019, Zimbabwe 2008, West Germany 1948, Rwanda 1994, Iraq 2003).
 
 ## Commands
 - `npm run build`  → writes `dist/index.html` (single self-contained file). Also syntax-checks the combined UI script.
 - `npm run sim`    → 20-year balance simulation of scripted strategies (passive / smart / trader) on both difficulties.
 - `npm run missions` → checks every mission: "nothing" must lose, "smart" must win.
 - `npm run mp`     → two sandboxed players against a real score server: ranking, codes, offline, hostile input.
-- `npm run check`  → all of the above. Run this after every engine change.
+- `npm run years`  → fails if any year word or calendar year is reachable by the player, in either language.
+- `npm run levels` → drives a winning game through the real `advance()` to month 240 in both languages: the badge
+  starts on level 3, level-ups toast, the month-60 report card leads with the level, and the game **ends** on a
+  final level (it used to run forever — `showLegacy` was only reachable from dead turn-based code).
+- `npm run check`  → build, years, levels (engine half), sim, missions, mp. Run this after every engine change.
 - `npm run serve`  → a score server on localhost:8787, for working on the scoreboard.
 - `npm run browser`→ two real browsers in one room (needs `npm i -D playwright`). Writes `tools/shot-mp-*.png`.
 - `npm run decide` → the casual loop in a real browser: the game asks a question unprompted, offers 2–3
@@ -32,6 +42,12 @@ fast: a player should be able to think, and should not have to wait two years to
   - `ACT.*` are player actions that mutate state immediately (decrees, projects, deals, investments, ports…).
   - Delays live in `state.pipe` with `due` in months (`state.t` = months since Jan 2027).
   - `legacy(state)` computes the score. `checkFail` returns a failure id or null.
+  - **Levels.** `LEVELS` holds ten score bands fitted to how real games score (every game starts on 3, doing
+    nothing sinks to 1–2 and fails, steady play reaches 7–9, only industry touches 10). `levelOf(score, prev)`
+    applies hysteresis — clear a line by a point to rise, drop 1.5 below your floor to fall — so the level does
+    not flicker. The UI keeps `S.level` for that memory; `syncD()` computes it for saves that predate it. The
+    A–F grade still exists (`legacy().grade`, and it still travels on the scoreboard wire) but the player sees
+    the level; `levelTone()` maps a level onto the old grade colours. `GAME_MONTHS = 240` ends the game.
   - **Work, not landmines.** `pv.jobless` is the share of working-age people with no steady job, and it is the
     biggest single driver of provincial anger. It falls when factories open, the province's project is built,
     the economy grows and the lights stay on; it rises with blackouts and violence. `joblessNat(s)` is the

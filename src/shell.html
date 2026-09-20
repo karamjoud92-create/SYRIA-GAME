@@ -300,7 +300,8 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 @keyframes breathe{ 50%{ box-shadow:0 6px 0 var(--gold-deep), 0 0 0 18px rgba(244,182,63,.12); } }
 .toasts{ position:absolute; left:50%; transform:translateX(-50%); bottom:62px; z-index:7; display:flex; flex-direction:column; gap:6px; align-items:center; width:min(520px, 90%); pointer-events:none; }
 .toast{ background:var(--card-ink); color:#fff; border-radius:14px; padding:7px 14px; font-size:14px; font-weight:600; box-shadow:0 4px 0 rgba(10,14,30,.35); animation:slidein .25s ease-out; text-align:center; }
-.toast.year{ background:var(--gold); color:var(--gold-ink); font-weight:800; }
+.toast.level{ background:var(--gold); color:var(--gold-ink); font-weight:800; }
+.toast.bad{ background:var(--bad); color:#fff; font-weight:800; }
 .newslist{ list-style:none; margin:0; padding:0; } .newslist li{ padding:7px 0; border-bottom:2px dotted var(--card-line); font-size:13.5px; } .newslist .nd{ display:block; font-size:12px; color:var(--card-muted); font-weight:700; }
 .small{ font-size:12.5px; margin:6px 0; }
 .rcard{ border:2px solid var(--card-line); border-radius:18px; padding:12px 14px; background:#fff; margin-bottom:12px; }

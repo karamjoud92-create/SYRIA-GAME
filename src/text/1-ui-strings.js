@@ -6,7 +6,7 @@ const PROV_NAME = {
 
 const STR = {
 en:{
-  title:'Transition', subtitle:'Rebuild Syria, 2027 to 2047', harvest:'Harvest', winter:'Winter', season:'season', nextSeason:'next season', leftToSpend:'{0} left to spend', about:'about',
+  title:'Transition', subtitle:'Rebuild Syria. 240 months, 10 levels.', harvest:'Harvest', winter:'Winter', season:'season', nextSeason:'next season', leftToSpend:'{0} left to spend', about:'about',
   tabPolicy:'Policies', tabDecrees:'Decrees', tabMoney:'Money', tabProvince:'Province', tabPeople:'People', tabChains:'Supply', tabCharts:'Charts', tabBudget:'Budget', tabNews:'News',
   mapTitle:'Syria', layerAnger:'Anger', layerPower:'Electricity', layerDamage:'Damage', layerJobs:'Work',
   tierCalm:'Calm', tierTense:'Uneasy', tierRiot:'Angry', tierRevolt:'Revolt', revoltAt:'At 75+ a province revolts.',
@@ -43,10 +43,10 @@ en:{
   better:'Things got better.', worse:'Things got worse.', same:'Not much changed.', endOf:'End of {0}', whyTitle:'Why did this happen?',
   crisisNeeds:'🚨 A crisis needs your decision', nextSeasonBtn:'Next season ▶', crisis:'Crisis', whatDo:'What do you do?', youChose:'{0}: you chose "{1}".',
   nothingChanges:'Nothing changes', everywhere:'everywhere',
-  tipLabel:'Tip:', tryAgain:'Try again', lookMap:'Look at the map', afterN:'after {0} seasons as president', madeIt:'You made it to {0}!', twenty:'Twenty years as president',
+  tipLabel:'Tip:', tryAgain:'Try again', lookMap:'Look at the map', afterN:'after {0} seasons as president', madeIt:'You made it to the end!', twenty:'240 months as president',
   didBest:'You did best on {0} and worst on {1}.', history:'From history', missionWon:'Mission complete!', missionLost:'Mission failed',
   pickDiff:'Pick how you want to play.', learner:'🌱 Learner (recommended)', learnerTxt:'More money to start, fewer crises. Good for your first game.',
-  realistic:'🔥 Realistic', realisticTxt:'Starting numbers close to the real situation. Most first attempts fail within five years.',
+  realistic:'🔥 Realistic', realisticTxt:'Starting numbers close to the real situation. Most first attempts fail within 60 months.',
   missionsBtn:'🎯 Short missions', missionsTxt:'Eight-season challenges. Each one teaches one system.',
   disclaimer:'A simplified game, not a prediction. The $108B war-damage total comes from the World Bank’s 2025 assessment; other numbers are rough estimates. Map boundaries: Natural Earth.',
   missionsTitle:'Short missions', missionGoal:'Goal', seasonsLeft:'{0} seasons left', back:'Back',
@@ -57,7 +57,7 @@ en:{
   quiet:'A quiet season.', wasted:'lost',
 },
 ar:{
-  title:'المرحلة الانتقالية', subtitle:'أعِد بناء سوريا، من 2027 إلى 2047', harvest:'الحصاد', winter:'الشتاء', season:'الموسم', nextSeason:'الموسم القادم', leftToSpend:'بقي {0} للإنفاق', about:'حوالي',
+  title:'المرحلة الانتقالية', subtitle:'أعِد بناء سوريا. 240 شهراً، 10 مستويات.', harvest:'الحصاد', winter:'الشتاء', season:'الموسم', nextSeason:'الموسم القادم', leftToSpend:'بقي {0} للإنفاق', about:'حوالي',
   tabPolicy:'السياسات', tabDecrees:'المراسيم', tabMoney:'المال', tabProvince:'المحافظة', tabPeople:'الناس', tabChains:'الإمداد', tabCharts:'الرسوم', tabBudget:'الميزانية', tabNews:'الأخبار',
   mapTitle:'سوريا', layerAnger:'الغضب', layerPower:'الكهرباء', layerDamage:'الدمار', layerJobs:'العمل',
   tierCalm:'هادئة', tierTense:'متوترة', tierRiot:'غاضبة', tierRevolt:'تمرّد', revoltAt:'عند 75 أو أكثر تتمرّد المحافظة.',
@@ -94,10 +94,10 @@ ar:{
   better:'تحسّنت الأمور.', worse:'ساءت الأمور.', same:'لم يتغيّر الكثير.', endOf:'نهاية {0}', whyTitle:'لماذا حدث هذا؟',
   crisisNeeds:'🚨 أزمة تحتاج قرارك', nextSeasonBtn:'الموسم التالي ◀', crisis:'أزمة', whatDo:'ماذا ستفعل؟', youChose:'{0}: اخترتَ "{1}".',
   nothingChanges:'لا شيء يتغيّر', everywhere:'في كل مكان',
-  tipLabel:'نصيحة:', tryAgain:'حاول مجدداً', lookMap:'انظر إلى الخريطة', afterN:'بعد {0} مواسم في الرئاسة', madeIt:'وصلتَ إلى {0}!', twenty:'عشرون عاماً في الرئاسة',
+  tipLabel:'نصيحة:', tryAgain:'حاول مجدداً', lookMap:'انظر إلى الخريطة', afterN:'بعد {0} مواسم في الرئاسة', madeIt:'وصلتَ إلى النهاية!', twenty:'240 شهراً في الرئاسة',
   didBest:'كان أفضل إنجاز لك في {0} وأضعفه في {1}.', history:'من التاريخ', missionWon:'نجحت المهمة!', missionLost:'فشلت المهمة',
   pickDiff:'اختر طريقة اللعب.', learner:'🌱 متعلّم (مُستحسن)', learnerTxt:'مال أكثر في البداية وأزمات أقل. مناسب للعبتك الأولى.',
-  realistic:'🔥 واقعي', realisticTxt:'أرقام بداية قريبة من الواقع. معظم المحاولات الأولى تفشل خلال خمس سنوات.',
+  realistic:'🔥 واقعي', realisticTxt:'أرقام بداية قريبة من الواقع. معظم المحاولات الأولى تفشل خلال 60 شهراً.',
   missionsBtn:'🎯 مهمات قصيرة', missionsTxt:'تحديات من ثمانية مواسم، كل واحد يعلّم نظاماً واحداً.',
   disclaimer:'لعبة مبسّطة وليست توقعاً للمستقبل. رقم دمار الحرب البالغ 108 مليارات دولار مأخوذ من تقييم البنك الدولي لعام 2025، وبقية الأرقام تقديرات تقريبية. حدود الخريطة: Natural Earth.',
   missionsTitle:'مهمات قصيرة', missionGoal:'الهدف', seasonsLeft:'بقي {0} مواسم', back:'رجوع',
@@ -123,8 +123,8 @@ const GLOSS = {
     ar:{ name:'ثقة الناس', short:'الثقة', what:'مدى إيمان الناس بالحكومة، من 0 إلى 100.', why:'الثقة العالية تجلب الاستثمار والنفوذ. الثقة المنخفضة تجلب الغضب.', fix:'الكهرباء، رواتب لائقة، أسعار مستقرة، وقرارات عادلة في الأزمات.' } },
   anger:{ icon:'🔥', en:{ name:'Anger', short:'Anger', what:'How angry people are, averaged across all provinces.', why:'At 75 a province revolts. Four in revolt at once ends your presidency.', fix:'Build projects, improve electricity and salaries, and choose carefully in crises.' },
     ar:{ name:'الغضب', short:'الغضب', what:'مدى غضب الناس، بالمتوسط في كل المحافظات.', why:'عند 75 تتمرّد المحافظة. أربع محافظات متمرّدة معاً تنهي رئاستك.', fix:'ابنِ المشاريع، حسّن الكهرباء والرواتب، واختر بحكمة في الأزمات.' } },
-  edu:{ icon:'🎓', en:{ name:'Education', short:'School', what:'How well the country teaches its people, from 0 to 100.', why:'Educated people earn more, start businesses and are far harder to recruit into anything violent. It pays back over ten years, not one.', fix:'Build schools, then universities, under People → Schools & clinics. Corruption and unrest drag it down.' },
-    ar:{ name:'التعليم', short:'التعليم', what:'مدى جودة تعليم البلاد لناسها، من 0 إلى 100.', why:'المتعلّم يكسب أكثر ويؤسّس أعمالاً، ويصعب جداً تجنيده في أي شيء عنيف. عائده بعد عشر سنوات لا بعد سنة.', fix:'ابنِ المدارس ثم الجامعات من الناس ← المدارس والعيادات. الفساد والاضطراب يسحبانه إلى الأسفل.' } },
+  edu:{ icon:'🎓', en:{ name:'Education', short:'School', what:'How well the country teaches its people, from 0 to 100.', why:'Educated people earn more, start businesses and are far harder to recruit into anything violent. It pays back slowly, over many months, not right away.', fix:'Build schools, then universities, under People → Schools & clinics. Corruption and unrest drag it down.' },
+    ar:{ name:'التعليم', short:'التعليم', what:'مدى جودة تعليم البلاد لناسها، من 0 إلى 100.', why:'المتعلّم يكسب أكثر ويؤسّس أعمالاً، ويصعب جداً تجنيده في أي شيء عنيف. عائده يأتي ببطء على مدى أشهر كثيرة، لا فوراً.', fix:'ابنِ المدارس ثم الجامعات من الناس ← المدارس والعيادات. الفساد والاضطراب يسحبانه إلى الأسفل.' } },
   health:{ icon:'🩺', en:{ name:'Health', short:'Health', what:'How well the country keeps its people alive and working, from 0 to 100.', why:'Sick people do not work, and families ruined by one hospital bill stop trusting you.', fix:'Build clinics and hospitals under People → Schools & clinics, and keep the electricity on — a hospital without power is a building.' },
     ar:{ name:'الصحة', short:'الصحة', what:'مدى قدرة البلاد على إبقاء ناسها أحياء وقادرين على العمل، من 0 إلى 100.', why:'المريض لا يعمل، والعائلة التي تدمّرها فاتورة مشفى واحدة تفقد ثقتها بك.', fix:'ابنِ العيادات والمشافي من الناس ← المدارس والعيادات، وأبقِ الكهرباء — المشفى بلا كهرباء مجرد بناء.' } },
   jobs:{ icon:'💼', en:{ name:'People without work', short:'No work', what:'Out of every 100 people old enough to work, how many have no steady job.', why:'Work is the difference between a country that holds together and one that does not. People with no income get angry, leave, or take a gun from whoever offers one.', fix:'Build factories in the Trade panel — textiles, food, medicine, cement, phone networks, tourism. Keep the lights on so workshops can run, and keep provinces calm so business comes back.' },
@@ -174,7 +174,7 @@ const LEDGER = {
 
 const TUT = {
   en:[
-    ['🏛️','You are the new president of Syria','The war is over. Cities are damaged, most people get four hours of electricity a day, and the money is almost worthless. Your job: keep the country together for 20 years.'],
+    ['🏛️','You are the new president of Syria','The war is over. Cities are damaged, most people get four hours of electricity a day, and the money is almost worthless. Your job: keep the country together for 240 months.'],
     ['📊','The dashboard is your scoreboard','Green is fine, yellow is a warning, red is danger. The small line underneath shows what happens next season. Tap any box to learn what it means.'],
     ['🗺️','The map shows each province','Colors show how angry people are. Tap a province to see its problems and its big project. The zoom circle shows Damascus city and Rural Damascus separately.'],
     ['🔗','Everything is connected','Printing money makes the dollar more expensive, which shrinks salaries, which makes people angry. After each season, “Why did this happen?” shows you the chain.'],
@@ -182,7 +182,7 @@ const TUT = {
     ['⚠️','How you lose','You run out of dollars. Four provinces revolt at once. The army takes over because soldiers are poor and officials are rich. Or Suwayda and the east break away.'],
   ],
   ar:[
-    ['🏛️','أنت رئيس سوريا الجديد','انتهت الحرب. المدن مدمّرة، ومعظم الناس يحصلون على أربع ساعات كهرباء في اليوم، والعملة شبه بلا قيمة. مهمتك: أن تحافظ على وحدة البلاد لعشرين عاماً.'],
+    ['🏛️','أنت رئيس سوريا الجديد','انتهت الحرب. المدن مدمّرة، ومعظم الناس يحصلون على أربع ساعات كهرباء في اليوم، والعملة شبه بلا قيمة. مهمتك: أن تحافظ على وحدة البلاد 240 شهراً.'],
     ['📊','اللوحة العلوية هي لوحة النتائج','الأخضر جيد، والأصفر تحذير، والأحمر خطر. السطر الصغير تحتها يُظهر ما سيحدث في الموسم القادم. اضغط على أي مربع لتفهم معناه.'],
     ['🗺️','الخريطة تُظهر كل محافظة','الألوان تُظهر مدى غضب الناس. اضغط على محافظة لترى مشاكلها ومشروعها الكبير. دائرة التكبير تُظهر مدينة دمشق وريف دمشق كلاً على حدة.'],
     ['🔗','كل شيء مترابط','طباعة النقود ترفع سعر الدولار، فتنكمش الرواتب، فيغضب الناس. بعد كل موسم، يُظهر لك «لماذا حدث هذا؟» السلسلة كاملة.'],

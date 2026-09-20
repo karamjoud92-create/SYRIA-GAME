@@ -28,7 +28,7 @@ function sfx(name){
     case 'up':     tone(660, 0.18, { gain:0.045, to:880 }); break;
     case 'down':   tone(440, 0.22, { gain:0.045, to:330 }); break;
     case 'done':   tone(880, 0.7, { gain:0.06 }); tone(1320, 0.6, { gain:0.03, at:0.02 }); break;
-    case 'year':   [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, { gain:0.05, at:i * 0.09 })); break;
+    case 'level':  [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, { gain:0.05, at:i * 0.09 })); break;
     case 'crisis': tone(247, 0.35, { type:'triangle', gain:0.08 }); tone(208, 0.5, { type:'triangle', gain:0.08, at:0.22 }); break;
     case 'bad':    tone(392, 0.2, { type:'triangle', gain:0.05 }); tone(311, 0.35, { type:'triangle', gain:0.05, at:0.14 }); break;
     case 'cycle':  [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.28, { type:'triangle', gain:0.04, at:i * 0.07 })); break;

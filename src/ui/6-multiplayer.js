@@ -9,7 +9,7 @@ function mpAgo(ms){
   return h < 24 ? fill(t('mpHrAgo'), [h]) : fill(t('mpDayAgo'), [Math.floor(h / 24)]);
 }
 function mpWhen(e){
-  const when = MONTHS[LANG][((e.t % 12) + 12) % 12] + ' ' + (START_YEAR + Math.floor(e.t / 12));
+  const when = whenTxt(e.t);
   const what = e.over === 'fail' ? t('mpFell') : e.over === 'end' ? t('mpFinished') : t('mpPlaying');
   return when + ' · ' + what;
 }
@@ -32,7 +32,7 @@ function mpRow(e){
   const flag = e.me ? `<i class="you">${t('mpYou')}</i>` : e.src === 'code' ? `<i class="code">${t('mpFromCode')}</i>` : '';
   const stale = !e.me && e.age > 120000 ? `<span class="ago">${esc(mpAgo(e.age))}</span>` : '';
   return `<div class="mprow${e.me ? ' me' : ''}${e.over ? ' done' : ''}">
-    <span class="pl">${e.place}</span><span class="gr g-${e.grade}">${e.grade}</span>
+    <span class="pl">${e.place}</span><span class="gr g-${levelTone(levelRaw(e.score))}" title="${esc(fill(t('levelOf10'), [levelRaw(e.score)]))}">${levelRaw(e.score)}</span>
     <span class="nm"><b>${esc(e.name)}</b>${flag}<small>${esc(mpWhen(e))} ${stale}</small></span>
     <span class="sc">${Math.round(e.score)}</span></div>`;
 }
