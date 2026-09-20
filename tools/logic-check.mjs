@@ -122,6 +122,20 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(cr.on.border > cr.off.border + 3 && cr.on.cost < 0,
     `${tag}: and it costs you the crossings (border anger ${cr.off.border.toFixed(0)} -> ${cr.on.border.toFixed(0)}, plus a bill to man them)`);
 
+  // 8. a refinery you can pay for should pay you back. It used to lose money: base capacity
+  //    covered three quarters of production on day one, so bought capacity had nothing to do.
+  const rf = await page.evaluate(() => {
+    const mk = (oh, refs) => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 6000; s.treasury = 500;
+      ACT.decree(s, 'tribal'); ACT.decree(s, 'northeast'); s.policy.oilHome = oh; s.res.refinery = 14 + 20 * refs;
+      const o = oilNumbers(s); return o.home * 3.0 + o.exp * 1.8; };
+    return { homeNone: mk(1, 0), homeThree: mk(1, 3), sellNone: mk(0, 0), sellThree: mk(0, 3) };
+  });
+  const years = 150 / ((rf.homeThree - rf.homeNone) * 2);
+  ok(years > 0 && years < 6, `${tag}: three refineries pay for themselves in ${years.toFixed(1)} years when the oil is kept at home`);
+  ok(rf.sellThree === rf.sellNone, `${tag}: and do nothing at all if the policy says sell it abroad — which the card now says`);
+  const card = await page.evaluate(() => { const t = INV_TXT.refinery[LANG === 'ar' ? 'ar' : 'en']; return t[1]; });
+  ok(tag === 'en' ? /oil policy/i.test(card) : /سياسة النفط/.test(card), `${tag}: the card names the policy it depends on`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

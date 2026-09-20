@@ -195,7 +195,7 @@ function newGame(seed, diff = 'learner', mission = null){
     pc: easy ? 70 : 50, trust:42, corr:58, sov:60, sov0:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
     grant:0, repaired:0,
     policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
-    res:{ oilCap:60, refinery:25, gas:7, phos:1, farm:1, offshore:null },
+    res:{ oilCap:60, refinery:14, gas:7, phos:1, farm:1, offshore:null },
     ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0, logistics:0, coldchain:0, packaging:0 },
     svc:{ schools:0, clinics:0, unis:0 }, edu: easy ? 32 : 26, health: easy ? 34 : 27, popM:21.9, bar:0,
     ports:{ latakia:{ lvl:1, op:'state' }, tartus:{ lvl:1, op:'state' } },
@@ -344,7 +344,7 @@ function step(state, dt = MONTH, policyOverride){
   const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) - wheatCut);
   addU('wheat', -wheat * ez);
   addU('fuel', -ez * (86 * { full:1.15, partial:1, market:0.85 }[P.fuel] * (season === 'H1' ? 0.9 : 1.15) + s.mw / 2300 * 25));
-  addU('homeEnergy', oil.home * 2.2 + s.res.gas * 3 + (dealOn(s, 'iraq') ? 10 : 0));
+  addU('homeEnergy', oil.home * 3.0 + s.res.gas * 3 + (dealOn(s, 'iraq') ? 10 : 0));
   if (dealOn(s, 'iraq')) addU('powerImport', -15);
   addU('debt', -(s.debt * 0.006 + s.coupons));
   if (P.capex) addU('grid', -P.capex);

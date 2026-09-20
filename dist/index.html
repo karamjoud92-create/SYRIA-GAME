@@ -695,7 +695,7 @@ function newGame(seed, diff = 'learner', mission = null){
     pc: easy ? 70 : 50, trust:42, corr:58, sov:60, sov0:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
     grant:0, repaired:0,
     policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
-    res:{ oilCap:60, refinery:25, gas:7, phos:1, farm:1, offshore:null },
+    res:{ oilCap:60, refinery:14, gas:7, phos:1, farm:1, offshore:null },
     ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0, logistics:0, coldchain:0, packaging:0 },
     svc:{ schools:0, clinics:0, unis:0 }, edu: easy ? 32 : 26, health: easy ? 34 : 27, popM:21.9, bar:0,
     ports:{ latakia:{ lvl:1, op:'state' }, tartus:{ lvl:1, op:'state' } },
@@ -844,7 +844,7 @@ function step(state, dt = MONTH, policyOverride){
   const wheat = Math.max(10, 110 * { full:1, partial:0.85, removed:0.7 }[P.bread] * (season === 'H1' ? 0.55 : 1.1) * drought * (dealOn(s, 'russia') ? 0.75 : 1) - wheatCut);
   addU('wheat', -wheat * ez);
   addU('fuel', -ez * (86 * { full:1.15, partial:1, market:0.85 }[P.fuel] * (season === 'H1' ? 0.9 : 1.15) + s.mw / 2300 * 25));
-  addU('homeEnergy', oil.home * 2.2 + s.res.gas * 3 + (dealOn(s, 'iraq') ? 10 : 0));
+  addU('homeEnergy', oil.home * 3.0 + s.res.gas * 3 + (dealOn(s, 'iraq') ? 10 : 0));
   if (dealOn(s, 'iraq')) addU('powerImport', -15);
   addU('debt', -(s.debt * 0.006 + s.coupons));
   if (P.capex) addU('grid', -P.capex);
@@ -1949,7 +1949,7 @@ MISSION_TXT.trade = { icon:'🚢', en:['Open for business','Syria earns about $1
 // investments, ports, partners
 const INV_TXT = {
   oilwells:{ icon:'🛢️', en:['Repair oil wells','+25 thousand barrels a day of capacity. Only helps if you control the fields and the east is calm.'], ar:['إصلاح آبار النفط','+25 ألف برميل يومياً من القدرة. يفيد فقط إذا سيطرت على الحقول وكان الشرق هادئاً.'] },
-  refinery:{ icon:'🏭', en:['Expand the refineries','Refine 20 thousand more barrels a day at home, so less oil has to be sold cheap.'], ar:['توسيع المصافي','تكرير 20 ألف برميل إضافية يومياً محلياً، فيقلّ النفط الذي يُباع رخيصاً.'] },
+  refinery:{ icon:'🏭', en:['Expand the refineries','Refine 20 thousand more barrels a day at home. Refined fuel is worth far more than crude — but only if the oil policy says to use it at home.'], ar:['توسيع المصافي','تكرير 20 ألف برميل إضافية يومياً محلياً. الوقود المكرّر أغلى بكثير من الخام — لكن فقط إذا كانت سياسة النفط تقول باستخدامه محلياً.'] },
   gasfield:{ icon:'🔥', en:['Develop a gas field','+3 million m³ a day of gas for power plants. Ready in 18 months.'], ar:['تطوير حقل غاز','+3 مليون م³ يومياً من الغاز لمحطات الكهرباء. يجهز خلال 18 شهراً.'] },
   offshore:{ icon:'🌊', en:['Drill for offshore gas','A 50/50 bet. In 3 years you find a big gas field under the sea, or nothing.'], ar:['التنقيب عن الغاز البحري','مقامرة 50/50. خلال 3 سنوات تجد حقل غاز كبيراً تحت البحر، أو لا شيء.'] },
   phosphate:{ icon:'⛏️', en:['Expand phosphate mines','Mining exports +35%.'], ar:['توسيع مناجم الفوسفات','صادرات التعدين +35%.'] },
@@ -3626,7 +3626,7 @@ function investValue(id){
   const o = oilNumbers(S);
   switch(id){
     case 'oilwells': return 25 * o.access * o.security * 2.0 * 2;
-    case 'refinery': return Math.min(20, Math.max(0, o.prod * S.policy.oilHome - o.refineCap)) * 0.4 * 2;
+    case 'refinery': return Math.min(20, Math.max(0, o.prod * S.policy.oilHome - o.refineCap)) * 1.2 * 2;
     case 'gasfield': return 18;
     case 'offshore': return 30;
     case 'phosphate': return 35 * 0.35 * (1 - S.provs.homs.u / 150) * 2 * (dealOn(S, 'china') ? 0.7 : 1);

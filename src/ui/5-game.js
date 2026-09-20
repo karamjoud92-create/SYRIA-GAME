@@ -423,7 +423,7 @@ function investValue(id){
   const o = oilNumbers(S);
   switch(id){
     case 'oilwells': return 25 * o.access * o.security * 2.0 * 2;
-    case 'refinery': return Math.min(20, Math.max(0, o.prod * S.policy.oilHome - o.refineCap)) * 0.4 * 2;
+    case 'refinery': return Math.min(20, Math.max(0, o.prod * S.policy.oilHome - o.refineCap)) * 1.2 * 2;
     case 'gasfield': return 18;
     case 'offshore': return 30;
     case 'phosphate': return 35 * 0.35 * (1 - S.provs.homs.u / 150) * 2 * (dealOn(S, 'china') ? 0.7 : 1);

@@ -261,7 +261,7 @@ MISSION_TXT.trade = { icon:'🚢', en:['Open for business','Syria earns about $1
 // investments, ports, partners
 const INV_TXT = {
   oilwells:{ icon:'🛢️', en:['Repair oil wells','+25 thousand barrels a day of capacity. Only helps if you control the fields and the east is calm.'], ar:['إصلاح آبار النفط','+25 ألف برميل يومياً من القدرة. يفيد فقط إذا سيطرت على الحقول وكان الشرق هادئاً.'] },
-  refinery:{ icon:'🏭', en:['Expand the refineries','Refine 20 thousand more barrels a day at home, so less oil has to be sold cheap.'], ar:['توسيع المصافي','تكرير 20 ألف برميل إضافية يومياً محلياً، فيقلّ النفط الذي يُباع رخيصاً.'] },
+  refinery:{ icon:'🏭', en:['Expand the refineries','Refine 20 thousand more barrels a day at home. Refined fuel is worth far more than crude — but only if the oil policy says to use it at home.'], ar:['توسيع المصافي','تكرير 20 ألف برميل إضافية يومياً محلياً. الوقود المكرّر أغلى بكثير من الخام — لكن فقط إذا كانت سياسة النفط تقول باستخدامه محلياً.'] },
   gasfield:{ icon:'🔥', en:['Develop a gas field','+3 million m³ a day of gas for power plants. Ready in 18 months.'], ar:['تطوير حقل غاز','+3 مليون م³ يومياً من الغاز لمحطات الكهرباء. يجهز خلال 18 شهراً.'] },
   offshore:{ icon:'🌊', en:['Drill for offshore gas','A 50/50 bet. In 3 years you find a big gas field under the sea, or nothing.'], ar:['التنقيب عن الغاز البحري','مقامرة 50/50. خلال 3 سنوات تجد حقل غاز كبيراً تحت البحر، أو لا شيء.'] },
   phosphate:{ icon:'⛏️', en:['Expand phosphate mines','Mining exports +35%.'], ar:['توسيع مناجم الفوسفات','صادرات التعدين +35%.'] },
