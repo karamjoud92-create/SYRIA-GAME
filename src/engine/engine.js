@@ -76,6 +76,7 @@ const POLICY_OPTS = {
   capex:    [[0,'$0'],[20,'$20M'],[40,'$40M']],
   recon:    [[0,'0'],[5,'5bn'],[10,'10bn'],[20,'20bn']],
   intervene:[[0,'$0'],[25,'$25M'],[50,'$50M']],
+  fxWindow: [[0,'$0'],[50,'$50M'],[150,'$150M'],[400,'$400M']],
   crackdown:[[false,'Off'],[true,'On']],
 };
 
@@ -128,6 +129,20 @@ function indJobsAt(s, id){
   return j;
 }
 function joblessNat(s){ let tot = 0, w = 0; PROVS.forEach(p => { tot += s.provs[p.id].jobless * p.pop; w += p.pop; }); return tot / w; }
+// ---------- what the state can tax at home ----------
+// Oil and phosphate pay in dollars. Lira comes from people in steady work, shops that have
+// customers, and factories that file accounts. A state with no formal economy has no budget,
+// however many dollars sit in the central bank — which is the whole problem with rent.
+// Measured against the country as it is handed over in January 2027, so the base is exactly 1
+// on day one: this changes how the tax base *grows*, never what you start with.
+const JOBLESS0 = 55.4, POP0 = 21.9, HOURS0 = 4.0;
+const firmsBuilt = s => Object.keys(IND).reduce((a, k) => a + indLvl(s, k), 0);   // 0..27 sector levels running
+function domesticBase(s){
+  const work = clamp((JOBLESS0 - joblessNat(s)) / 42, -0.3, 1);        // people moving into, or out of, steady work
+  const people = clamp(s.popM / POP0 - 1, -0.45, 0.6);                 // more Syrians is more taxpayers, not only more mouths
+  const lights = clamp((nationalHours(s) - HOURS0) / 14, -0.2, 0.55);  // a shop with no power rings up nothing
+  return clamp(1 + work * 0.50 + people * 0.30 + lights * 0.25, 0.45, 1.55);
+}
 // Visitors only come to a calm, lit country — and it pays in dollars with no ship involved.
 function tourismIncome(s){
   const n = indLvl(s, 'tourism'); if (!n) return 0;
@@ -173,7 +188,7 @@ function newGame(seed, diff = 'learner', mission = null){
     wage:3000, head:1.30, debt:6100, coupons:0,
     pc: easy ? 70 : 50, trust:42, corr:58, sov:60, comp:35, cap:20, mw:2300, demand:DEMAND0,
     grant:0, repaired:0,
-    policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, crackdown:false, oilHome:0.5 },
+    policy:{ bread:'partial', fuel:'partial', tax:'standard', security:'balanced', print:0, capex:0, recon:0, intervene:0, fxWindow:0, crackdown:false, oilHome:0.5 },
     res:{ oilCap:60, refinery:25, gas:7, phos:1, farm:1, offshore:null },
     ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0, logistics:0, coldchain:0, packaging:0 },
     svc:{ schools:0, clinics:0, unis:0 }, edu: easy ? 32 : 26, health: easy ? 34 : 27, popM:21.9, bar:0,
@@ -261,16 +276,22 @@ function step(state, dt = MONTH, policyOverride){
   // --- lira budget ---
   const capMult = 1 + (s.cap - 20) * 0.0125, pIdx = s.parallel / BASE_FX;
   const taxMult = { lax:0.85, standard:1, aggressive:1.2 }[P.tax];
-  addS('taxes', 20 * (s.comp / 35) * capMult * taxMult * Math.pow(pIdx, 0.8));
+  const dbase = domesticBase(s);
+  addS('taxes', 20 * dbase * (s.comp / 35) * capMult * taxMult * Math.pow(pIdx, 0.8));
+  // Company tax. Every sector level is a payroll and a set of books, and it pays at home as
+  // well as abroad — which is why building industry beats pumping oil twice over.
+  const firms = firmsBuilt(s);
+  if (firms) addS('bizTax', firms * 0.80 * (s.comp / 35) * taxMult * (1 - s.corr / 190) * Math.pow(pIdx, 0.8));
   addS('customs', 6 * capMult * (P.crackdown ? 1.3 : 1) * pIdx * (1 - s.corr / 250));
   let projRev = 0; PROVS.forEach(p => { if (built(s, p.id)) projRev += PROJECTS[p.id].rev * (1 - projLeak(s, p.id)); });
   if (projRev) addS('projRev', projRev * Math.pow(pIdx, 0.6));
   if (P.fuel === 'market') addS('fuelSales', 3 * pIdx);
-  addS('wages', -(s.head * 1e6 * s.wage * 6) / 1e9);
+  const statePop = clamp(s.popM / POP0, 0.7, 1.9);
+  addS('wages', -(s.head * 1e6 * s.wage * 6) / 1e9 * statePop);
   addS('bread', -{ full:7, partial:4, removed:0.5 }[P.bread] * pIdx);
   if (P.fuel !== 'market') addS('fuelSub', -{ full:8, partial:4 }[P.fuel] * pIdx);
   addS('security', -{ light:3, balanced:5, heavy:8 }[P.security] * Math.pow(pIdx, 0.7));
-  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9));
+  addS('running', -3 * Math.pow(pIdx, 0.7) * (1 + s.bar * 0.9) * statePop);
   { let svcL = 0, svcU = 0; Object.keys(SERVICES).forEach(k => { const n = (s.svc && s.svc[k]) || 0; svcL += n * SERVICES[k].run; svcU += n * (SERVICES[k].runUsd || 0); });
     if (svcL) addS('services', -svcL * Math.pow(pIdx, 0.7));
     if (svcU) addU('medicine', -svcU); }
@@ -283,15 +304,21 @@ function step(state, dt = MONTH, policyOverride){
   const spread = s.official ? s.parallel / s.official - 1 : 0;
   const capture = clamp((s.flags.unified ? 1 : 1.1 - spread * 3) + (s.flags.remitBoost ? 0.15 : 0), 0.25, 1.1);
   addU('remit', 160 * capture * (1 + (s.trust - 42) / 200));
+  // --- the exchange window: the central bank sells reserves and the treasury is paid in lira ---
+  // It is the only way a dollar can become a salary. It is also Dutch disease in one dial:
+  // a strong lira makes everything Syria makes dearer for the people who were buying it.
+  const fxw = Math.min(P.fxWindow || 0, Math.max(0, s.reserves) / 2);
+  const iv = Math.min(P.intervene || 0, Math.max(0, s.reserves) / 2);
+  const dutch = 1 - clamp(fxw / 1300, 0, 0.3);
   // --- dollars: selling abroad (limited by what ports and border crossings can move) ---
   const euMult = dealOn(s, 'eu') ? 1.25 : 1;
   const oil = oilNumbers(s);
   const exportsWanted = {
     phos: (35 * (1 - s.provs.homs.u / 150) * s.res.phos * (s.flags.phosConcession ? 0.6 : 1) + (built(s,'homs') ? PROJECTS.homs.phosphate * (1 - projLeak(s,'homs')) : 0)) * (dealOn(s, 'china') ? 0.7 : 1),
     oilExport: oil.exp * 1.8 * euMult,
-    farm: 10 * s.res.farm * euMult * clamp(1.3 - (s.provs.hama.u + s.provs.idlib.u + s.provs.hasakeh.u) / 300, 0.4, 1),
-    exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * (dealOn(s, 'turkey') ? 1.15 : 1) : 0,
-    industry: industryExports(s) * euMult * (dealOn(s, 'turkey') ? 1.15 : 1),
+    farm: 10 * s.res.farm * euMult * dutch * clamp(1.3 - (s.provs.hama.u + s.provs.idlib.u + s.provs.hasakeh.u) / 300, 0.4, 1),
+    exports: s.cap > 20 ? (s.cap - 20) * 1.5 * euMult * dutch * (dealOn(s, 'turkey') ? 1.15 : 1) : 0,
+    industry: industryExports(s) * euMult * dutch * (dealOn(s, 'turkey') ? 1.15 : 1),
   };
   const wantTotal = Object.values(exportsWanted).reduce((a, b) => a + b, 0), capE = exportCapacity(s);
   const fit = (wantTotal > capE ? capE / wantTotal : 1) * exportValue(s);
@@ -304,7 +331,7 @@ function step(state, dt = MONTH, policyOverride){
     + (built(s,'latakia') ? 15 * (1 - projLeak(s,'latakia')) : 0) + (built(s,'daraa') ? 20 * (1 - projLeak(s,'daraa')) : 0)
     + (dealOn(s, 'jordan') ? 20 : 0) + (dealOn(s, 'lebanon') ? 12 : 0)));
   addU('overflight', 8);
-  { const tr = tourismIncome(s); if (tr > 0.5) addU('tourism', tr); }
+  { const tr = tourismIncome(s) * dutch; if (tr > 0.5) addU('tourism', tr); }
   if (dealOn(s, 'gulf')) addU('fdi', 40);
   if (dealOn(s, 'eu')) addU('euGrant', 30);
   if (s.cap > 20) addU('imports', -(s.cap - 20) * 1.4);
@@ -319,7 +346,10 @@ function step(state, dt = MONTH, policyOverride){
   if (dealOn(s, 'iraq')) addU('powerImport', -15);
   addU('debt', -(s.debt * 0.006 + s.coupons));
   if (P.capex) addU('grid', -P.capex);
-  if (P.intervene) addU('intervene', -P.intervene);
+  // Selling dollars is not the same as having them: the lira the central bank takes in is
+  // real budget money. Both of these used to debit reserves and credit nobody.
+  if (iv > 0){ addU('intervene', -iv); addS('intervene', iv * s.parallel / 1000); }
+  if (fxw > 0){ addU('fxSale', -fxw); addS('fxSale', fxw * s.parallel / 1000); }
   if (s.decrees.vocational) addU('vocational', -10);
   const outflowRate = L.usd.filter(x => x[1] < 0).reduce((a, x) => a - x[1], 0) / dt;
 
@@ -330,9 +360,13 @@ function step(state, dt = MONTH, policyOverride){
 
   // --- currency (rates per half-year, applied for dt) ---
   const cover = s.reserves / Math.max(1, outflowRate / 6);
+  // Selling dollars can stop a currency falling. It cannot make it permanently strong: once the
+  // lira is back near where it should be, every extra dollar sold buys less and less of a rally.
+  const fxSlack = clamp((s.parallel / BASE_FX - 0.9) / 0.4, 0, 1);
   const fx = { base:2.5, print:(P.print / s.m2) * 110,
     reserves: cover < 2 ? (2 - cover) * 6 : cover < 4 ? 0.5 : -0.5 * Math.min(3, cover - 4),
-    trust: -clamp((s.trust - 45) * 0.08, -3, 2), deficit: s.treasury < 0 ? Math.min(8, -s.treasury / 3) : 0, intervene: -P.intervene * 0.08, shock:0 };
+    trust: -clamp((s.trust - 45) * 0.08, -3, 2), deficit: s.treasury < 0 ? Math.min(8, -s.treasury / 3) : 0,
+    intervene: -iv * 0.08 * fxSlack, fxWindow: -fxw * 0.012 * fxSlack, shock:0 };
   const pct = clamp(Object.values(fx).reduce((a, b) => a + b, 0) / 100, -0.025, 0.5);
   s.parallel *= Math.pow(1 + pct, dt);
   s.official = s.flags.unified ? s.parallel : s.official + (s.parallel - s.official) * relax(0.2, dt);
@@ -694,4 +728,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, domesticBase, firmsBuilt, MONTH, yearNow, monthOf };

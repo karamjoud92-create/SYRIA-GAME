@@ -73,6 +73,53 @@ Built in this session, in order:
   line, ask what it points at and whether that is open yet.
 - **No fogged numbers.** `fog()` returns the exact value. If something should be hidden, hide it.
 
+### The lira has a tax base now, and the dollars have a way home
+
+For eleven versions the game modelled a **dollar economy and a lira payroll**. Tax revenue was
+`20 × compliance × capacity × rate` — a constant `20`, with no term for output, jobs, factories or
+population. You could build all 27 sector levels, employ a third of the country, and the tax line did
+not move by one lira; only telecom touched it, through compliance. `popM` appeared twice in the whole
+engine, both times as a cost. Meanwhile `expWage` climbed with capacity and the bar, so over a 20-year
+run the wage bill rose 4×. Success was priced in lira and paid in dollars. A near-perfect builder ended
+with $16.4B idle in reserves and a treasury that had never left break-even, which is exactly what a
+player notices and cannot explain: *when everything is going well, the lira isn't.*
+
+Three things changed, and they belong together:
+
+- **`domesticBase(s)`** — what the state can actually tax at home: people in steady work, the
+  population, and whether the lights are on for the shops. It is measured against January 2027 and is
+  exactly `1.0` on day one, so this changes how the tax base *grows*, never what you start with.
+- **`bizTax`** — a company tax line, one per sector level. Industry now pays at home as well as abroad,
+  which is the second reason to build a factory rather than a well.
+- **`fxWindow`** — the central bank sells reserves and the treasury is credited in lira. It is the only
+  way a dollar becomes a salary, and it is Dutch disease in one dial: `dutch` cuts manufactured, farm
+  and tourism earnings by up to 30% at the top setting. `intervene` credits the treasury too — it used
+  to debit reserves and credit *nobody*, which was a plain accounting hole.
+
+The other half of the truth had to come with it, or the treasury simply overflowed instead of the
+reserves: the **state scales with the country**. `wages` and `running` are multiplied by `statePop`.
+A country that grows 21.9M → 40M needs more teachers, clerks and pensions, and the extra taxpayers do
+not come free. Without this the builder treasury ran to 5,010bn — the same broken pattern, new currency.
+`fxSlack` gives intervention diminishing returns: selling dollars can stop a currency falling, it cannot
+make it permanently strong. Without it the lira could be pushed to 60 and `realWage` bought score.
+
+Measured over 8 seeds × 20 years, the window is score-neutral at $50M and $150M and costs ~7 points at
+$400M. It is a real trade-off — lira now, exports later — not a button.
+
+**The caveat, stated plainly.** This moved `builder` on Learner from 73.1 avg / 0-in-8 A-grades to
+74.9 / 5-in-8, i.e. straddling the A/B line rather than sitting under it. The gain is *not* the treasury
+level — trimming the coefficients changed the scores by literally nothing. It is that a solvent budget
+never trips `fx.deficit`, so the lira stops collapsing, and `reconB` divides the rebuilding budget by
+`s.parallel`: a stable lira makes reconstruction money go ~36% further. That is the engine's own model
+working correctly, and the honest lesson. Holding the A line would mean nerfing the Reconstruction
+score (`repaired / 108 * 100 * 2.5`), which would break scoreboard comparability with every score
+already posted. Left alone deliberately. `builder` on Realistic went 61 C → 71 B; `smart` is unchanged
+at 71 B / 58 C; `trader` on Realistic slipped 58 → 55, because extraction now grows the population and
+the state without growing the tax base. That last one is the rentier trap, and it is a feature.
+
+No save bump: `policy.fxWindow` is backfilled in `syncD()`, because `esc(undefined)` renders the literal
+word "undefined" and every v6 save in a player's browser lacks the key.
+
 ## Open, and worth doing next
 
 - **Provinces are not staged.** All 14 are yours from month 0. Locking them behind "extending state
@@ -93,6 +140,12 @@ Built in this session, in order:
   cause another.
 - **Old saves break on every state change.** Key is `transition-syria-v6` today. There is no migration
   path, by design; if the game gets an audience that has to change.
+- **The tax base saturates by year 5.** `domesticBase` hits its 1.55 ceiling early, because provincial
+  `jobless` floors at 4 and `popM` clamps at 40M — both pre-existing. The interesting pull (build a
+  factory, watch the tax line move) is all in years 0–8. After that only `bizTax` still grows.
+- **A strong lira is still a free Reconstruction multiplier.** `reconB = P.recon * dt / s.parallel`
+  treats rebuilding as 100% imported. It is mostly domestic — labour, cement, rubble. Blending the
+  two would remove the last place where currency strength buys score directly.
 
 ## Resuming
 

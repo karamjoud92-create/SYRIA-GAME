@@ -150,15 +150,25 @@ const POL = {
     ar:{ name:'طباعة النقود', q:'هل تطبع ليرات جديدة لدفع الفواتير؟', opts:{ 0:'لا', 5:'5 مليار', 15:'15 مليار', 30:'30 مليار' }, hint:{ 0:'لا طباعة. الأسعار أهدأ.', 5:'طباعة قليلة. الأسعار ترتفع أسرع قليلاً.', 15:'كثيرة. سعر الدولار يقفز والرواتب تشتري أقل.', 30:'طباعة طارئة. خطيرة جداً.' } } },
   intervene:{ icon:'🛡️', en:{ name:'Protect the lira', q:'Sell dollars to stop the lira falling?', opts:{ 0:'None', 25:'$25M', 50:'$50M' }, hint:{ 0:'Let the market decide.', 25:'Spend $25M to hold the dollar price down.', 50:'Spend $50M. Works, but burns your dollars.' } },
     ar:{ name:'حماية الليرة', q:'هل تبيع دولارات لمنع هبوط الليرة؟', opts:{ 0:'لا', 25:'25 مليون$', 50:'50 مليون$' }, hint:{ 0:'دع السوق يقرّر.', 25:'أنفق 25 مليون دولار لكبح سعر الدولار.', 50:'أنفق 50 مليون دولار. ينجح لكنه يستنزف دولاراتك.' } } },
+  fxWindow:{ icon:'🏦', en:{ name:'Sell dollars for lira', q:'Should the central bank sell dollars to the market and put the lira in the budget?',
+      opts:{ 0:'None', 50:'$50M', 150:'$150M', 400:'$400M' },
+      hint:{ 0:'Dollars stay in the bank. They cannot pay a teacher.', 50:'A small, steady sale. Real lira for salaries and rebuilding, and the lira holds its value.',
+        150:'A serious sale. The budget breathes — but a stronger lira makes Syrian goods dearer abroad.',
+        400:'Everything you have. The budget is rich and your factories start losing customers abroad. This is the trap oil countries fall into.' } },
+    ar:{ name:'بيع الدولارات مقابل الليرة', q:'هل يبيع المصرف المركزي دولارات في السوق ويضع الليرات في الموازنة؟',
+      opts:{ 0:'لا', 50:'50 مليون$', 150:'150 مليون$', 400:'400 مليون$' },
+      hint:{ 0:'الدولارات تبقى في المصرف. الدولار في الخزنة لا يدفع راتب معلّم.', 50:'بيع صغير ومنتظم. ليرات حقيقية للرواتب والإعمار، والليرة تحافظ على قيمتها.',
+        150:'بيع جدّي. الموازنة تتنفّس، لكن ليرة أقوى تجعل البضائع السورية أغلى في الخارج.',
+        400:'كل ما لديك. الموازنة غنية ومصانعك تبدأ بخسارة زبائنها في الخارج. هذا هو الفخّ الذي تقع فيه الدول النفطية.' } } },
   crackdown:{ icon:'🚧', en:{ name:'Stop smugglers at the borders', q:'Crack down on smuggling?', opts:{ false:'No', true:'Yes' }, hint:{ false:'Smugglers keep operating.', true:'More customs money and less corruption.' } },
     ar:{ name:'ملاحقة المهرّبين على الحدود', q:'هل تشدّد على التهريب؟', opts:{ false:'لا', true:'نعم' }, hint:{ false:'المهرّبون يستمرّون.', true:'رسوم جمركية أكثر وفساد أقل.' } } },
 };
-const POL_VALUES = { bread:['full','partial','removed'], fuel:['full','partial','market'], tax:['lax','standard','aggressive'], security:['light','balanced','heavy'], capex:[0,20,40], recon:[0,5,10,20], print:[0,5,15,30], intervene:[0,25,50], crackdown:[false,true] };
+const POL_VALUES = { bread:['full','partial','removed'], fuel:['full','partial','market'], tax:['lax','standard','aggressive'], security:['light','balanced','heavy'], capex:[0,20,40], recon:[0,5,10,20], print:[0,5,15,30], intervene:[0,25,50], fxWindow:[0,50,150,400], crackdown:[false,true] };
 
 const LEDGER = {
-  en:{ choices:'Your choices this season', oligarch:'Oligarch settlements', taxes:'Taxes', customs:'Border fees', projRev:'Project income', fuelSales:'Fuel sales', wages:'Salaries', bread:'Cheap bread', fuelSub:'Cheap fuel', security:'Police and army', running:'Running government', recon:'Rebuilding', integrity:'Integrity Commission', interest:'Interest on debt', printed:'Printed money',
+  en:{ choices:'Your choices this season', oligarch:'Oligarch settlements', taxes:'Taxes', bizTax:'Company tax from factories', fxSale:'Dollars sold for lira', customs:'Border fees', projRev:'Project income', fuelSales:'Fuel sales', wages:'Salaries', bread:'Cheap bread', fuelSub:'Cheap fuel', security:'Police and army', running:'Running government', recon:'Rebuilding', integrity:'Integrity Commission', interest:'Interest on debt', printed:'Printed money',
     remit:'Money sent home by Syrians abroad', phos:'Mining exports', transit:'Trade and ports', oil:'Oil', overflight:'Planes flying over', exports:'Factory exports', imports:'Imports for the economy', wheat:'Buying wheat', fuel:'Buying fuel', debt:'Paying old debts', grid:'Power stations', intervene:'Protecting the lira', demining:'Demining teams', loan_imf:'IMF loan', loan_bridge:'Bank loan' },
-  ar:{ choices:'قراراتك هذا الموسم', oligarch:'تسويات الأثرياء', taxes:'الضرائب', customs:'رسوم الحدود', projRev:'دخل المشاريع', fuelSales:'مبيعات الوقود', wages:'الرواتب', bread:'دعم الخبز', fuelSub:'دعم الوقود', security:'الشرطة والجيش', running:'تشغيل الحكومة', recon:'إعادة الإعمار', integrity:'هيئة النزاهة', interest:'فوائد الدين', printed:'نقود مطبوعة',
+  ar:{ choices:'قراراتك هذا الموسم', oligarch:'تسويات الأثرياء', taxes:'الضرائب', bizTax:'ضريبة الشركات من المصانع', fxSale:'دولارات بيعت مقابل ليرات', customs:'رسوم الحدود', projRev:'دخل المشاريع', fuelSales:'مبيعات الوقود', wages:'الرواتب', bread:'دعم الخبز', fuelSub:'دعم الوقود', security:'الشرطة والجيش', running:'تشغيل الحكومة', recon:'إعادة الإعمار', integrity:'هيئة النزاهة', interest:'فوائد الدين', printed:'نقود مطبوعة',
     remit:'حوالات السوريين في الخارج', phos:'صادرات التعدين', transit:'التجارة والموانئ', oil:'النفط', overflight:'عبور الطائرات', exports:'صادرات المصانع', imports:'مستوردات الاقتصاد', wheat:'شراء القمح', fuel:'شراء الوقود', debt:'سداد الديون القديمة', grid:'محطات الكهرباء', intervene:'حماية الليرة', demining:'فرق نزع الألغام', loan_imf:'قرض صندوق النقد', loan_bridge:'قرض مصرفي' },
 };
 

@@ -49,6 +49,14 @@ function decisionDeck(){
       opts:[{ label:pol.opts.market, sub:pol.hint.market, chips:[], run:() => withEffects(`${pol.name}: ${pol.opts.market}`, () => { S.policy.fuel = 'market'; return true; }) }] });
   }
 
+  // 2b. dollars piling up in the bank while the budget has no lira in it
+  if (isOpen('polFx') && !S.policy.fxWindow && S.reserves > 600 && S.treasury < 15 && !decSkipped('pol_fx')){
+    const pol = L2(POL.fxWindow);
+    out.push({ id:'pol_fx', icon:'🏦', weight:66, why:t('decFx'), title:pol.name, text:pol.hint['0'],
+      opts:[50, 150].map(v => ({ label:pol.opts[String(v)], sub:pol.hint[String(v)], chips:[],
+        run:() => withEffects(`${pol.name}: ${pol.opts[String(v)]}`, () => { S.policy.fxWindow = v; return true; }) })) });
+  }
+
   // 3. people are paid less than they expect
   if (isOpen('money') && !cooldown('lastRaise', 6) && realWage(S) < (S.expWage || 25) - 6 && S.treasury > 5 && !decSkipped('wage')){
     out.push({ id:'wage', icon:'👷', weight:60, why:t('decWage'), title:t('raiseTitle'),

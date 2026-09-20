@@ -42,7 +42,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   const heads = await page.$$eval('.drawer .body h3.bh', e => e.map(n => n.textContent.trim()));
   ok(heads.length >= 4, `${tag}: the guide has first steps, what to do next, why, and the chains (${heads.length} sections)`);
   const chains = await page.$$eval('.chainlist li', e => e.length);
-  ok(chains === 5, `${tag}: five cause-and-effect chains are shown (${chains})`);
+  ok(chains === 6, `${tag}: six cause-and-effect chains are shown (${chains})`);
 
   // doing the thing ticks the box
   await page.evaluate(() => { UI.drawer = null; render(true); }); await page.waitForTimeout(150);

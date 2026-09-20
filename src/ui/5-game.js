@@ -3,7 +3,9 @@ const SPEEDS = [0, 9500, 5600, 3000];
 UI.speed = 0; UI.flash = {}; UI.effect = null; UI.toasts = []; UI.sub = { money:'actions', progress:'why', trade:'resources', people:'families' }; UI.pdown = false; UI.hover = false; UI.dirty = false;
 let TIMER = null, TOAST_ID = 0;
 D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:0 };
-const syncD = () => { if (S) D.policy = S.policy; };
+// A save made before a dial existed carries no value for it. Fill it in on load, or the
+// panel renders the word "undefined" where the hint should be.
+const syncD = () => { if (S){ if (S.policy && S.policy.fxWindow === undefined) S.policy.fxWindow = 0; D.policy = S.policy; } };
 
 const DRAWERS5 = [
   ['guide', '🧭', 'dGuide', 'guideSub'],
@@ -22,12 +24,12 @@ const UNLOCK = {
   guide:0, policy:0, money:0, people:0, layerUnrest:0, projects:0,
   decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
   trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2,
-  services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
+  services:3, sectors:3, layerJobs:3, polIntervene:3, polFx:3, polCrackdown:3,
   supply:4, unis:4,
 };
 const isOpen = f => stageNow() >= (UNLOCK[f] === undefined ? 0 : UNLOCK[f]);
 // what each stage hands over, for the announcement
-const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['subServices', 'sectorTitle'], ['extractTitle', 'svcUnis']];
+const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['subServices', 'sectorTitle', 'giftFx'], ['extractTitle', 'svcUnis']];
 
 // ---------- time words ----------
 function monthsTxt(n){
@@ -209,7 +211,7 @@ function whyLive(){
   const a = H[Math.max(0, n - 7)], c = H[n - 1], w = S.last.why, W = WHY[LANG], out = [], st = (txt, cls) => ({ txt, cls });
   const pct = (c.fx / a.fx - 1) * 100;
   if (Math.abs(pct) >= 1){
-    const f = w.fx, up = pct > 0, cand = [[f.print, fill(W.print, [S.policy.print * 2])], [f.reserves, f.reserves > 0 ? W.reserves : W.reservesGood], [f.deficit, W.deficit], [f.trust, f.trust > 0 ? W.lowTrust : W.highTrust], [f.intervene, W.intervene]];
+    const f = w.fx, up = pct > 0, cand = [[f.print, fill(W.print, [S.policy.print * 2])], [f.reserves, f.reserves > 0 ? W.reserves : W.reservesGood], [f.deficit, W.deficit], [f.trust, f.trust > 0 ? W.lowTrust : W.highTrust], [f.intervene, W.intervene], [f.fxWindow, W.fxWindow]];
     const dr = cand.filter(([v]) => up ? v > 0.5 : v < -0.5).sort((x, y) => Math.abs(y[0]) - Math.abs(x[0])).slice(0, 2).map(x => x[1]);
     const ch = [st(dr.length ? dr.join(' + ') : W.base, 'cause'), st(up ? fill(W.fxUp, [pct.toFixed(1)]) : fill(W.fxDown, [pct.toFixed(1)]), up ? 'bad' : 'good')];
     const dp = c.pay - a.pay; if (Math.abs(dp) >= 0.3) ch.push(st(dp < 0 ? fill(W.payDown, [Math.abs(dp).toFixed(1)]) : fill(W.payUp, [dp.toFixed(1)]), dp < 0 ? 'bad' : 'good'));
@@ -359,7 +361,7 @@ function renderProvince(){
 }
 
 // ---------- drawers ----------
-const POL_GATE = { bread:'policy', fuel:'policy', security:'policy', tax:'polTax', print:'polPrint', capex:'polCapex', recon:'polRecon', intervene:'polIntervene', crackdown:'polCrackdown' };
+const POL_GATE = { bread:'policy', fuel:'policy', security:'policy', tax:'polTax', print:'polPrint', capex:'polCapex', recon:'polRecon', intervene:'polIntervene', fxWindow:'polFx', crackdown:'polCrackdown' };
 function renderPolicy(){
   return Object.keys(POL).filter(k => isOpen(POL_GATE[k])).map(k => { const p = L2(POL[k]), cur = S.policy[k];
     return `<div class="pol"><div class="ph"><span class="pic" aria-hidden="true">${POL[k].icon}</span><div><h3>${p.name}</h3><div class="q">${p.q}</div></div></div>
@@ -400,7 +402,12 @@ function renderMoneyBudget(){
   const bars = (rows, fmt, title) => { rows = merge(rows); const mx = Math.max(...rows.map(r => Math.abs(r[1])), 1), tot = rows.reduce((a, r) => a + r[1], 0);
     return `<h3 class="bh">${title}</h3>${rows.map(r => `<div class="brow"><span>${esc(LB[r[0]] || r[0])}</span><div class="btrack"><i class="${r[1] < 0 ? 'neg' : 'pos'}" style="width:${Math.abs(r[1]) / mx * 100}%"></i></div><b class="${r[1] < 0 ? 'bad' : 'good'}">${fmt(r[1])}</b></div>`).join('')}
       <div class="brow total"><span>${t('leftOver')}</span><div></div><b class="${tot < 0 ? 'bad' : 'good'}">${fmt(tot)}</b></div>`; };
-  return `<p class="muted" style="font-size:13px;margin:0">${t('budgetIntro')}</p>` + bars(Lg.syp, v => (v < 0 ? MINUS : '+') + bn(Math.abs(v)), '💵 ' + t('cashLira')) + bars(Lg.usd, v => (v < 0 ? MINUS : '+') + usdM(Math.abs(v)), '🏦 ' + t('dollars'));
+  const base = Math.round(domesticBase(S) * 100), firms = firmsBuilt(S), jl = Math.round(joblessNat(S));
+  const baseBox = `<div class="group"><h3>🧾 ${t('taxBase')}</h3><p class="kid">${t('taxBaseTxt')}</p>
+    <div class="row"><span class="chip${base >= 100 ? ' up' : ' down'}">${fill(t('taxBaseNow'), [base])}</span>
+    <span class="chip${firms ? ' up' : ''}">${fill(t('taxBaseFirms'), [firms])}</span>
+    <span class="chip${jl > 40 ? ' down' : ' up'}">${fill(t('taxBaseJobs'), [jl])}</span></div></div>`;
+  return `<p class="muted" style="font-size:13px;margin:0">${t('budgetIntro')}</p>` + bars(Lg.syp, v => (v < 0 ? MINUS : '+') + bn(Math.abs(v)), '💵 ' + t('cashLira')) + baseBox + bars(Lg.usd, v => (v < 0 ? MINUS : '+') + usdM(Math.abs(v)), '🏦 ' + t('dollars'));
 }
 
 // ---------- trade ----------
@@ -521,7 +528,7 @@ function renderGuide(){
 
   // and the chains themselves, always available
   h += `<h3 class="bh">⚙️ ${t('guideChains')}</h3><ul class="chainlist">`
-    + [1, 2, 3, 4, 5].map(i => `<li>${esc(t('chain' + i))}</li>`).join('')
+    + [1, 2, 3, 4, 5, 6].map(i => `<li>${esc(t('chain' + i))}</li>`).join('')
     + `</ul><p class="small muted">${t('chainHelp')}</p>`;
   return h;
 }

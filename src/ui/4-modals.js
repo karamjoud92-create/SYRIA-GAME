@@ -7,7 +7,7 @@ function whyChains(before, after){
   if (Math.abs(w.pct) >= 1){
     const f = w.fx, up = w.pct > 0, cand = [
       [f.print, fill(W.print, [after.policy.print])], [f.reserves, f.reserves > 0 ? W.reserves : W.reservesGood], [f.deficit, W.deficit],
-      [f.trust, f.trust > 0 ? W.lowTrust : W.highTrust], [f.intervene, W.intervene], [f.shock, W.shock]];
+      [f.trust, f.trust > 0 ? W.lowTrust : W.highTrust], [f.intervene, W.intervene], [f.fxWindow, W.fxWindow], [f.shock, W.shock]];
     const drivers = cand.filter(([v]) => up ? v > 0.5 : v < -0.5).map(([v, l]) => [Math.abs(v), l]);
     drivers.sort((a, b) => b[0] - a[0]);
     const c = [step(drivers.length ? drivers.slice(0, 2).map(d => d[1]).join(AR() ? ' + ' : ' + ') : W.base, 'cause'),
