@@ -52,6 +52,14 @@ Built in this session, in order:
    Progress that shows all six components any month, four live consequences below 40 (`grip()`), and a way
    back: paying off the $6.1B of inherited debt buys it back at $100M a point, up to where you started.
 
+11. **A logic pass over the whole engine.** Twelve things the game asserted about itself and did not
+   do. The presidency never ended; factories ran at full output in the dark; nothing ever destroyed
+   anything; schools cost more than the entire tax take; population was read in two places; the
+   statistics office sold a benefit that did not exist; a decree signed in month 0 did nothing;
+   the crackdown was free; the refinery lost money; extraction and industry were the wrong way
+   round; living standards ignored whether anyone worked; population grew four times too fast.
+   `npm run logic` now holds every one of them.
+
 ## Decisions worth not undoing
 
 - **The artifact cannot host live shared scores.** Declaring the artifact database makes a page
@@ -76,6 +84,27 @@ Built in this session, in order:
   filtered; `npm run guide` fails if a suggestion ever names a locked panel again. When adding a new adviser
   line, ask what it points at and whether that is open yet.
 - **No fogged numbers.** `fog()` returns the exact value. If something should be hidden, hide it.
+- **If the game says it in prose, the code has to do it.** Every finding in the logic pass was a
+  sentence somewhere — in the glossary, a policy hint, an investment card or CLAUDE.md — that the
+  engine did not implement. "Keep the lights on so workshops can run" was in the jobs glossary while
+  industrial output ignored electricity entirely. Prose is a specification; check it against a probe.
+- **Dead code hides live bugs.** The twenty-year ending was unreachable for as long as it was,
+  because the old turn-based `advance()` still held the check and still looked right. This is the
+  second bug that file has caused. When overriding a function, read what the old one did last.
+- **Month 0 is a real month.** `s.decrees[id] = s.t` is falsy on the first month. This has now bitten
+  twice — once in the decision deck's skip list, once across nine decree effects. Store a timestamp,
+  test with `!== undefined`.
+- **A rate is per half-year unless it says otherwise, and conversions are where the bugs are.**
+  Population growth read `* dt * 2` where a year is `dt / 2`. Four times too fast for long enough
+  that every surviving strategy sat on the 40M ceiling, which made the bug invisible.
+- **Tuning the test to pass is not fixing the game.** Three times in this pass a scripted strategy
+  stopped working because a rule that had been free suddenly cost something. Each time the question
+  is whether the bot was modelling a strategy or exploiting the gap: the sim's crisis picker was
+  arbitrary (fixed), the builder's grid funding was tuned for a world where power did not matter
+  (the engine gained a $60M tier instead), and the crackdown bots were simply wrong to leave it on.
+- **Making a dial real usually needs a matching lever.** Factories needing power made a full
+  industrial economy unpowerable until capex got a $60M tier. Giving independence teeth needed
+  `ACT.repay`. A cost with no counterplay is a trap, not a decision.
 - **A score component the player cannot see is not a mechanic.** Independence was one sixth of the score
   with no readout, no glossary entry and no gameplay effect: signing every loan, deal and concession on
   offer cost about 1.8 points across 20 years. Anything that feeds `legacy()` needs a live readout and a
@@ -120,6 +149,7 @@ npm run check     # build + balance sim + missions + scoreboard tests. Run after
 npm run onboard   # browser: does the game still open up slowly, in both languages?
 npm run econ      # browser: sectors, factories, the work layer, the bar
 npm run indep     # browser: the independence chip, score panel, teeth and the buy-back
+npm run logic     # browser: twelve claims the game makes about itself, in both languages
 npm run browser   # browser: two players in one room
 npm run serve     # a local score server on :8787 while working on the scoreboard
 ```

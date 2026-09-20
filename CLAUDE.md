@@ -24,6 +24,10 @@ fast: a player should be able to think, and should not have to wait two years to
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
+- `npm run logic`  → the claims the game makes about itself: the presidency ends at twenty years,
+  a month-0 decree works, factories stop in the dark but wellheads do not, revolt destroys things,
+  the border crackdown costs something, a refinery pays back, extraction earns more per dollar while
+  industry employs people, schools are affordable, and population changes the budget. Both languages.
 - `npm run indep`  → independence end to end: it is a dashboard number from month 0, it explains itself,
   selling it costs trust, influence, export dollars and calm, the score panel shows all six parts, and
   money buys it back — but never past where you started. Both languages.
@@ -49,6 +53,21 @@ fast: a player should be able to think, and should not have to wait two years to
     need that scales with `s.popM`; `svcCover` is how much of that need is met. Education and health relax toward
     targets set by that coverage and drag on unrest, trust, capacity and unemployment when neglected. They decay
     if you build nothing, but only to the floor the war left behind — never to zero.
+  - **`popRatio(s)` — how many people live here.** `POP0` is 21.9M. The bread and fuel bills, the
+    payroll, the cost of running the state, the tax base and electricity demand all scale with
+    `popRatio`; `indJobsAt` is divided by it, because a mill employing a fixed number of people
+    covers less of a bigger country. Growth is about 1%/yr (the rate read `* dt * 2` when `dt` is
+    in half-years — four times too fast, which pinned every surviving strategy at the 40M ceiling).
+    Stability and Livelihoods both carry the share of people who stayed, so emigration cannot be
+    played as a way to shrink the budget.
+  - **`industryPower(s)` — factories need electricity.** `(hours/12)^0.6`, floored at 0.22: 23% of
+    full output at one hour a day, 66% at six, full at twelve. It scales industrial exports, the
+    capacity export line and food's cut to the wheat bill. Extraction is deliberately exempt — a
+    wellhead runs on its own power, which is why pumping oil survives a blackout and making things
+    does not. A fully built industrial economy needs the $60M capex tier to stay lit.
+  - **`hasDecree(s, id)`.** `s.decrees[id]` stores the month it was signed and month 0 is a real
+    month, so `s.decrees.x ? …` silently ignored anything signed in the first month. Never test
+    that map for truthiness.
   - **`classes(s)` and `s.popM`.** Population grows, and shrinks when people emigrate (driven by unemployment,
     wages against expectations, unrest and trust). `classes()` splits it into poor / getting by / rich as a
     *result* of wages, work, health, schooling, inflation and corruption — never a dial. `poor` is one of the
