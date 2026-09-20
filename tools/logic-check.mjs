@@ -146,6 +146,37 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(lv.working > lv.idle * 1.3,
     `${tag}: on the same $${lv.wage.toFixed(0)} salary, work counts (5% idle scores ${lv.working.toFixed(0)}, 60% idle scores ${lv.idle.toFixed(0)})`);
 
+  // 10. CLAUDE.md: "Extraction earns more dollars per dollar spent; industry employs people."
+  //     It was the other way round on both counts. Ports, logistics and power are held
+  //     generous in every arm so neither capacity nor blackouts confound the comparison.
+  const inv = await page.evaluate(() => {
+    const mk = () => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 99999; s.treasury = 9999;
+      ACT.decree(s, 'tribal'); ACT.decree(s, 'northeast');
+      s.ports.latakia.lvl = 3; s.ports.tartus.lvl = 3; s.ind.logistics = 3; s.mw = 14000;
+      s.policy.capex = 40; s.policy.oilHome = 1; return s; };
+    const usdIn = s => s.last.ledger.usd.reduce((a, r) => a + r[1], 0) / s.last.dt;
+    let base = mk(); for (let i = 0; i < 60; i++) base = step(base);
+    const b = usdIn(base), bj = joblessNat(base), out = { extraction: [], industry: [] }, jobs = { extraction: [], industry: [] };
+    for (const k of Object.keys(INVEST)){
+      if (k === 'logistics') continue;
+      let s = mk(); const lvl = INVEST[k].max || 1;
+      if (s.ind[k] !== undefined) s.ind[k] = lvl; else s.invests[k] = lvl;
+      for (let i = 0; i < lvl; i++){ if (k === 'oilwells') s.res.oilCap += 20; if (k === 'refinery') s.res.refinery += 20;
+        if (k === 'gasfield') s.res.gas += 5; if (k === 'phosphate') s.res.phos += 0.35; if (k === 'farm') s.res.farm += 1; }
+      if (k === 'offshore'){ s.res.offshore = true; s.res.oilCap += 30; }
+      for (let i = 0; i < 60; i++) s = step(s);
+      const kind = INVEST[k].sector ? 'industry' : 'extraction';
+      out[kind].push((usdIn(s) - b) * 2 / (INVEST[k].usd * lvl));
+      jobs[kind].push(bj - joblessNat(s));
+    }
+    const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+    return { xUsd: avg(out.extraction), iUsd: avg(out.industry), xJob: avg(jobs.extraction), iJob: avg(jobs.industry) };
+  });
+  ok(inv.xUsd > inv.iUsd,
+    `${tag}: extraction earns more dollars per dollar spent (${inv.xUsd.toFixed(2)} vs ${inv.iUsd.toFixed(2)} a year per $ put in)`);
+  ok(inv.iJob > inv.xJob * 2,
+    `${tag}: and industry is what employs people (${inv.iJob.toFixed(1)}pp of unemployment vs ${inv.xJob.toFixed(1)}pp)`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }
