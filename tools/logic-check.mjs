@@ -89,6 +89,22 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(pw.dark.oil > pw.lit.oil * 0.8,
     `${tag}: but a wellhead runs on its own power ($${pw.lit.oil.toFixed(0)}M -> $${pw.dark.oil.toFixed(0)}M)`);
 
+  // 6. a province in revolt burns, and the score counts what is standing rather than the effort
+  const war = await page.evaluate(() => {
+    const total = s => PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0);
+    const run = burn => { let s = newGame(7, 'learner'); s.reserves = 6000; s.treasury = 4000;
+      for (let i = 0; i < 120; i++){ s.policy.recon = 20; s.treasury = Math.max(s.treasury, 400);
+        if (burn) ['aleppo','rif','homs'].forEach(k => s.provs[k].mod = 70);
+        else PROVS.forEach(p => s.provs[p.id].mod = -20);
+        s = step(s); }
+      return { left: total(s), repaired: s.repaired, recon: legacy(s).comp.Reconstruction }; };
+    return { calm: run(false), burn: run(true) };
+  });
+  ok(war.burn.left > 108, `${tag}: twenty years of revolt destroys things ($108B of damage -> $${war.burn.left.toFixed(0)}B)`);
+  ok(war.calm.left < 108, `${tag}: and a calm country rebuilds ($${war.calm.left.toFixed(0)}B left)`);
+  ok(war.burn.recon < war.calm.recon,
+    `${tag}: the score counts what is standing, not the effort (burning ${war.burn.recon.toFixed(0)} < calm ${war.calm.recon.toFixed(0)}, though it repaired nearly as much)`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

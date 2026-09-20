@@ -915,6 +915,9 @@ function step(state, dt = MONTH, policyOverride){
     newU[p.id] = clamp(pv.u + (tgt - pv.u) * relax(0.44, dt) + contagion * dt, 0, 100);
     Object.keys(parts).forEach(k => ap[k] += parts[k] * p.pop); ap.neighbors += contagion * p.pop / 0.44; wsum += p.pop;
     const rep = Math.min(pv.dmg, (reconB + privB) * pv.dmg / totalDmg); pv.dmg -= rep; s.repaired += rep;
+    // Revolt is not only anger: things burn. Without this, rebuilding was a one-way ratchet and
+    // twenty years of open revolt left the country holding exactly the rubble it started with.
+    if (newU[p.id] >= 75) pv.dmg = Math.min(pv.dmg0 + p.pop * 6, pv.dmg + (newU[p.id] - 75) * p.pop * 0.005 * dt);
     // Work comes from factories, a calm street and the lights staying on — and goes when any of them fail.
     const jt = clamp(p.jobless + (pv.jobsMod || 0)
       - indJobsAt(s, p.id)
@@ -1095,7 +1098,7 @@ function legacy(s){
   const comp = {
     Stability: clamp(100 - nu - bar * 8, 0, 100),
     Livelihoods: clamp(realWage(s) / (150 + bar * 70) * 100, 0, 100),
-    Reconstruction: clamp(s.repaired / 108 * 100 * 2.5, 0, 100),
+    Reconstruction: clamp((1 - PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0) / 108) * 100 * 2.5, 0, 100),
     Institutions: clamp(100 - s.corr, 0, 100),
     Solvency: clamp(s.reserves / 1500 * 60 + (1 - s.debt / 15000) * 40, 0, 100),
     Sovereignty: clamp(s.sov - bar * 10, 0, 100),
