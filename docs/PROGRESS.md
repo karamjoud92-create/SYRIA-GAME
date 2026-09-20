@@ -64,6 +64,12 @@ Built in this session, in order:
    overridable in the Guide. Cards keep two or three real answers at every setting; what shrinks is how often
    one appears — from nine questions waiting to one.
 
+15. **The networks are on the map.** Roads between neighbouring provinces that thicken as you build them, a
+   railway that lays one more line per level, and markers at the ports and airports. The four networks with no
+   geography are counted in the legend instead of being faked as a colour.
+16. **CI actually runs the tests.** `npm run check` plus all six browser suites, on every branch and pull
+   request; Pages only publishes from the default branch once both are green.
+
 ## Decisions worth not undoing
 
 - **The artifact cannot host live shared scores.** Declaring the artifact database makes a page
@@ -87,6 +93,9 @@ Built in this session, in order:
 - **Networks have upkeep.** Without it, `infra` scored 75 on Learner with no industry at all and Reconstruction
   pinned at 100 — a free A by ignoring the economy. With it, `infra` is a 68 on Learner and dies of a default at
   year 4 on Realistic. That failing line in `npm run sim` is the intended lesson, not a regression.
+- **Don't fake geography.** Water, housing and digital government are national, and tinting provinces by them
+  would have been a lie dressed as information. They are counted in the legend instead. Only roads, rail, ports
+  and airports are drawn, because only those are actually somewhere.
 - **The mentor shrinks the number of questions, not the number of answers.** A card with one answer is a
   notification; a card with two is a decision. Never "simplify" a card by removing an option.
 - **Anything the first render touches must already exist.** `5-game.js` ends with the boot IIFE, so a `const` in
@@ -105,6 +114,9 @@ Built in this session, in order:
 
 - **Levels 10–12 hand over nothing new.** They are the mastery tail: the mentor goes quiet and the remaining
   medals are the only content. If the game grows, that is where new systems belong.
+- **Tests must set up their own state.** The map checks in `levels-check.mjs` max out the roads, the railway
+  and both ports, which silently changed what the mentor section after them was measuring. Each section now
+  builds the state it needs.
 - **The decision deck now has ten sources** (ports and infrastructure were added; oil policy, facilities/loans,
   crisis follow-ups and the scoreboard still never surface as questions).
 - **The Build panel can bankrupt a careless player on Realistic.** The card refuses to offer an upgrade without

@@ -93,10 +93,38 @@ for (const [tag, vp, loc] of [['en', { width:1280, height:900 }, 'en-US'], ['ar'
   const medTxt = await page.$eval('.drawer .body', e => e.innerText);
   ok(!/undefined|\{0\}/.test(medTxt), `${tag}: every medal has real text in this language`);
 
-  // ---------- 7. the mentor steps back ----------
+  // ---------- 7. the networks are on the map, not only in a drawer ----------
+  await clear(page);
+  await page.evaluate(() => { UI.decHide = true; UI.layer = 'build'; S.infra.roads = 0; S.infra.rail = 0; S.infra.air = 0; render(true); });
+  ok(await page.$('.layers [data-act=layer][data-v=build]'), `${tag}: there is a Networks layer to switch to`);
+  ok(await page.$('.netlayer'), `${tag}: and it draws over the provinces`);
+  const planes = [];
+  for (const a of [0, 1, 2, 3]) planes.push(await page.evaluate(v => { S.infra.air = v; render(true);
+    return [...document.querySelectorAll('.netlayer text')].filter(n => n.textContent.includes('\u2708')).length; }, a));
+  ok(planes.join(',') === '0,1,2,3', `${tag}: an airport appears for each level built (${planes.join(',')})`);
+  const rails = [];
+  for (const r of [0, 1, 4]) rails.push(await page.evaluate(v => { S.infra.rail = v; render(true);
+    return document.querySelectorAll('.netlayer path').length; }, r));
+  ok(rails[0] === 0 && rails[1] > 0 && rails[2] > rails[1], `${tag}: the railway grows line by line (${rails.join(',')})`);
+  const roads = [];
+  for (const r of [0, 5]) roads.push(await page.evaluate(v => { S.infra.roads = v; render(true);
+    return parseFloat(document.querySelector('.netlayer line').getAttribute('stroke-width')); }, r));
+  ok(roads[1] > roads[0] * 3, `${tag}: the roads thicken as they are built (${roads.join(' → ')})`);
+  const dots = await page.evaluate(() => { S.ports.latakia.lvl = 3; S.ports.tartus.lvl = 1; render(true);
+    return [...document.querySelectorAll('.netlayer text')].map(n => n.textContent).filter(x => /[\u25cf\u25cb]/.test(x)); });
+  ok(dots.includes('\u25cf\u25cf\u25cf') && dots.includes('\u25cf\u25cb\u25cb'), `${tag}: each port shows its own level (${dots.join(' ')})`);
+  // the four networks with no geography are stated, not faked as a colour on a province
+  const leg = await page.$eval('.legend', e => e.innerText);
+  ok(/\d\s*\/\s*\d/.test(leg), `${tag}: the legend counts every network's level (${leg.replace(/\n/g, ' ').slice(0, 60)})`);
+
+  // ---------- 8. the mentor steps back ----------
   await clear(page);
   const counts = await page.evaluate(() => {
+    // set up the state this section needs rather than inheriting whatever the last one left behind:
+    // the map checks above deliberately max out the roads, the railway and both ports.
     S.pc = 300; S.reserves = 9000; S.treasury = 60; S.policy.print = 30;
+    S.infra = { grid:1, water:1, housing:1, roads:1, egov:1, rail:1, air:1 };
+    S.ports.latakia.lvl = 1; S.ports.tartus.lvl = 1;
     const out = {};
     for (const m of ['0', '1', '2', '3']){ S.flags.mentorSet = +m; UI.decSkip = {}; out[m] = decisionDeck().length; }
     S.flags.mentorSet = 'auto'; return out;
@@ -106,9 +134,9 @@ for (const [tag, vp, loc] of [['en', { width:1280, height:900 }, 'en-US'], ['ar'
   ok(counts['0'] > counts['3'], `${tag}: and noticeably less at the far end (${counts['0']} vs ${counts['3']})`);
   const optRange = await page.evaluate(() => { S.flags.mentorSet = 0; UI.decSkip = {}; const d = decisionDeck();
     return { n:d.length, min:Math.min(...d.map(x => x.opts.length)), max:Math.max(...d.map(x => x.opts.length)),
-      two:d.filter(x => x.opts.length >= 2).length }; });
+      two:d.filter(x => x.opts.length >= 2).length, lonely:d.filter(x => x.opts.length < 2).map(x => x.id) }; });
   ok(optRange.max <= 3, `${tag}: no card is a menu (at most ${optRange.max} answers)`);
-  ok(optRange.two >= optRange.n - 1, `${tag}: all but at most one card is a real either/or (${optRange.two}/${optRange.n})`);
+  ok(optRange.two >= optRange.n - 1, `${tag}: all but at most one card is a real either/or (${optRange.two}/${optRange.n}${optRange.lonely.length ? ', one answer: ' + optRange.lonely.join(',') : ''})`);
 
   // the control is in the Guide, and it works
   await openDrawer(page, 'guide');
@@ -118,7 +146,7 @@ for (const [tag, vp, loc] of [['en', { width:1280, height:900 }, 'en-US'], ['ar'
   await page.click('.drawer [data-act=mentor][data-v="auto"]'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => S.flags.mentorSet === 'auto'), `${tag}: and can be handed back to the game`);
 
-  // ---------- 8. a save survives a round trip ----------
+  // ---------- 9. a save survives a round trip ----------
   await clear(page);
   ok(await page.evaluate(() => { const c = saveCode(); const before = { xp:Math.round(S.xp), grid:iLvl(S, 'grid'), jordan:S.deals.jordan.lvl };
     return loadCode(c) && Math.round(S.xp) === before.xp && iLvl(S, 'grid') === before.grid && S.deals.jordan.lvl === before.jordan; }),

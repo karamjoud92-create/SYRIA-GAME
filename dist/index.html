@@ -2190,7 +2190,7 @@ Object.assign(STR.en, {
   infraBuilding:'Building, ready in {0}', infraMaxed:'Fully built', infraNone:'Nothing here is open to you yet.',
   infraReadyBadge:'{0} ready to upgrade',
   // medals
-  subWhy:'Why now', hide:'Hide',
+  subWhy:'Why now', hide:'Hide', layerBuild:'Networks',
   subMedals:'Medals', medalsTitle:'Medals', medalsSub:'Every medal is earned once and pays in experience, never in money. Experience is what raises your level.',
   medalGot:'Earned', medalXp:'+{0} XP', medalsCount:'{0} of {1}',
   // trade routes
@@ -2223,7 +2223,7 @@ Object.assign(STR.ar, {
   infraLvl:'المستوى {0} من {1}', infraNextCost:'المستوى التالي', infraUpTo:'{0} → المستوى {1}', infraUpgrade:'طوّر',
   infraBuilding:'قيد البناء، يجهز خلال {0}', infraMaxed:'مكتمل', infraNone:'لا شيء هنا مفتوح لك بعد.',
   infraReadyBadge:'{0} جاهز للتطوير',
-  subWhy:'لماذا الآن', hide:'إخفاء',
+  subWhy:'لماذا الآن', hide:'إخفاء', layerBuild:'الشبكات',
   subMedals:'الأوسمة', medalsTitle:'الأوسمة', medalsSub:'كل وسام يُنال مرة واحدة ويُدفع خبرةً لا مالاً. والخبرة هي ما يرفع مستواك.',
   medalGot:'نِلته', medalXp:'+{0} خبرة', medalsCount:'{0} من {1}',
   routeLvl:'الطريق {0} من {1}', routeWidenBtn:'وسّع الطريق', routeWiden:'توسيع الطريق مع {0}',
@@ -2720,6 +2720,10 @@ function layerOf(id){
     case 'power': { const h = provHours(S, id); return { fill:mix('#3a3f55', '#f2c94c', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
     case 'damage': return { fill:mix('#6f9d8f', '#8e2f36', pv.dmg / 20), val:(AR() ? '' : '$') + pv.dmg.toFixed(pv.dmg < 10 ? 1 : 0) + (AR() ? ' مليار$' : 'B') };
     case 'jobs': return { fill:mix('#6f9d8f', '#c8612f', (pv.jobless - 15) / 60), val:Math.round(pv.jobless) + '%' };
+    // The networks layer. The fill is still electricity — that is what the grid you built actually
+    // does, province by province — but muted, because the roads, rail and markers drawn on top of
+    // it are the point. See netOverlay() in 8-levels.js.
+    case 'build': { const h = provHours(S, id); return { fill:mix('#8d93ab', '#eef1f8', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
   }
 }
 function provBadge(id){ const pv = S.provs[id]; return (pv.project === true ? '✅' : pv.project === 'building' ? '🏗️' : D.projects.includes(id) ? '🚧' : '') + (tierOf(pv.u) === 'revolt' ? '⚠️' : ''); }
@@ -3027,17 +3031,20 @@ function renderMapSvg(){
   const Cn = STR[LANG].countries;
   const neighbors = `<text x="420" y="-8" class="ctry">${Cn.TURKEY}</text><text x="760" y="470" class="ctry" text-anchor="middle">${Cn.IRAQ}</text><text x="330" y="755" class="ctry">${Cn.JORDAN}</text><text x="-60" y="455" class="ctry" text-anchor="middle">${Cn.LEBANON}</text><text x="-95" y="150" class="sea" text-anchor="middle">${Cn.sea1}</text><text x="-95" y="170" class="sea" text-anchor="middle">${Cn.sea2}</text>`;
   const star = `<g transform="translate(${MAP.cent.damascus[0]},${MAP.cent.damascus[1]})" pointer-events="none"><path d="M0,-8 L2.3,-2.3 L8,-2.3 L3.5,1.2 L5,7 L0,3.5 L-5,7 L-3.5,1.2 L-8,-2.3 L-2.3,-2.3Z" fill="var(--gold)" stroke="#fff9ee" stroke-width="1.2"/></g>`;
-  return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${labels}${inset}${star}</svg>`;
+  // the networks are drawn between the provinces and their labels, so roads run under the names
+  const nets = typeof netOverlay === 'function' ? netOverlay() : '';
+  return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${nets}${labels}${inset}${star}</svg>`;
 }
 function renderLayers(){
   // a layer shows up with the problem it describes, not before
-  const gate = { unrest:'layerUnrest', power:'layerPower', damage:'layerDamage', jobs:'layerJobs' };
-  const open = [['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']]
+  const gate = { unrest:'layerUnrest', build:'layerBuild', power:'layerPower', damage:'layerDamage', jobs:'layerJobs' };
+  const open = [['unrest','🔥','layerAnger'],['build','🛣️','layerBuild'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']]
     .filter(([k]) => typeof isOpen !== 'function' || isOpen(gate[k]));
   if (!open.some(([k]) => k === UI.layer)) UI.layer = 'unrest';
   return `<div class="layers" role="group">${open.map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
 }
 function renderLegend(){
+  if (UI.layer === 'build') return `<div class="legend">${typeof netLegend === 'function' ? netLegend() : ''}</div>`;
   const items = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('')
     : UI.layer === 'power' ? `<span><i style="background:#3a3f55"></i>${t('legDark')}</span><span><i style="background:#f2c94c"></i>${t('legLight')}</span>`
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span>`
@@ -3459,7 +3466,7 @@ const xpToNext = () => levelNow() >= MAX_LEVEL ? 0 : Math.max(0, LEVEL_XP[levelN
 function stageNow(){ return [1, 3, 5, 7, 9].filter(n => levelNow() >= n).length - 1; }
 const UNLOCK = {
   guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
-  build:2, medals:2, infraGrid:2, infraWater:2, infraHousing:2,
+  build:2, medals:2, layerBuild:2, infraGrid:2, infraWater:2, infraHousing:2,
   decrees:3, layerPower:3, polTax:3, polPrint:3, families:3,
   infraRoads:4, infraEgov:4,
   trade:5, progress:5, chains:5, layerDamage:5, polCapex:5, polRecon:5, ports:5, partners:5, infraRail:5,
@@ -3469,7 +3476,7 @@ const UNLOCK = {
 };
 const isOpen = f => levelNow() >= (UNLOCK[f] === undefined ? 1 : UNLOCK[f]);
 // what each level hands over, for the announcement. Index 0 is level 1.
-const LEVEL_GIFTS = [[], ['dBuild', 'subMedals'], ['dDecrees', 'layerPower'], ['infraRoads', 'infraEgov'],
+const LEVEL_GIFTS = [[], ['dBuild', 'layerBuild'], ['dDecrees', 'layerPower'], ['infraRoads', 'infraEgov'],
   ['dTrade', 'dProgress'], ['routesGift', 'infraAir'], ['subServices', 'sectorTitle'], ['moreRoutes'],
   ['extractTitle', 'svcUnis'], ['mentorOff'], ['veteran'], ['veteran']];
 
@@ -4811,6 +4818,65 @@ document.addEventListener('click', ev => {
   S.flags.mentorSet = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v;
   sfx('tap'); persist(); render(true);
 });
+
+// ---------- the networks, on the map ----------
+// Seven networks existed only as a list in a drawer, in a game with a map in the middle of the
+// screen. Three of them have real geography and now get drawn: roads between neighbouring
+// provinces, a rail spine that grows line by line, and markers at the ports and airports. The
+// other four — water, housing, digital government, and the grid's own level — have no geography,
+// so they are stated in the legend rather than faked as a colour on a province.
+//
+// Called from renderMapSvg() during the very first render, so: function declarations only, and
+// nothing here may reach for a `const` declared in this file. See rule 10 in CLAUDE.md.
+function railLines(n){
+  // each level lays another line, in the order a country with one railway budget would lay them
+  const all = [
+    ['tartus', 'homs', 'damascus'],                 // the coast to the capital
+    ['homs', 'hama', 'aleppo'],                     // up the spine
+    ['aleppo', 'raqqa', 'deir'],                    // out to the east
+    ['deir', 'hasakeh'],                            // and the far northeast
+  ];
+  return all.slice(0, Math.max(0, n));
+}
+function netOverlay(){
+  if (!S || UI.layer !== 'build') return '';
+  const C = MAP.cent, road = iLvl(S, 'roads'), rail = iLvl(S, 'rail'), air = iLvl(S, 'air');
+  const seen = {}, out = [];
+
+  // --- roads: every border between neighbours, thicker and more solid with each level ---
+  const w = 1.4 + road * 1.15, op = (0.28 + road * 0.125).toFixed(2);
+  PROVS.forEach(p => p.nb.forEach(n => {
+    const key = [p.id, n].sort().join('|'); if (seen[key]) return; seen[key] = 1;
+    const [x1, y1] = C[p.id], [x2, y2] = C[n];
+    out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e8d5a8" stroke-width="${w.toFixed(1)}" stroke-linecap="round"
+      opacity="${op}"${road ? '' : ' stroke-dasharray="6 7"'}/>`);
+  }));
+
+  // --- rail: a double line, the classic way to say "this is a railway and not a road" ---
+  railLines(rail).forEach(line => {
+    const d = line.map((id, i) => `${i ? 'L' : 'M'}${C[id][0]},${C[id][1]}`).join(' ');
+    out.push(`<path d="${d}" fill="none" stroke="#2f2a3d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>
+      <path d="${d}" fill="none" stroke="#f7f1e3" stroke-width="2.4" stroke-linecap="butt" stroke-dasharray="3 7" opacity=".9"/>`);
+  });
+
+  // --- ports and airports: a marker you can count, not a number in a drawer ---
+  const pin = (x, y, icon, sub) => `<g pointer-events="none"><circle cx="${x}" cy="${y}" r="13" fill="var(--card)" stroke="var(--gold-deep)" stroke-width="2.5"/>
+    <text x="${x}" y="${y + 6}" text-anchor="middle" style="font-size:15px">${icon}</text>
+    ${sub ? `<text x="${x}" y="${y + 25}" text-anchor="middle" class="lval">${sub}</text>` : ''}</g>`;
+  ['latakia', 'tartus'].forEach(id => { const p = S.ports[id];
+    out.push(pin(C[id][0] + 26, C[id][1] - 22, '⚓', '●'.repeat(p.lvl) + '○'.repeat(3 - p.lvl))); });
+  ['damascus', 'latakia', 'aleppo'].slice(0, air).forEach((id, i) =>
+    out.push(pin(C[id][0] - (id === 'damascus' ? 30 : 26), C[id][1] + 26, '✈️', '')));
+
+  return `<g class="netlayer" pointer-events="none">${out.join('')}</g>`;
+}
+// what the map cannot show, said plainly instead of coloured in
+function netLegend(){
+  const rows = [['grid', '⚡'], ['water', '🚰'], ['housing', '🏘️'], ['egov', '🖥️'], ['roads', '🛣️'], ['rail', '🚂'], ['air', '✈️']]
+    .filter(([k]) => infraOpen(k))
+    .map(([k, i]) => `<span title="${esc(L2(INFRA_TXT[k])[0])}">${i} ${iLvl(S, k)}/${INFRA[k].max}</span>`).join('');
+  return rows || `<span>${esc(t('infraNone'))}</span>`;
+}
 
 </script>
 </body>

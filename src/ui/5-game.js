@@ -38,7 +38,7 @@ const xpToNext = () => levelNow() >= MAX_LEVEL ? 0 : Math.max(0, LEVEL_XP[levelN
 function stageNow(){ return [1, 3, 5, 7, 9].filter(n => levelNow() >= n).length - 1; }
 const UNLOCK = {
   guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
-  build:2, medals:2, infraGrid:2, infraWater:2, infraHousing:2,
+  build:2, medals:2, layerBuild:2, infraGrid:2, infraWater:2, infraHousing:2,
   decrees:3, layerPower:3, polTax:3, polPrint:3, families:3,
   infraRoads:4, infraEgov:4,
   trade:5, progress:5, chains:5, layerDamage:5, polCapex:5, polRecon:5, ports:5, partners:5, infraRail:5,
@@ -48,7 +48,7 @@ const UNLOCK = {
 };
 const isOpen = f => levelNow() >= (UNLOCK[f] === undefined ? 1 : UNLOCK[f]);
 // what each level hands over, for the announcement. Index 0 is level 1.
-const LEVEL_GIFTS = [[], ['dBuild', 'subMedals'], ['dDecrees', 'layerPower'], ['infraRoads', 'infraEgov'],
+const LEVEL_GIFTS = [[], ['dBuild', 'layerBuild'], ['dDecrees', 'layerPower'], ['infraRoads', 'infraEgov'],
   ['dTrade', 'dProgress'], ['routesGift', 'infraAir'], ['subServices', 'sectorTitle'], ['moreRoutes'],
   ['extractTitle', 'svcUnis'], ['mentorOff'], ['veteran'], ['veteran']];
 

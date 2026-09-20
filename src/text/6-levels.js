@@ -76,7 +76,7 @@ Object.assign(STR.en, {
   infraBuilding:'Building, ready in {0}', infraMaxed:'Fully built', infraNone:'Nothing here is open to you yet.',
   infraReadyBadge:'{0} ready to upgrade',
   // medals
-  subWhy:'Why now', hide:'Hide',
+  subWhy:'Why now', hide:'Hide', layerBuild:'Networks',
   subMedals:'Medals', medalsTitle:'Medals', medalsSub:'Every medal is earned once and pays in experience, never in money. Experience is what raises your level.',
   medalGot:'Earned', medalXp:'+{0} XP', medalsCount:'{0} of {1}',
   // trade routes
@@ -109,7 +109,7 @@ Object.assign(STR.ar, {
   infraLvl:'المستوى {0} من {1}', infraNextCost:'المستوى التالي', infraUpTo:'{0} → المستوى {1}', infraUpgrade:'طوّر',
   infraBuilding:'قيد البناء، يجهز خلال {0}', infraMaxed:'مكتمل', infraNone:'لا شيء هنا مفتوح لك بعد.',
   infraReadyBadge:'{0} جاهز للتطوير',
-  subWhy:'لماذا الآن', hide:'إخفاء',
+  subWhy:'لماذا الآن', hide:'إخفاء', layerBuild:'الشبكات',
   subMedals:'الأوسمة', medalsTitle:'الأوسمة', medalsSub:'كل وسام يُنال مرة واحدة ويُدفع خبرةً لا مالاً. والخبرة هي ما يرفع مستواك.',
   medalGot:'نِلته', medalXp:'+{0} خبرة', medalsCount:'{0} من {1}',
   routeLvl:'الطريق {0} من {1}', routeWidenBtn:'وسّع الطريق', routeWiden:'توسيع الطريق مع {0}',

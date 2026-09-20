@@ -142,3 +142,62 @@ document.addEventListener('click', ev => {
   S.flags.mentorSet = b.dataset.v === 'auto' ? 'auto' : +b.dataset.v;
   sfx('tap'); persist(); render(true);
 });
+
+// ---------- the networks, on the map ----------
+// Seven networks existed only as a list in a drawer, in a game with a map in the middle of the
+// screen. Three of them have real geography and now get drawn: roads between neighbouring
+// provinces, a rail spine that grows line by line, and markers at the ports and airports. The
+// other four — water, housing, digital government, and the grid's own level — have no geography,
+// so they are stated in the legend rather than faked as a colour on a province.
+//
+// Called from renderMapSvg() during the very first render, so: function declarations only, and
+// nothing here may reach for a `const` declared in this file. See rule 10 in CLAUDE.md.
+function railLines(n){
+  // each level lays another line, in the order a country with one railway budget would lay them
+  const all = [
+    ['tartus', 'homs', 'damascus'],                 // the coast to the capital
+    ['homs', 'hama', 'aleppo'],                     // up the spine
+    ['aleppo', 'raqqa', 'deir'],                    // out to the east
+    ['deir', 'hasakeh'],                            // and the far northeast
+  ];
+  return all.slice(0, Math.max(0, n));
+}
+function netOverlay(){
+  if (!S || UI.layer !== 'build') return '';
+  const C = MAP.cent, road = iLvl(S, 'roads'), rail = iLvl(S, 'rail'), air = iLvl(S, 'air');
+  const seen = {}, out = [];
+
+  // --- roads: every border between neighbours, thicker and more solid with each level ---
+  const w = 1.4 + road * 1.15, op = (0.28 + road * 0.125).toFixed(2);
+  PROVS.forEach(p => p.nb.forEach(n => {
+    const key = [p.id, n].sort().join('|'); if (seen[key]) return; seen[key] = 1;
+    const [x1, y1] = C[p.id], [x2, y2] = C[n];
+    out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e8d5a8" stroke-width="${w.toFixed(1)}" stroke-linecap="round"
+      opacity="${op}"${road ? '' : ' stroke-dasharray="6 7"'}/>`);
+  }));
+
+  // --- rail: a double line, the classic way to say "this is a railway and not a road" ---
+  railLines(rail).forEach(line => {
+    const d = line.map((id, i) => `${i ? 'L' : 'M'}${C[id][0]},${C[id][1]}`).join(' ');
+    out.push(`<path d="${d}" fill="none" stroke="#2f2a3d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>
+      <path d="${d}" fill="none" stroke="#f7f1e3" stroke-width="2.4" stroke-linecap="butt" stroke-dasharray="3 7" opacity=".9"/>`);
+  });
+
+  // --- ports and airports: a marker you can count, not a number in a drawer ---
+  const pin = (x, y, icon, sub) => `<g pointer-events="none"><circle cx="${x}" cy="${y}" r="13" fill="var(--card)" stroke="var(--gold-deep)" stroke-width="2.5"/>
+    <text x="${x}" y="${y + 6}" text-anchor="middle" style="font-size:15px">${icon}</text>
+    ${sub ? `<text x="${x}" y="${y + 25}" text-anchor="middle" class="lval">${sub}</text>` : ''}</g>`;
+  ['latakia', 'tartus'].forEach(id => { const p = S.ports[id];
+    out.push(pin(C[id][0] + 26, C[id][1] - 22, '⚓', '●'.repeat(p.lvl) + '○'.repeat(3 - p.lvl))); });
+  ['damascus', 'latakia', 'aleppo'].slice(0, air).forEach((id, i) =>
+    out.push(pin(C[id][0] - (id === 'damascus' ? 30 : 26), C[id][1] + 26, '✈️', '')));
+
+  return `<g class="netlayer" pointer-events="none">${out.join('')}</g>`;
+}
+// what the map cannot show, said plainly instead of coloured in
+function netLegend(){
+  const rows = [['grid', '⚡'], ['water', '🚰'], ['housing', '🏘️'], ['egov', '🖥️'], ['roads', '🛣️'], ['rail', '🚂'], ['air', '✈️']]
+    .filter(([k]) => infraOpen(k))
+    .map(([k, i]) => `<span title="${esc(L2(INFRA_TXT[k])[0])}">${i} ${iLvl(S, k)}/${INFRA[k].max}</span>`).join('');
+  return rows || `<span>${esc(t('infraNone'))}</span>`;
+}

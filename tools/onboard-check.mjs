@@ -38,7 +38,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   await jump(page, 20); await clear(page);
   const dock3 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
   const layers3 = await page.$$eval('.layers button', e => e.length);
-  ok(dock3.length === 9 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
+  ok(dock3.length === 9 && layers3 === 5, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
 
   // --- schools, clinics, universities ---
   await page.evaluate(() => { UI.drawer = 'people'; UI.sub.people = 'services'; render(true); }); await page.waitForTimeout(250);

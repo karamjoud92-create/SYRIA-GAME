@@ -9,6 +9,10 @@ function layerOf(id){
     case 'power': { const h = provHours(S, id); return { fill:mix('#3a3f55', '#f2c94c', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
     case 'damage': return { fill:mix('#6f9d8f', '#8e2f36', pv.dmg / 20), val:(AR() ? '' : '$') + pv.dmg.toFixed(pv.dmg < 10 ? 1 : 0) + (AR() ? ' مليار$' : 'B') };
     case 'jobs': return { fill:mix('#6f9d8f', '#c8612f', (pv.jobless - 15) / 60), val:Math.round(pv.jobless) + '%' };
+    // The networks layer. The fill is still electricity — that is what the grid you built actually
+    // does, province by province — but muted, because the roads, rail and markers drawn on top of
+    // it are the point. See netOverlay() in 8-levels.js.
+    case 'build': { const h = provHours(S, id); return { fill:mix('#8d93ab', '#eef1f8', h / 20), val:h.toFixed(0) + (AR() ? 'س' : 'h') }; }
   }
 }
 function provBadge(id){ const pv = S.provs[id]; return (pv.project === true ? '✅' : pv.project === 'building' ? '🏗️' : D.projects.includes(id) ? '🚧' : '') + (tierOf(pv.u) === 'revolt' ? '⚠️' : ''); }

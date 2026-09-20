@@ -92,17 +92,20 @@ function renderMapSvg(){
   const Cn = STR[LANG].countries;
   const neighbors = `<text x="420" y="-8" class="ctry">${Cn.TURKEY}</text><text x="760" y="470" class="ctry" text-anchor="middle">${Cn.IRAQ}</text><text x="330" y="755" class="ctry">${Cn.JORDAN}</text><text x="-60" y="455" class="ctry" text-anchor="middle">${Cn.LEBANON}</text><text x="-95" y="150" class="sea" text-anchor="middle">${Cn.sea1}</text><text x="-95" y="170" class="sea" text-anchor="middle">${Cn.sea2}</text>`;
   const star = `<g transform="translate(${MAP.cent.damascus[0]},${MAP.cent.damascus[1]})" pointer-events="none"><path d="M0,-8 L2.3,-2.3 L8,-2.3 L3.5,1.2 L5,7 L0,3.5 L-5,7 L-3.5,1.2 L-8,-2.3 L-2.3,-2.3Z" fill="var(--gold)" stroke="#fff9ee" stroke-width="1.2"/></g>`;
-  return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${labels}${inset}${star}</svg>`;
+  // the networks are drawn between the provinces and their labels, so roads run under the names
+  const nets = typeof netOverlay === 'function' ? netOverlay() : '';
+  return `<svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g class="country">${paths}</g>${selPath}${nets}${labels}${inset}${star}</svg>`;
 }
 function renderLayers(){
   // a layer shows up with the problem it describes, not before
-  const gate = { unrest:'layerUnrest', power:'layerPower', damage:'layerDamage', jobs:'layerJobs' };
-  const open = [['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']]
+  const gate = { unrest:'layerUnrest', build:'layerBuild', power:'layerPower', damage:'layerDamage', jobs:'layerJobs' };
+  const open = [['unrest','🔥','layerAnger'],['build','🛣️','layerBuild'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']]
     .filter(([k]) => typeof isOpen !== 'function' || isOpen(gate[k]));
   if (!open.some(([k]) => k === UI.layer)) UI.layer = 'unrest';
   return `<div class="layers" role="group">${open.map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}</div>`;
 }
 function renderLegend(){
+  if (UI.layer === 'build') return `<div class="legend">${typeof netLegend === 'function' ? netLegend() : ''}</div>`;
   const items = UI.layer === 'unrest' ? ['calm','tense','riot','revolt'].map(x => `<span><i style="background:${TIER_COL[x]}"></i>${tierName(x)}</span>`).join('')
     : UI.layer === 'power' ? `<span><i style="background:#3a3f55"></i>${t('legDark')}</span><span><i style="background:#f2c94c"></i>${t('legLight')}</span>`
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span>`

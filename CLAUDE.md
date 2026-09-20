@@ -29,9 +29,13 @@ another player's country.
   by year 4, schools built, the population bar adding up, four advisors, the hide button. Both languages.
 - `npm run econ`   → drives the economy in a real browser: all 15 sectors offered, a factory built and opened,
   the work map layer, the bar shown to the player, no landmines left anywhere. Both languages.
+- CI (`.github/workflows/ci.yml`) runs `npm run check` **and all six browser suites on every branch and
+  pull request**, and only publishes to Pages from the default branch once both are green. Before this it
+  ran `build.js` and the scoreboard test on the default branch alone, so nothing else had ever run in CI.
 - `npm run levels` → the progression in a real browser: the clock is a level and not a year, the Build panel
   opens at its level with the rest locked, an upgrade costs more the second time, a trade route widens, the medal
-  shelf fills, and the mentor asks fewer questions as it is turned down. Both languages.
+  shelf fills, the networks are drawn on the map, and the mentor asks fewer questions as it is turned down.
+  Both languages.
 - `npm run strings`→ every `t()` key and every bilingual table has English *and* Arabic. `t()` falls back to
   printing the key, so a missing string does not crash — it just appears on screen. This found two.
 - Optional browser test: `npm i -D playwright && npx playwright install chromium`, then `node tools/smoke.mjs`.
@@ -110,6 +114,13 @@ another player's country.
   preserved exactly: months 0 / 7 / 15 / 27 / 45 are now levels 1 / 3 / 5 / 7 / 9, which is why the onboarding
   test still passes on pure time. Gate new UI by adding a key to `UNLOCK` and wrapping the control in
   `isOpen('key')` — and add it to `LEVEL_GIFTS` so the unlock is announced. Still engine-independent.
+- **The networks on the map** (`netOverlay()`, `netLegend()` in `src/ui/8-levels.js`, map layer `build`). Three
+  of the seven networks have real geography and are drawn: roads between neighbouring provinces (from `p.nb`,
+  thicker and more solid with each level), a rail spine that lays one more line per level (`railLines()`), and
+  markers at the two ports and at the airports as they are built. Centroids come from `MAP.cent`. The other four
+  — water, housing, digital government, and the grid's own level — have no geography, so they are **counted in
+  the legend rather than faked as a colour on a province**. `renderMapSvg()` calls this during the first render,
+  so it follows rule 10: function declarations only, and nothing reaching for a `const` in that file.
 - **The mentor** (`mentorLevel()`, `MENTOR_MIN` in `src/ui/8-levels.js`). The game counts actions the player took
   from a panel (`S.selfActs`) against actions taken by answering a card (`S.cardActs`) and, with the level,
   decides how loud to be: at 0 it asks often, at 3 it only interrupts for something serious. The deck is filtered

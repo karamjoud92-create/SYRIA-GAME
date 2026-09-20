@@ -1,0 +1,100 @@
+# Checks the game on every branch, and publishes it from the default branch once it passes.
+#
+# Before this, the only workflow was the Pages deploy, gated to the default branch, running
+# `build.js` and the scoreboard test and nothing else — so the balance simulation, the missions,
+# the progression checks and all six browser suites had never run in CI at all. They run here now,
+# on every push, and the deploy waits for them.
+#
+# Turn publishing on once: repository Settings -> Pages -> Source: "GitHub Actions".
+name: Check and publish
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The whole engine side: build, the 20-year balance simulation, the missions, levels and
+  # infrastructure, and the scoreboard client. No browser, so it is fast.
+  engine:
+    name: Engine, balance and missions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm run check
+
+  # The six browser suites, in English and Arabic. Three of the bugs in this project were invisible
+  # to the node tests and obvious on screen, which is why these are not optional.
+  browser:
+    name: The game in a real browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install a browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - run: node build.js
+      - name: Every string exists in English and Arabic
+        run: node tools/strings-check.mjs
+      - name: The game teaches a new player
+        run: node tools/guide-check.mjs
+      - name: It opens up slowly
+        run: node tools/onboard-check.mjs
+      - name: It asks, and tapping an answer changes the country
+        run: node tools/decide-check.mjs
+      - name: Levels, networks, trade routes, medals and the mentor
+        run: node tools/levels-check.mjs
+      - name: Sectors, factories and work
+        run: node tools/econ-check.mjs
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: tools/shot-*.png
+          if-no-files-found: ignore
+
+  # Only from the default branch, and only once both of the above are green.
+  build-site:
+    name: Lay out the site
+    needs: [engine, browser]
+    if: github.ref_name == github.event.repository.default_branch || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node build.js
+      - name: Lay out the site
+        run: |
+          mkdir -p site
+          cp dist/index.html site/index.html
+          cp dist/index.html site/404.html   # an invite link with a typo still lands on the game
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build-site
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
