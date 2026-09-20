@@ -166,7 +166,11 @@ const PARTNERS = {
   china:{ flag:'🇨🇳', pc:10, sov:5, ok:() => true },
   russia:{ flag:'🌾', pc:8, sov:5, ok:() => true },
 };
-const PORT_UPGRADE = { usd:60, months:8 };
+// Ports have no ceiling. A working economy outgrows a level-3 berth and then has nowhere to put
+// what it makes: a builder used to end with half a billion a year stuck at the docks and a panel
+// that said "maxed". Each berth costs more than the last, so growth is paid for, never blocked.
+const PORT_UPGRADE = { months:8 };
+const portCost = lvl => Math.round(60 * Math.pow(1.45, Math.max(0, lvl - 1)));
 // What a state is actually for. Each level is a wave of buildings, not one building.
 const SERVICES = {
   // Upkeep used to be 23.6bn a half-year at full coverage: more than the entire public payroll
@@ -178,6 +182,9 @@ const SERVICES = {
 };
 const svcNeed = (s, k) => Math.max(1, Math.round(s.popM * SERVICES[k].per));
 const svcCover = (s, k) => clamp(((s.svc && s.svc[k]) || 0) / svcNeed(s, k), 0, 1.25);
+// Is there room for another wave? The cap was invisible: the button stayed live, the click did
+// nothing and the player got no message at all. Anything that refuses has to be able to say so.
+const svcRoom = (s, k) => ((s.svc && s.svc[k]) || 0) < svcNeed(s, k) + 2;
 // How many out of every hundred are poor, comfortable, or rich. Not a dial you set — a result.
 function classes(s){
   const rw = realWage(s), jl = joblessNat(s);
@@ -579,8 +586,9 @@ const ACT = {
     s.log.push([s.t, 'investStart', id, x.months]); return true;
   },
   portUpgrade(s, id){
-    const p = s.ports[id]; if (p.lvl >= 3 || s.reserves < PORT_UPGRADE.usd || s.pipe.some(x => x.kind === 'port' && x.id === id)) return false;
-    s.reserves -= PORT_UPGRADE.usd; s.pipe.push({ due:s.t + PORT_UPGRADE.months, kind:'port', id }); s.log.push([s.t, 'portStart', id]); return true;
+    const p = s.ports[id], cost = portCost(p.lvl);
+    if (s.reserves < cost || s.pipe.some(x => x.kind === 'port' && x.id === id)) return false;
+    s.reserves -= cost; s.pipe.push({ due:s.t + PORT_UPGRADE.months, kind:'port', id }); s.log.push([s.t, 'portStart', id]); return true;
   },
   portConcession(s, id){
     const p = s.ports[id]; if (p.op === 'foreign') return false;
@@ -592,7 +600,7 @@ const ACT = {
   service(s, id){
     const x = SERVICES[id];
     if (s.reserves < x.usd || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'svc' && p.id === id)) return false;
-    if ((s.svc[id] || 0) >= svcNeed(s, id) + 2) return false;
+    if (!svcRoom(s, id)) return false;
     s.reserves -= x.usd; s.treasury -= x.syp;
     s.pipe.push({ due:s.t + x.months, kind:'svc', id });
     s.log.push([s.t, 'svcStart', id, x.months]); return true;
@@ -791,4 +799,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, svcRoom, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

@@ -156,7 +156,8 @@ const EFX_KEYS = [
 const EFX_ICON = { poor:'🧍' };
 function withEffects(title, fn){
   const before = clone(S), pB = step(before, 0.5);
-  const ok = fn(); if (!ok) return false;
+  const ok = fn();
+  if (!ok){ toast('⚠️ ' + t('cantNow')); return false; }   // a click that does nothing is a bug, not a no-op
   const pA = step(S, 0.5), now = [], later = [];
   EFX_KEYS.forEach(([k, get, thr, goodUp, fmt]) => {
     const dn = get(S) - get(before), dl = (get(pA) - get(pB)) - dn;
@@ -514,9 +515,9 @@ function renderTradePorts(){
     <p class="small">${fill(t('portsUse'), [usdM(want), usdM(cap)])}</p>${S.clogged > 1 ? `<p class="why">⚠️ ${fill(t('clogged'), [usdM(S.clogged * 2)])}</p>` : ''}</div>`;
   h += ['latakia', 'tartus'].map(id => {
     const p = S.ports[id], up = S.pipe.find(x => x.kind === 'port' && x.id === id);
-    return `<div class="dcard port"><h4>⚓ ${PORT_NAME[LANG][id]}</h4><div class="stars">${[1,2,3].map(i => `<span class="${i <= p.lvl ? 'on' : ''}">⚓</span>`).join('')} <span class="small muted">${fill(t('portLvl'), [p.lvl])} · ${p.op === 'foreign' ? t('portForeign') : t('portState')}</span></div>
-      ${up ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(up.due - S.t)])}</span>` : p.lvl >= 3 ? `<span class="chip up">${t('maxed')}</span>` :
-      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < PORT_UPGRADE.usd ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(PORT_UPGRADE.usd)])}</span></button>
+    return `<div class="dcard port"><h4>⚓ ${PORT_NAME[LANG][id]}</h4><div class="stars">${Array.from({ length:Math.max(3, p.lvl) }, (_, i) => `<span class="${i < p.lvl ? 'on' : ''}">⚓</span>`).join('')} <span class="small muted">${fill(t('portLvl'), [p.lvl])} · ${p.op === 'foreign' ? t('portForeign') : t('portState')}</span></div>
+      ${up ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(up.due - S.t)])}</span>` :
+      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl))])}</span>${S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
         ${p.op === 'state' ? `<button class="opt mini" data-act="portCon" data-id="${id}"><b>🤝 ${t('concession')}</b><span class="t">${t('concessionTxt')}</span></button>` : ''}</div>`}</div>`;
   }).join('');
   return h;
@@ -591,7 +592,7 @@ function renderServices(){
   h += Object.keys(SERVICES).filter(id => id !== 'unis' || isOpen('unis')).map(id => {
     const x = SERVICES[id], have = S.svc[id] || 0, need = svcNeed(S, id), cov = svcCover(S, id);
     const running = S.pipe.find(p => p.kind === 'svc' && p.id === id), enough = have >= need;
-    let why = ''; if (!running){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = t(x.reqKey); }
+    let why = ''; if (!running){ if (!svcRoom(S, id)) why = t('svcNoRoom'); else if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = t(x.reqKey); }
     const txt = { schools:t('svcSchoolsTxt'), clinics:t('svcClinicsTxt'), unis:t('svcUnisTxt') }[id];
     return `<div class="dcard"><span class="gem">🏦 ${usdM(x.usd)}</span><h4>${SVC_ICON[id]} ${esc(svcLabel(id))}</h4><p class="kid">${esc(txt)}</p>
       <div class="bar big"><i style="width:${clamp(cov * 100, 0, 100)}%;background:${enough ? 'var(--good)' : 'var(--tense)'}"></i></div>
