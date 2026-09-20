@@ -279,6 +279,33 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
     `${tag}: twenty years ends a chapter and the same country carries on (now chapter ${chap.chapter})`);
   ok(chap.bar >= 0.25, `${tag}: with more expected of it than before (bar ${chap.bar.toFixed(2)})`);
 
+  // 16. multinationals: somebody else's money, your choice of sector, their cut forever
+  const firms = await page.evaluate(() => {
+    const run = give => { let s = newGame(7, 'learner'); s.reserves = 3000; s.treasury = 600;
+      for (let i = 0; i < 240; i++){ const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive';
+        P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 40 ? 10 : 0;
+        if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
+        for (const id of ['tribal','integrity','digitax','dialogue','northeast','braingain'])
+          if (s.decrees[id] === undefined && ACT.decree(s, id)) break;
+        if (s.reserves > 300) for (let n = 0; n < 3; n++) ACT.invest(s, 'textiles');
+        if (s.reserves > 600) for (const k of ['food','pharma','logistics','packaging']) ACT.invest(s, k);
+        if (give && i === 24 && !s.firms.anadolu && FIRMS.anadolu.ok(s)) ACT.firmDeal(s, 'anadolu', give);
+        s = step(s); }
+      const out = (s.last.ledger.usd.find(r => r[0] === 'profitsOut') || [0, 0])[1] / s.last.dt;
+      return { score: s.score, out: Math.abs(out), tex: s.ind.textiles || 0 }; };
+    let sov = newGame(7, 'learner'); sov.trust = 55; sov.corr = 44; sov.edu = 42; sov.cap = 32;
+    const before = sov.sov; ACT.firmDeal(sov, 'anadolu', 'textiles');
+    return { none: run(null), best: run('logistics'), worst: run('textiles'), sovBefore: before, sovAfter: sov.sov };
+  });
+  ok(firms.sovAfter < firms.sovBefore,
+    `${tag}: letting a multinational in costs independence (${firms.sovBefore} -> ${firms.sovAfter})`);
+  ok(firms.best.score > firms.none.score + 3,
+    `${tag}: pointed at the right sector their money is worth having (${firms.none.score.toFixed(1)} -> ${firms.best.score.toFixed(1)})`);
+  ok(firms.worst.score < firms.none.score,
+    `${tag}: pointed at your biggest earner it is a mistake (${firms.worst.score.toFixed(1)}, and $${firms.worst.out.toFixed(0)}M a half-year leaves)`);
+  ok(firms.worst.out > firms.best.out,
+    `${tag}: because they take a share of the whole sector, including what you build later`);
+
   await page.screenshot({ path: `tools/shot-logic-${tag}.png` });
   await page.close();
 }

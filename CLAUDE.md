@@ -129,6 +129,15 @@ fast: a player should be able to think, and should not have to wait two years to
   counts when both entries name each other with matching halves, so nobody can grant themselves one,
   and `PACT_MAX` caps how many at once. This needs no server change: the handshake rides on the
   scoreboard entry that already travels.
+- **Multinationals** (`FIRMS`, `ACT.firmDeal`, `firmProfits` in the engine; `renderTradeFirms` in
+  `5-game.js`; Trade → Companies, unlocked with the rest of trade at month 15). Five firms, each
+  with its own conditions and its own shortlist of sectors. **The player chooses the sector** — that
+  is the whole decision. The firm builds levels at its own cost and the jobs and output are the
+  country's, but it keeps a share of **everything that sector ever earns abroad**, including levels
+  the player builds later, and letting it in costs independence. So pointing one at logistics (low
+  export value, free levels that unclog the ports) is a coup, and pointing one at your biggest
+  earner is a mistake that bleeds for the rest of the game. Any new firm needs both: a real gift and
+  a cut that grows with your success, or it is free money like the old crackdown was.
 - **Levels and chapters — nothing has a ceiling.** Every sector, berth and service is a ladder:
   `investCost(s, id)` and `portCost(lvl)` charge about 40% more for each level while what a level
   returns stays linear, so growth is paid for out of growth and the wall is the economy rather than

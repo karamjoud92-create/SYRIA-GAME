@@ -187,6 +187,39 @@ const PARTNERS = {
 // Ports have no ceiling. A working economy outgrows a level-3 berth and then has nowhere to put
 // what it makes: a builder used to end with half a billion a year stuck at the docks and a panel
 // that said "maxed". Each berth costs more than the last, so growth is paid for, never blocked.
+// ---------- multinationals ----------
+// Somebody else's money builds you a factory. The jobs are real and they land here; the output
+// is real and it counts as yours. What leaves is a share of what that sector earns abroad, every
+// year, for as long as the plant stands — and a piece of your say in your own country. The player
+// picks which sector each firm puts its money into, which is the whole decision: a multinational
+// will build what you point it at, and you live with what it takes out.
+const FIRMS = {
+  gulfco:{ flag:'\u{1F3DC}\uFE0F', lvls:2, months:10, sov:3, share:0.42,
+    sectors:['cement', 'tourism', 'food'], ok:s => s.cap >= 28 && s.corr < 62 },
+  anadolu:{ flag:'\u{1F1F9}\u{1F1F7}', lvls:2, months:8, sov:2, share:0.36,
+    sectors:['textiles', 'packaging', 'logistics'], ok:s => natUnrest(s) < 55 && s.provs.aleppo.u < 62 },
+  hanjin:{ flag:'\u{1F1E8}\u{1F1F3}', lvls:3, months:12, sov:6, share:0.55,
+    sectors:['telecom', 'cement', 'logistics'], ok:() => true },
+  meridian:{ flag:'\u{1F1EA}\u{1F1FA}', lvls:2, months:12, sov:1, share:0.30,
+    sectors:['pharma', 'coldchain'], ok:s => s.corr < 48 && s.edu >= 38 },
+  levant:{ flag:'\u{1F310}', lvls:1, months:6, sov:0, share:0.24,
+    sectors:['food', 'textiles', 'coldchain', 'packaging'], ok:s => s.trust >= 48 },
+};
+const FIRM_IDS = Object.keys(FIRMS);
+const firmsOn = s => Object.entries(s.firms || {});
+// What the multinationals take out of the country each half-year, before you see a dollar.
+// They own a share of the SECTOR, not of the plants they happened to build. Push textiles to
+// level ten afterwards and the firm takes its cut of all ten, forever. That is what makes the
+// choice a real one: which sector are you willing to sign away a third of, for good?
+function firmProfits(s){
+  let out = 0;
+  firmsOn(s).forEach(([id, f]) => { const k = IND[f.sector]; if (!k) return;
+    out += k.exp * indLvl(s, f.sector) * FIRMS[id].share * industryPower(s); });
+  return out;
+}
+const firmShareOf = (s, sector) => firmsOn(s).filter(([, f]) => f.sector === sector)
+  .reduce((a, [id]) => a + FIRMS[id].share, 0);
+
 const PORT_UPGRADE = { months:8 };
 const portCost = lvl => Math.round(60 * Math.pow(1.45, Math.max(0, lvl - 1)));
 // What a state is actually for. Each level is a wave of buildings, not one building.
@@ -234,7 +267,7 @@ function newGame(seed, diff = 'learner', mission = null){
     ind:{ telecom:0, pharma:0, textiles:0, cement:0, food:0, tourism:0, logistics:0, coldchain:0, packaging:0 },
     svc:{ schools:0, clinics:0, unis:0 }, edu: easy ? 32 : 26, health: easy ? 34 : 27, popM:21.9, bar:0,
     ports:{ latakia:{ lvl:1, op:'state' }, tartus:{ lvl:1, op:'state' } },
-    deals:{}, invests:{}, decrees:{}, facilities:{}, flags:{}, provs,
+    deals:{}, invests:{}, decrees:{}, facilities:{}, firms:{}, flags:{}, provs,
     pipe:[], history:[], log:[], event:null, recentEvents:[], over:null, last:null, cycles:[], scoreHist:[],
   };
 }
@@ -320,6 +353,7 @@ function step(state, dt = MONTH, policyOverride){
     if (item.kind === 'invest') finishInvest(s, item, notes);
     if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl += 1; notes.push(['portDone', item.id, p.lvl]); }
     if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); }
+    if (item.kind === 'firm'){ s.ind[item.sector] = (s.ind[item.sector] || 0) + item.lvls; notes.push(['firmDone', item.id, item.sector, item.lvls]); }
     return false;
   });
 
@@ -394,6 +428,7 @@ function step(state, dt = MONTH, policyOverride){
   { const tr = tourismIncome(s); if (tr > 0.5) addU('tourism', tr); }
   if (dealOn(s, 'gulf')) addU('fdi', 40);
   if (pactHas(s, 'money')) addU('pact', 34);
+  { const fp = firmProfits(s); if (fp > 0.5) addU('profitsOut', -fp); }
   if (dealOn(s, 'eu')) addU('euGrant', 30);
   if (s.cap > 20) addU('imports', -(s.cap - 20) * 1.4);
   // --- dollars: buying food and fuel ---
@@ -603,6 +638,14 @@ const ACT = {
     s.reserves -= cost; s.pipe.push({ due:s.t + x.months, kind:'invest', id }); s.invests[id] = (s.invests[id] || 0) + 1;
     if (id === 'offshore') s.res.offshore = 'drilling';
     s.log.push([s.t, 'investStart', id, x.months]); return true;
+  },
+  firmDeal(s, id, sector){
+    const f = FIRMS[id];
+    if (!f || s.firms[id] || !f.sectors.includes(sector) || !f.ok(s)) return false;
+    s.firms[id] = { sector, lvls:f.lvls, since:s.t };
+    s.sov = clamp(s.sov - f.sov, 0, 100);
+    s.pipe.push({ due:s.t + f.months, kind:'firm', id, sector, lvls:f.lvls });
+    s.log.push([s.t, 'firmSigned', id, sector]); return true;
   },
   portUpgrade(s, id){
     const p = s.ports[id], cost = portCost(p.lvl);
@@ -818,4 +861,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, FIRMS, FIRM_IDS, firmProfits, firmShareOf, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

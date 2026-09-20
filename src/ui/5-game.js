@@ -27,7 +27,7 @@ function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.
 const UNLOCK = {
   guide:0, policy:0, money:0, people:0, layerUnrest:0, projects:0,
   decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
-  trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2,
+  trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2, firms:2,
   services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
   supply:4, unis:4,
 };
@@ -200,6 +200,8 @@ function noteText(n){
     case 'projStart': return c > 3 ? fill(N.projStartLeak, [PN(a), monthsTxt(b), c]) : fill(N.projStart, [PN(a), monthsTxt(b)]);
     case 'projDone': return b > 3 ? fill(N.projDoneLeak, [PN(a), L2(PROJ_TXT[a])[0], b]) : fill(N.projDone, [PN(a), L2(PROJ_TXT[a])[0]]);
     case 'facSign': case 'facFrozen': return fill(N[k], [L2(FAC_TXT[a])[0]]);
+    case 'firmSigned': return fill(N.firmSigned, [L2(FIRM_TXT[a])[1], L2(INV_TXT[b])[0]]);
+    case 'firmDone': return fill(N.firmDone, [L2(FIRM_TXT[a])[1], L2(INV_TXT[b])[0]]);
     case 'grant': case 'wbGrid': case 'gridDone': return fill(N[k], [a]);
     case 'private': return '';
     case 'event': return fill(t('youChose'), [L2(EV_TXT[a])[0], L2(EV_TXT[a])[2][b][0]]);
@@ -528,6 +530,28 @@ function renderTradePorts(){
   }).join('');
   return h;
 }
+// Somebody else's money, and you choose where it goes. The decision is the sector, not the firm:
+// a multinational will build whatever you point it at, and take its cut of that for good.
+function renderTradeFirms(){
+  let h = `<p class="small muted" style="margin-top:0">${t('firmsSub')}</p>`;
+  h += FIRM_IDS.map(id => {
+    const f = FIRMS[id], tx = L2(FIRM_TXT[id]), got = S.firms[id];
+    const building = S.pipe.find(p => p.kind === 'firm' && p.id === id);
+    const pct = Math.round(f.share * 100);
+    const cut = k => Math.round(IND[k].exp * Math.max(indLvl(S, k), f.lvls) * f.share * 2);
+    const body = got
+      ? `<span class="chip up">✅ ${fill(t('firmIn'), [esc(L2(INV_TXT[got.sector])[0])])}</span>
+         ${building ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(building.due - S.t)])}</span>` : `<span class="chip down">${fill(t('firmTakes'), [usdM(cut(got.sector))])}</span>`}`
+      : !f.ok(S) ? `<div class="why">${esc(tx[2])}</div>`
+      : `<div class="small muted" style="margin:6px 0 4px">${t('firmPick')}</div>
+         <div class="row" style="flex-wrap:wrap">${f.sectors.map(k => `<button class="btn small primary" data-act="firm" data-id="${id}" data-sector="${k}">${INV_TXT[k].icon} ${esc(L2(INV_TXT[k])[0])}<span class="sub2"> −${pct}%</span></button>`).join('')}</div>`;
+    return `<div class="dcard partner${got ? ' on' : ''}"><div class="ph"><span class="flag" aria-hidden="true">${f.flag}</span>
+      <div><div class="small muted">${esc(tx[0])}</div><h4>${esc(tx[1])}</h4></div></div>
+      <p class="kid">${fill(t('firmBuilds'), [f.lvls, monthsTxt(f.months)])} ${fill(t('firmShare'), [pct])} ${f.sov ? fill(t('firmSov'), [f.sov]) : t('firmNoSov')}</p>
+      ${body}</div>`;
+  }).join('');
+  return h;
+}
 function renderTradePartners(){
   return `<p class="small muted" style="margin-top:0">${t('partnersSub')}</p>` + Object.keys(PARTNERS).map(id => {
     const x = PARTNERS[id], tx = L2(PART_TXT[id]), d = S.deals[id];
@@ -637,7 +661,7 @@ function drawerBody(id){
     case 'policy': return renderPolicy();
     case 'decrees': return renderDecrees();
     case 'money': return UI.sub.money === 'budget' ? renderMoneyBudget() : renderMoneyActions();
-    case 'trade': return UI.sub.trade === 'ports' ? renderTradePorts() : UI.sub.trade === 'partners' ? renderTradePartners() : renderTradeResources();
+    case 'trade': return UI.sub.trade === 'ports' ? renderTradePorts() : UI.sub.trade === 'partners' ? renderTradePartners() : UI.sub.trade === 'firms' ? renderTradeFirms() : renderTradeResources();
     case 'people': return UI.sub.people === 'services' ? renderServices() : UI.sub.people === 'pop' ? renderPopulation() : renderPeople();
     case 'chains': return renderChains();
     case 'progress': return UI.sub.progress === 'score' ? renderScorePanel() : UI.sub.progress === 'cycles' ? renderProgressCycles() : UI.sub.progress === 'news' ? renderNews() : UI.sub.progress === 'charts' ? renderProgressCharts() : renderWhyPanel();
@@ -646,7 +670,7 @@ function drawerBody(id){
 function renderDrawer(){
   const d = DRAWERS5.find(x => x[0] === UI.drawer); if (!d) return '';
   const sub = d[0] === 'decrees' ? fill(t('decreesIntro'), [Math.round(S.pc)]) : t(d[3]);
-  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['score','subScore'],['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']] : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
+  const subtabs = d[0] === 'money' ? [['actions','subActions'],['budget','subBudget']] : d[0] === 'progress' ? [['score','subScore'],['why','subWhy'],['charts','subCharts'],['cycles','subCycles'],['news','subNews']] : d[0] === 'trade' ? [['resources','subResources'],['ports','subPorts'],['partners','subPartners']].concat(isOpen('firms') ? [['firms','subFirms']] : []) : d[0] === 'people' ? [['families','subFamilies'],['services','subServices'],['pop','subPop']] : null;
   return `<aside class="drawer"><div class="head"><span class="dic" aria-hidden="true">${d[1]}</span><h2>${t(d[2])}</h2><button class="close" data-act="closeDrawer" aria-label="${t('close')}">✕</button></div>
     <div class="sub">${sub}</div>
     ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
@@ -880,6 +904,7 @@ document.addEventListener('click', ev => {
     case 'repay': withEffects(t('repayTitle'), () => ACT.repay(S, +v)) && sfx('coin'); break;
     case 'invest': withEffects(L2(INV_TXT[id])[0], () => ACT.invest(S, id)); break;
     case 'svc': withEffects(svcLabel(id), () => ACT.service(S, id)); break;
+    case 'firm': withEffects(L2(FIRM_TXT[id])[1], () => ACT.firmDeal(S, id, b.dataset.sector)) && sfx('coin'); break;
     case 'portUp': withEffects(`${t('upgrade')}: ${PORT_NAME[LANG][id]}`, () => ACT.portUpgrade(S, id)); break;
     case 'portCon': withEffects(`${t('concession')}: ${PORT_NAME[LANG][id]}`, () => ACT.portConcession(S, id)) && sfx('coin'); break;
     case 'deal': withEffects(`${L2(PART_TXT[id])[0]}: ${L2(PART_TXT[id])[1]}`, () => ACT.deal(S, id)); break;
