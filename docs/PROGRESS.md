@@ -78,6 +78,12 @@ Built in this session, in order:
    checks for empty panels, silently disabled controls, raw string keys, thrown clicks, subtabs offered
    above their level, and anything locked that is named nowhere.
 
+19. **The level ladder is flat.** Level 5 used to hand over nine things at once while levels 4, 6 and 8
+   handed over two, two and nothing. It is 3–5 per level through level 9 now, on the same month schedule —
+   only the grouping moved, so a passive player sees the same game at the same time.
+20. **The guide keeps teaching past month 3.** Six first steps, then one more for each thing the game hands
+   over: the first upgrade, the medals, the first port, the first trade route, schools, the first factory.
+
 ## Decisions worth not undoing
 
 - **The artifact cannot host live shared scores.** Declaring the artifact database makes a page
@@ -101,6 +107,12 @@ Built in this session, in order:
 - **Networks have upkeep.** Without it, `infra` scored 75 on Learner with no industry at all and Reconstruction
   pinned at 100 — a free A by ignoring the economy. With it, `infra` is a 68 on Learner and dies of a default at
   year 4 on Realistic. That failing line in `npm run sim` is the intended lesson, not a regression.
+- **A subtab that opens before its panel is a dead end nobody reports.** `medals` at level 2 inside a panel
+  at level 5 was invisible in both directions: not reachable, and not in the 🔒 list either, because the game
+  believed it was open. The audit checks both directions now, and the check is proven against the real bug.
+- **Guide steps read their completion from the state, not from click handlers.** There are two ways to do
+  everything in this game — the panel and the decision card — and a step that only listened for a panel
+  click would stay unticked for a player who did it the other way.
 - **A hidden control reads as a broken one.** The Progress panel was fine; it just did not exist below
   level 5, and nothing said so. Users do not conclude "not unlocked yet", they conclude "this button is
   broken". Anything gated must announce itself and its level.
@@ -145,9 +157,6 @@ Built in this session, in order:
   a place you were never given.
 - **The decision deck has seven sources.** Ports, oil policy, facilities/loans, crisis follow-ups and the
   multiplayer scoreboard never surface as questions; a player who only taps cards will never meet them.
-- **The first steps do not cover the later game.** The six guide tasks teach months 0–3. Nothing walks a
-  player through their first factory, their first school or their first trade deal when those unlock; the
-  "what to do next" line carries all of it alone.
 - **Ports still jam late.** Supply sectors cut the sim's clog from 160 to 16, but a player who builds
   industry hard and ignores logistics still loses output at the dock with only an advisor line to warn
   them. A louder signal on the map would help.

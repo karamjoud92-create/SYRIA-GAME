@@ -108,6 +108,10 @@ another player's country.
   the only one open from month 0 to the end. It holds four things: the six first steps (ticked off by
   `guideTick()` from the real click handlers, stored in `S.flags.g_*` so no save bump is needed), the single most
   useful thing to do next, why the numbers just moved (`whyLive()`), and the cause-and-effect chains.
+  The first six steps teach months 0–3; **later steps appear as the game opens up** (`need:'<unlock key>'`,
+  filtered by `guideTasks()`) — the first upgrade, the medal shelf, the first port, the first trade route,
+  schools, the first factory. Each later step reads its own completion out of the state (`done:s => …`)
+  rather than waiting for a click handler, so answering a decision card ticks it exactly as the panel does.
   **Any advice must be reachable.** An adviser suggestion that points at a locked control carries `need:'<unlock
   key>'` and is filtered out by `usable()`; `advisorsOpen()` hides ministers whose brief has not opened. This
   was wrong twice — the guide told a brand-new player to build schools, then to fund power stations, both of
@@ -158,6 +162,10 @@ another player's country.
    same, and the dock's 🔒 button (`lockedThings()`, `showLocked()`) lists everything still to come. A panel
    that simply is not rendered reads as a broken button: that is exactly how the Progress panel was reported
    as "not clicking" when it was really gated to level 5. `npm run audit` enforces this.
+10b. **A subtab's gate must never be lower than its panel's.** `medals` was set to level 2 while living
+   inside Progress at level 5: for three levels it was neither reachable nor listed as locked, because
+   `isOpen('medals')` was true. `npm run audit` fails on this, and the check is proven — putting the bug
+   back makes it fire, reverting makes it pass.
 11. **A subtab is gated by the same key as the thing behind it** (`renderDrawer` filters `all` through
    `isOpen`). The People panel used to offer "Schools & clinics" from month 0 and let you build them, while
    the guide was forbidden from mentioning schools until level 7 — the panel and the advice disagreeing about
