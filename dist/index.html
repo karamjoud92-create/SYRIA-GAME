@@ -36,7 +36,10 @@ h2,h3,h4{ margin:0; line-height:1.15; font-weight:800; }
 .game{ height:100%; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto minmax(0,1fr) auto; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
 
 /* ===== HUD ===== */
-.hud{ display:flex; align-items:center; gap:8px; padding:10px 14px 8px; }
+/* Wraps at every width. It used to wrap only below 1250px, so once the level block and the
+   independence chip went in, a 1920 desktop pushed the globe half off the edge and the menu
+   and scoreboard buttons clean off the screen. */
+.hud{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 14px 8px; }
 .hud > *{ flex-shrink:0; }
 .turn{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
 .ring{ width:54px; height:54px; position:relative; }
