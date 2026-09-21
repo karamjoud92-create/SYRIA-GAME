@@ -173,7 +173,11 @@ fast: a player should be able to think, and should not have to wait two years to
 1b. **Do not show the player a fogged number.** `fog()` returns the exact value; there is no '~'. If something
    should be hidden, hide it — do not blur it.
 2. **RTL:** use CSS logical properties (`inset-inline-start`, `padding-inline-end`, `border-inline-end`…), never left/right, except inside the map SVG (which is always LTR).
-3. **Balance:** after touching `engine.js`, run `npm run check`. Doing nothing must eventually fail; steady play
+3. **Balance:** after touching `engine.js`, run `npm run check` **and read the table it prints** —
+   the suite does not fail on balance, it only prints, so grepping the output down to the pass line
+   hides drift. That is how uncapping the ladders slipped through: the bots' rule was "buy it if you
+   can afford it", which was bounded when everything capped at 3 and became "spend every dollar the
+   month it arrives" once nothing did. They ended at 8.7 hours of power and $554M. Doing nothing must eventually fail; steady play
    (`smart`) should reach about B on Learner and C on Realistic, and building industry (`builder`) should beat
    pumping oil (`trader`). The sim also prints `builder@5y/@10y/@20y` — that curve should climb and then fight
    for every point, not run away to an A.

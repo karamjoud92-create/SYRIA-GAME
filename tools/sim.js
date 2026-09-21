@@ -24,8 +24,19 @@ const smart=(s,m)=>{ const P=s.policy; P.fuel='market'; P.tax='aggressive'; P.cr
   if (!s.facilities.gulf) E.ACT.facility(s,'gulf'); if(!s.facilities.wb) E.ACT.facility(s,'wb');
   for (const k of ['aleppo','rif','hasakeh','deir','homs','hama','daraa','suwayda','idlib','raqqa','latakia','damascus','tartus','quneitra']) if(!s.provs[k].project && (s.grant>=20||s.reserves>500)){ E.ACT.project(s,k,'tender'); break; }
 };
+// Nothing caps any more, so "buy it if you can afford it" is no longer a strategy — it is a
+// compulsion that spends every dollar the month it arrives and never funds the grid. A competent
+// player keeps a buffer and stops climbing a ladder when the next rung costs more than it returns.
+const BUFFER = 900;
+const afford = (s, id) => s.reserves - E.investCost(s, id) > BUFFER;
+const buy = (s, ids) => { for (const id of ids) if (afford(s, id)) E.ACT.invest(s, id); };
+// Jammed ports are the one thing the game shouts about, so a competent player clears them first.
+const berth = (s, id) => { const need = (s.clogged || 0) > 20 ? BUFFER * 0.5 : BUFFER * 1.5;
+  if (s.reserves - E.portCost(s.ports[id].lvl) > need) E.ACT.portUpgrade(s, id); };
+
 const trader=(s,m)=>{ smart(s,m);
-  if (s.reserves>400){ for(const id of ['oilwells','refinery','gasfield','phosphate','farm']) E.ACT.invest(s,id); E.ACT.portUpgrade(s,'latakia'); E.ACT.portUpgrade(s,'tartus'); }
+  buy(s, ['oilwells','refinery','gasfield','phosphate','farm']);
+  berth(s,'latakia'); berth(s,'tartus');
   for (const id of ['jordan','turkey','iraq','gulf','eu','lebanon']) E.ACT.deal(s,id);
 };
 // builds an economy out of factories and people rather than out of holes in the ground
@@ -34,9 +45,10 @@ const builder=(s,m)=>{ smart(s,m);
   // empty. Since industryPower() exists, the grid has to keep up with the mills.
   if (E.nationalHours(s) < 14 && s.reserves > 600) s.policy.capex = 60;
   // a state that teaches and treats its people, and can move what it makes
-  if (s.reserves>200){ for(const id of ['schools','clinics','unis']) E.ACT.service(s,id); }
-  if (s.reserves>260){ for(const id of ['textiles','food','pharma','logistics','coldchain','packaging','cement','telecom','tourism']) E.ACT.invest(s,id); }
-  if (s.reserves>700){ for(const id of ['refinery','farm','oilwells']) E.ACT.invest(s,id); E.ACT.portUpgrade(s,'latakia'); E.ACT.portUpgrade(s,'tartus'); }
+  if (s.reserves>400){ for(const id of ['schools','clinics','unis']) E.ACT.service(s,id); }
+  buy(s, ['textiles','food','pharma','logistics','coldchain','packaging','cement','telecom','tourism']);
+  buy(s, ['refinery','farm','oilwells']);
+  berth(s,'latakia'); berth(s,'tartus');
   for (const id of ['jordan','turkey','iraq','gulf','eu']) E.ACT.deal(s,id);
 };
 // Sells the country: builds exactly what the builder builds, and takes every hand offered.

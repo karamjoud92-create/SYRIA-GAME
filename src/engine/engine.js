@@ -474,7 +474,7 @@ function step(state, dt = MONTH, policyOverride){
   const rw = realWage(s), hrs = nationalHours(s), nu = natUnrest(s);
   // THE BAR. Every good year raises what counts as good enough, and it never drops back.
   // Nobody thanks you in 2040 for the electricity that made you a hero in 2029.
-  const barFrom = s.diff === 'realistic' ? 38 : 41, barOver = s.diff === 'realistic' ? 36 : 37;
+  const barFrom = s.diff === 'realistic' ? 33 : 41, barOver = s.diff === 'realistic' ? 30 : 37;
   s.bar = clamp(Math.max(s.bar || 0, ((s.score || 40) - barFrom) / barOver), 0, 1);
   s.expWage = 25 + Math.max(0, s.cap - 20) * 0.6 + s.bar * 32;
   const tp = { base:45, decrees:(s.trustMod || 0), bread:{ full:6, partial:0, removed:-10 }[P.bread], fuel:{ full:4, partial:0, market:-6 }[P.fuel],
