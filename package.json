@@ -18,7 +18,8 @@
     "indep": "node build.js && node tools/indep-check.mjs",
     "logic": "node build.js && node tools/logic-check.mjs",
     "live": "node build.js && node tools/live-check.mjs",
-    "trade": "node build.js && node tools/trade-check.mjs"
+    "trade": "node build.js && node tools/trade-check.mjs",
+    "panels": "node build.js && node tools/panels-check.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

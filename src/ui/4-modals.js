@@ -128,7 +128,7 @@ function saveCodeModal(){
 }
 function loadCodeModal(err){
   modal(`<h2>📥 ${t('loadCode')}</h2>${err ? `<p class="bad">${t('badCode')}</p>` : ''}<textarea class="code" id="codein" placeholder="${t('pasteCode')}"></textarea>
-  <div class="row"><button class="btn primary" data-act="doload">${t('load')}</button><button class="btn" data-act="${S ? 'close' : 'startscreen'}">${t('back')}</button></div>`);
+  <div class="row"><button class="btn primary" data-act="doload">${t('load')}</button><button class="btn" data-act="${UI.started ? 'close' : 'startscreen'}">${t('back')}</button></div>`);
 }
 function compareRows(a, b){
   const row = (key, va, vb, fmt, goodUp) => { const d = vb - va, cls = Math.abs(d) < 1e-6 ? 'muted' : (d > 0) === goodUp ? 'good' : 'bad', arr = Math.abs(d) < 1e-6 ? '→' : d > 0 ? '↑' : '↓';

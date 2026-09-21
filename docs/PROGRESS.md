@@ -139,8 +139,10 @@ Built in this session, in order:
   functions that later files override and nothing calls. They reference CSS variables this theme does
   not define. Harmless, but they have already caused one real bug (the invisible cycle labels) and will
   cause another.
-- **Old saves break on every state change.** Key is `transition-syria-v6` today. There is no migration
-  path, by design; if the game gets an audience that has to change.
+- **Old saves no longer break on every state change** (fixed). `heal()` in `src/ui/5-game.js` runs
+  from `syncD` on every load path and fills any key a save is missing from a fresh `newGame`,
+  without overwriting anything the player earned. The key is still `transition-syria-v6`; bump it
+  only for a change that cannot be healed.
 
 ## Resuming
 
@@ -149,7 +151,8 @@ npm run check     # build + balance sim + missions + scoreboard tests. Run after
 npm run onboard   # browser: does the game still open up slowly, in both languages?
 npm run econ      # browser: sectors, factories, the work layer, the bar
 npm run indep     # browser: the independence chip, score panel, teeth and the buy-back
-npm run logic     # browser: twelve claims the game makes about itself, in both languages
+npm run logic     # browser: the claims the game makes about itself, in both languages
+npm run panels    # browser: panels open, greyed buttons explain themselves, nothing off the edge
 npm run browser   # browser: two players in one room
 npm run serve     # a local score server on :8787 while working on the scoreboard
 ```
@@ -157,3 +160,33 @@ npm run serve     # a local score server on :8787 while working on the scoreboar
 Branch: `claude/multiplayer-game-shared-scores-l72mdf` (the repository's default branch).
 Every change in this project was verified in a real browser in English and Arabic before shipping.
 Keep doing that: three of the bugs fixed here were invisible to the unit tests and obvious on screen.
+
+## The panel audit (last round)
+
+Twenty-seven agents went over the built page in parallel — panels, dead clicks, Arabic/RTL, the new
+features, saves, and thrown errors over a long playthrough — and every finding was handed to
+independent skeptics who tried to refute it first. Sixteen survived; five were correctly refuted.
+All sixteen are fixed, and `npm run panels` now fails if any of them comes back.
+
+Worth not undoing:
+
+- **`pipeLabel()` handles all six pipe kinds.** The Progress drawer used to assume anything that was
+  not a project or a port was a factory, so a school or a multinational in the queue threw inside
+  `render()` and blanked the panel for good. The fallback branch matters as much as the six cases.
+- **`heal()` on every load path.** See above. This is why old save codes still open Trade → Companies.
+- **Factories really have no ceiling now.** `max:3` was still sitting in every `INVEST` entry and the
+  UI honoured it, so the escalating-cost ladder was unreachable. The cards also quoted the base price
+  forever; they charge `investCost(S, id)` now and show `Level N` instead of ●●○.
+- **The HUD and the dock wrap at every width**, and their buttons are checked at seven viewport widths
+  in both languages with every panel unlocked. Two separate 760px blocks in the stylesheet meant the
+  phone rules were being outranked and never applied at all.
+- **The dig-vs-make trade-off is measured without the supply sectors.** Counting packaging, cold chain
+  and logistics as "industry" made extraction and industry tie to within 0.2% on dollars per dollar —
+  which would have meant industry strictly dominates, and no choice at all. Excluded, the gap is 25%.
+
+Still open after this round:
+
+- **Ports still jam late.** A fully built industrial economy outruns the berth ladder (the sim's
+  builder ends with 348 of unmet export demand). The answer exists in the game — more berths, more
+  logistics — but eight months a berth is slow, and the only warning is a badge on the Trade panel.
+- **Dead code from older layouts** is still in `src/ui/1-core.js` and `src/ui/2-map-panels.js`.

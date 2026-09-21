@@ -1,9 +1,30 @@
 // ===== Transition: UI v5 (continuous time + trade). Overrides earlier render functions. =====
 const SPEEDS = [0, 9500, 5600, 3000];
+UI.started = false;   // a real game is in play, not the placeholder sitting behind the start screen
 UI.speed = 0; UI.flash = {}; UI.effect = null; UI.toasts = []; UI.sub = { money:'actions', progress:'why', trade:'resources', people:'families' }; UI.pdown = false; UI.hover = false; UI.dirty = false;
 let TIMER = null, TOAST_ID = 0;
 D = { policy:{}, decrees:[], projects:[], projMode:{}, facilities:[], wageRaise:0 };
-const syncD = () => { if (S) D.policy = S.policy; };
+// A save from an earlier build of v6 is missing whatever was added since (s.firms, s.ind, s.bar,
+// s.lvl …). Rather than bump the key and throw everyone's country away, fill the gaps from a fresh
+// game: only keys that are absent, never a value the player earned. Unguarded reads of a late field
+// used to blank a whole panel for anyone with an old save code.
+function heal(s){
+  if (!s) return s;
+  const fresh = newGame(s.seed, s.diff || 'learner');
+  for (const k of Object.keys(fresh)){
+    if (s[k] === undefined){ s[k] = fresh[k]; continue; }
+    const a = s[k], b = fresh[k];
+    if (b && typeof b === 'object' && !Array.isArray(b) && a && typeof a === 'object' && !Array.isArray(a))
+      for (const j of Object.keys(b)) if (a[j] === undefined) a[j] = b[j];
+  }
+  for (const id of Object.keys(fresh.provs)){
+    const a = s.provs[id], b = fresh.provs[id];
+    if (!a){ s.provs[id] = b; continue; }
+    for (const j of Object.keys(b)) if (a[j] === undefined) a[j] = b[j];
+  }
+  return s;
+}
+const syncD = () => { if (S){ heal(S); D.policy = S.policy; } };
 
 const DRAWERS5 = [
   ['guide', '🧭', 'dGuide', 'guideSub'],
@@ -52,7 +73,7 @@ function snap(s){ return { t:s.t, popM:s.popM, cash:s.treasury, usd:s.reserves, 
 function persist(){ STORE[UI.active] = { S }; STORE.active = UI.active; try { localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e){} }
 function restore(){
   try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!o) return false; STORE = o; UI.active = o.active || 'campaign';
-    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); return true; } catch(e){ return false; }
+    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); UI.started = true; return true; } catch(e){ return false; }
 }
 // Months owed since the tab was closed. Nothing here decides anything for the player: crises
 // that would have fired are queued and asked on return, never answered on their behalf.
@@ -84,12 +105,12 @@ function begin(diff, mission){
   UI.active = mission ? 'mission' : 'campaign';
   S = startGame(undefined, diff, mission); S.history = [snap(S)]; S.log = []; syncD();
   if (UI.live){ S.live = true; S.realAt = Date.now(); S.pending = []; }
-  UI.drawer = null; UI.provOpen = false; UI.toasts = []; persist();
+  UI.drawer = null; UI.provOpen = false; UI.toasts = []; UI.started = true; persist();
 }
 function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
 function loadCode(code){
   try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 6) return false;
-    UI.active = o.active || 'campaign'; S = o.S; syncD(); setSpeed(0); persist(); return true; } catch(e){ return false; }
+    UI.active = o.active || 'campaign'; S = o.S; syncD(); setSpeed(0); UI.started = true; persist(); return true; } catch(e){ return false; }
 }
 function pcLeft(){ return S.pc; }
 function usdLeft(){ return S.reserves; }
@@ -319,10 +340,10 @@ function renderHUD(P){
       ${res('power', pw.toFixed(1) + (AR() ? 'س' : 'h'), pw, nationalHours(P), true, sign(nationalHours(P) - pw, 1))}
       ${res('sov', Math.round(S.sov), S.sov, P.sov, true, sign(P.sov - S.sov, 1))}
     </div>
-    <span class="spacer"></span>
+    <div class="hudbtns">
     <button class="iconbtn" data-act="mute" aria-label="${SFX.on ? t('soundOff') : t('soundOn')}" title="${SFX.on ? t('soundOff') : t('soundOn')}">${SFX.on ? '🔊' : '🔇'}</button>
     <button class="iconbtn lang" data-act="lang" aria-label="${t('language')}">🌐 <span class="lt2">${t('language')}</span></button>
-    <button class="iconbtn" data-act="menu" aria-label="${t('menu')}">☰</button>`;
+    <button class="iconbtn" data-act="menu" aria-label="${t('menu')}">☰</button><!--hudbtns--></div>`;
 }
 
 // ---------- advisors ----------
@@ -441,11 +462,15 @@ function renderMoneyActions(){
   {
     const sov0 = S.sov0 === undefined ? 60 : S.sov0, room = Math.max(0, sov0 - S.sov);
     const spare = Math.max(0, S.reserves - 300), amts = [250, 1000].filter(a => a <= S.debt);
-    const why = S.debt <= 0 ? t('repayNone') : spare < amts[0] ? t('repayNeed') : '';
+    // Every greyed button needs its own reason. The why used to be computed against the cheapest
+    // amount only, so the $1.00B button went dead and said nothing.
+    const why = S.debt <= 0 ? t('repayNone') : spare < amts[0] ? t('repayNeed')
+      : amts.some(a => a > spare) ? fill(t('repaySpare'), [usdM(Math.floor(spare))]) : '';
+    const dead = a => S.debt <= 0 || a > spare;
     h += `<div class="group"><h3>\u{1F9ED} ${t('repayTitle')}</h3><p>${fill(t('repayText'), [usdM(S.debt), usdM(SOV_PER_USD)])}</p>
       <div class="dcard"><h4>${t('debtLeft')}: ${usdM(S.debt)}</h4>
       <div class="row spread"><div class="row">${room > 0 ? `<span class="chip up">${fill(t('buysBack'), [Math.min(room, 250 / SOV_PER_USD).toFixed(1)])}</span>` : `<span class="chip">${t('repayDone')}</span>`}</div>
-      <div class="row">${amts.map(a => `<button class="btn primary" data-act="repay" data-v="${a}" ${why || a > spare ? 'disabled' : ''}>${usdM(a)}</button>`).join('')}</div></div>
+      <div class="row">${amts.map(a => `<button class="btn primary" data-act="repay" data-v="${a}" ${dead(a) ? 'disabled' : ''}>${usdM(a)}</button>`).join('')}</div></div>
       ${why ? `<div class="why">${esc(why)}</div>` : ''}</div></div>`;
   }
   h += `<div class="group"><h3>🌍 ${t('abroadTitle')}</h3><p>${t('abroadText')}${S.grant > 0 ? ' ' + fill(t('grantOnHand'), [usdM(S.grant)]) : ''}</p>` + FACILITIES.map(f => {
@@ -490,7 +515,7 @@ function renderTradeResources(){
   let h = `<div class="rcard oil"><div class="rh"><span class="ri">🛢️</span><div><h3>${t('oilTitle')}</h3><div class="rv">${fill(t('oilProd'), [o.prod.toFixed(0)])}</div></div></div>
     ${bar(o.prod, 120, '#2a2438')}<p class="small">${fill(t('oilAccess'), [Math.round(o.access * 100), Math.round(o.security * 100)])}</p>
     <div class="q">${t('oilUseQ')}</div><div class="seg">${[0, 0.5, 1].map(v => `<button data-act="oilHome" data-v="${v}" aria-pressed="${S.policy.oilHome === v}">${t('oilUse')[v]}</button>`).join('')}</div>
-    <div class="split"><span>🏠 ${o.home.toFixed(0)}k</span><div class="splitbar"><i style="width:${o.prod ? o.home / o.prod * 100 : 0}%"></i></div><span>🚢 ${o.exp.toFixed(0)}k</span></div>
+    <div class="split"><span>🏠 ${fill(t('kbbl'), [o.home.toFixed(0)])}</span><div class="splitbar"><i style="width:${o.prod ? o.home / o.prod * 100 : 0}%"></i></div><span>🚢 ${fill(t('kbbl'), [o.exp.toFixed(0)])}</span></div>
     <p class="small">${fill(t('oilUseHint'), [o.refineCap])}</p></div>`;
   h += `<div class="rgrid">
     <div class="rcard"><div class="rh"><span class="ri">🔥</span><div><h3>${t('gasTitle')}</h3><div class="rv">${fill(t('gasProd'), [r.gas.toFixed(0)])}</div></div></div>${bar(r.gas, 30, '#35b6a3')}<p class="small">${t('gasHint')}</p></div>
@@ -499,13 +524,15 @@ function renderTradeResources(){
   // one card, used by both groups below
   const investCard = id => {
     const x = INVEST[id], tx = L2(INV_TXT[id]), running = S.pipe.find(p => p.kind === 'invest' && p.id === id), count = S.invests[id] || 0;
-    const maxed = (x.max && count >= x.max) || (id === 'offshore' && r.offshore && r.offshore !== 'drilling');
-    const v = investValue(id), pb = v > 0.5 ? x.usd / v + x.months / 12 : null;
-    let why = ''; if (!running && !maxed){ if (S.reserves < x.usd) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
-    const built = count ? `<span class="chip up">${'●'.repeat(count)}${'○'.repeat(Math.max(0, (x.max || 3) - count))}</span>` : '';
+    // no ceiling any more: the next level just costs more (investCost). Only the one-shot gamble ends.
+    const maxed = id === 'offshore' && r.offshore && r.offshore !== 'drilling';
+    const cost = investCost(S, id);
+    const v = investValue(id), pb = v > 0.5 ? cost / v + x.months / 12 : null;
+    let why = ''; if (!running && !maxed){ if (S.reserves < cost) why = fill(t('needsUsd'), [cost]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
+    const built = count ? `<span class="chip up">${fill(t('levelN'), [count])}</span>` : '';
     const status = running ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(running.due - S.t)])}</span>` : maxed ? `<span class="chip up">${id === 'offshore' ? (r.offshore === 'found' ? '✅ ' + (A ? 'وُجد غاز' : 'Gas found') : '❌ ' + (A ? 'بئر جافة' : 'Dry well')) : t('maxed')}</span>`
       : `<button class="btn primary" data-act="invest" data-id="${id}" ${why ? 'disabled' : ''}>${t('investBtn')}</button>`;
-    return `<div class="dcard inv"><span class="gem">🏦 ${usdM(x.usd)}</span><h4>${INV_TXT[id].icon} ${esc(tx[0])}</h4><p class="kid">${esc(tx[1])}</p>
+    return `<div class="dcard inv"><span class="gem">🏦 ${usdM(cost)}</span><h4>${INV_TXT[id].icon} ${esc(tx[0])}</h4><p class="kid">${esc(tx[1])}</p>
       <div class="row spread"><div class="row"><span class="chip">⏳ ${monthsTxt(x.months)}</span>${x.jobs ? `<span class="chip up">💼 ${fill(t('jobsChip'), ['+' + x.jobs])}</span>` : ''}${x.gamble ? `<span class="chip down">🎲 ${t('gamble')}</span>` : ''}${pb ? `<span class="chip up">${fill(t('payback'), [monthsTxt(Math.round(pb * 12 / 6) * 6)])}</span>` : `<span class="chip">${t('paybackNever')}</span>`}${built}</div>${status}</div>
       ${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   };
@@ -525,7 +552,7 @@ function renderTradePorts(){
     const p = S.ports[id], up = S.pipe.find(x => x.kind === 'port' && x.id === id);
     return `<div class="dcard port"><h4>⚓ ${PORT_NAME[LANG][id]}</h4><div class="stars">${Array.from({ length:Math.max(3, p.lvl) }, (_, i) => `<span class="${i < p.lvl ? 'on' : ''}">⚓</span>`).join('')} <span class="small muted">${fill(t('portLvl'), [p.lvl])} · ${p.op === 'foreign' ? t('portForeign') : t('portState')}</span></div>
       ${up ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(up.due - S.t)])}</span>` :
-      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl))])}</span>${S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
+      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl)), monthsTxt(PORT_UPGRADE.months)])}</span>${S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
         ${p.op === 'state' ? `<button class="opt mini" data-act="portCon" data-id="${id}"><b>🤝 ${t('concession')}</b><span class="t">${t('concessionTxt')}</span></button>` : ''}</div>`}</div>`;
   }).join('');
   return h;
@@ -676,12 +703,25 @@ function renderDrawer(){
     ${subtabs ? `<div class="subtabs" role="tablist">${subtabs.map(([k, l]) => `<button role="tab" data-act="subtab" data-d="${d[0]}" data-v="${k}" aria-selected="${UI.sub[d[0]] === k}">${t(l)}</button>`).join('')}</div>` : ''}
     <div class="body">${drawerBody(d[0])}</div></aside>`;
 }
+// every pipe kind the engine can push: mw, proj, invest, firm, port, svc. Never index a text
+// table off a pipe entry without a fallback — an unknown kind used to throw and kill render().
+function pipeLabel(i){
+  if (i.kind === 'proj') return '🏗️ ' + esc(PN(i.id));
+  if (i.kind === 'port') return '⚓ ' + esc((PORT_NAME[LANG] || {})[i.id] || i.id);
+  if (i.kind === 'svc') return (SVC_ICON[i.id] || '🏫') + ' ' + esc(svcLabel(i.id) || i.id);
+  if (i.kind === 'firm'){
+    const f = FIRM_TXT[i.id], sec = INV_TXT[i.sector];
+    return '🏢 ' + esc((f ? L2(f)[1] : i.id) + (sec ? ' — ' + L2(sec)[0] : ''));
+  }
+  const x = INV_TXT[i.id];
+  return x ? x.icon + ' ' + esc(L2(x)[0]) : '🏭 ' + esc(String(i.id || ''));
+}
 function renderProgressCharts(){
   const G = k => L2(GLOSS[k]).name, pipe = (S.pipe || []).filter(i => !(i.kind === 'mw' && i.mw < 20)).slice().sort((a, b) => a.due - b.due);
   const mwSoon = (S.pipe || []).filter(i => i.kind === 'mw').reduce((a, i) => a + i.mw, 0);
   let h = `<h3 class="bh" style="margin-top:0">⏳ ${t('comingSoon')}</h3>`;
   if (mwSoon > 1) h += `<div class="pipe"><span>⚡ ${fill(t('mwArrives'), [Math.round(mwSoon)])}</span><b>${t('inTime').replace('{0}', monthsTxt(12))}</b></div>`;
-  h += pipe.filter(i => i.kind !== 'mw').map(i => `<div class="pipe"><span>${i.kind === 'proj' ? '🏗️ ' + esc(PN(i.id)) : i.kind === 'port' ? '⚓ ' + PORT_NAME[LANG][i.id] : INV_TXT[i.id].icon + ' ' + esc(L2(INV_TXT[i.id])[0])}</span><b>${fill(t('inTime'), [monthsTxt(i.due - S.t)])}</b></div>`).join('');
+  h += pipe.filter(i => i.kind !== 'mw').map(i => `<div class="pipe"><span>${pipeLabel(i)}</span><b>${fill(t('inTime'), [monthsTxt(i.due - S.t)])}</b></div>`).join('');
   if (!pipe.length && mwSoon <= 1) h += `<p class="muted" style="font-size:13px">${t('comingNone')}</p>`;
   h += `<h3 class="bh">📈 ${t('subCharts')}</h3>` + (S.history.length < 3 ? `<p class="muted" style="font-size:13px">${t('chartsEmpty')}</p>` :
     spark('score', '🏆 ' + t('score'), v => v.toFixed(0), true, '#d89412') + spark('trust', '🤝 ' + G('trust'), v => v.toFixed(0), true, '#35b6a3') + spark('anger', '🔥 ' + G('anger'), v => v.toFixed(0), false, '#f08a3c') +
@@ -814,8 +854,10 @@ function showAway(r){
   modal(`<div class="tut-icon" aria-hidden="true">\u{1F305}</div><h2>${t('awayTitle')}</h2>
     <div class="src">${fill(t('awaySub'), [monthsTxt(r.months), esc(whenTxt(S.t))])}</div>
     <div class="scores" style="margin-top:14px">${rows.map(([ic, name, from, to, good, fmt]) => {
-      const up = (to - from) * good > 0;
-      return `<div><div class="row spread"><span>${ic} ${esc(name)}</span><b class="${up ? 'good' : 'bad'}">${up ? '↑' : '↓'} ${esc(fmt(to))}</b></div>
+      // The arrow says which way the number moved; the colour says whether that is good news.
+      // They used to be the same flag, so unemployment falling was drawn as ↓ in red and rising as ↑ in green.
+      const rose = to > from, well = (to - from) * good > 0;
+      return `<div><div class="row spread"><span>${ic} ${esc(name)}</span><b class="${well ? 'good' : 'bad'}">${rose ? '↑' : '↓'} ${esc(fmt(to))}</b></div>
         <div class="small muted" style="margin:0">${esc(fmt(from))} → ${esc(fmt(to))}</div></div>`; }).join('')}</div>
     ${done.length ? `<h3 class="bh">✅ ${t('awayDone')}</h3>${done.map(n => `<div class="pipe"><span>${esc(noteText([S.t, ...n]))}</span></div>`).join('')}` : ''}
     ${r.queued ? `<p class="tipbox">⚠️ ${fill(t('awayWaiting'), [r.queued])}</p>` : ''}
@@ -870,7 +912,7 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
   const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore','awayGo','livemode','nextChapter'];
-  if (S && S.over && !always.includes(a)) return;
+  if (S && S.over && !always.includes(a)){ toast('⏹️ ' + t('overNow')); return; }   // never a dead click
   if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed','showScore'].includes(a)) sfx('tap');
   const T = LANG === 'ar';
   switch(a){

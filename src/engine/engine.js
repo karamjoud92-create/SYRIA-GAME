@@ -96,23 +96,23 @@ const relax = (r, dt) => 1 - Math.pow(1 - r, dt);   // per-half-year relaxation 
 // ---------- trade & resources data ----------
 const INVEST = {
   // extraction: dollars, but few jobs
-  oilwells:{ usd:60, months:8, max:3, jobs:2, req:s => eastAnger(s) < 70 },
-  refinery:{ usd:50, months:8, max:3, jobs:3 },
-  gasfield:{ usd:80, months:12, max:3, jobs:2 },
+  oilwells:{ usd:60, months:8, jobs:2, req:s => eastAnger(s) < 70 },
+  refinery:{ usd:50, months:8, jobs:3 },
+  gasfield:{ usd:80, months:12, jobs:2 },
   offshore:{ usd:150, months:24, gamble:true, jobs:1 },
-  phosphate:{ usd:50, months:8, max:3, jobs:3 },
-  farm:{ usd:30, months:8, max:3, jobs:5 },
+  phosphate:{ usd:50, months:8, jobs:3 },
+  farm:{ usd:30, months:8, jobs:5 },
   // industry: fewer dollars per dollar spent, but this is what employs a country
-  textiles:{ usd:35, months:6, max:3, jobs:11, sector:true },
-  food:{ usd:30, months:6, max:3, jobs:9, sector:true },
-  pharma:{ usd:45, months:9, max:3, jobs:7, sector:true },
-  cement:{ usd:55, months:9, max:3, jobs:6, sector:true },
-  telecom:{ usd:70, months:9, max:3, jobs:5, sector:true },
-  tourism:{ usd:40, months:12, max:3, jobs:10, sector:true, req:s => natUnrest(s) < 48 },
+  textiles:{ usd:35, months:6, jobs:11, sector:true },
+  food:{ usd:30, months:6, jobs:9, sector:true },
+  pharma:{ usd:45, months:9, jobs:7, sector:true },
+  cement:{ usd:55, months:9, jobs:6, sector:true },
+  telecom:{ usd:70, months:9, jobs:5, sector:true },
+  tourism:{ usd:40, months:12, jobs:10, sector:true, req:s => natUnrest(s) < 48 },
   // supply: nothing you make is worth anything until it can move
-  logistics:{ usd:40, months:6, max:3, jobs:8, sector:true, supply:true },
-  coldchain:{ usd:35, months:6, max:3, jobs:6, sector:true, supply:true },
-  packaging:{ usd:25, months:6, max:3, jobs:7, sector:true, supply:true },
+  logistics:{ usd:40, months:6, jobs:8, sector:true, supply:true },
+  coldchain:{ usd:35, months:6, jobs:6, sector:true, supply:true },
+  packaging:{ usd:25, months:6, jobs:7, sector:true, supply:true },
 };
 // Where each sector's jobs land, and what it earns abroad per half-year, per level.
 const IND = {

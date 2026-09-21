@@ -38,6 +38,11 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run indep`  → independence end to end: it is a dashboard number from month 0, it explains itself,
   selling it costs trust, influence, export dollars and calm, the score panel shows all six parts, and
   money buys it back — but never past where you started. Both languages.
+- `npm run panels` → the panels themselves: every kind of thing under construction draws, a greyed
+  button always says why, an old save still opens every drawer, the floating effect box never
+  covers the drawer beside it, and **no header or dock button sits off the edge** at 1920 / 1400 /
+  1100 / 900 / 820 / 700 / 390px with every panel unlocked. Both languages. Run it after any CSS or
+  panel change.
 - Optional browser test: `npm i -D playwright && npx playwright install chromium`, then `node tools/smoke.mjs`.
 
 ## Architecture
@@ -53,8 +58,13 @@ fast: a player should be able to think, and should not have to wait two years to
   - **`INVEST` / `IND` — fifteen sectors.** `INVEST` holds cost, months, `max` and `jobs` for each. The nine with
     `sector:true` (textiles, food, pharma, cement, telecom, tourism, plus the three `supply:true` ones — logistics,
     cold chain, packaging) also have an `IND` entry saying where their
-    jobs land and what they earn abroad. Extraction earns more dollars per dollar spent; industry employs people,
-    and people are what hold the country together. Levels live in `s.ind`, built count in `s.invests`.
+    jobs land and what they earn abroad. Extraction earns more dollars per dollar spent (0.56 vs 0.45
+    a year per $ put in); industry employs people (11.3pp of unemployment vs 3.2pp), and people are what
+    hold the country together. The three `supply:true` sectors are a third thing and sit out that
+    comparison — they do not export, they multiply what everything else fetches, and counting them as
+    "industry" flattened the whole trade-off to a 0.2% tie. Levels live in `s.ind`, built count in
+    `s.invests`. **No sector has a ceiling**; `investCost` charges 40% more for each level, and the UI
+    must quote `investCost(s, id)`, never the base `INVEST[id].usd`.
     Tourism earns without a ship, so the ports never throttle it — unrest and blackouts do.
   - **Services, `s.edu`, `s.health`.** `SERVICES` (schools, clinics, universities) are built in waves against a
     need that scales with `s.popM`; `svcCover` is how much of that need is met. Education and health relax toward
@@ -150,7 +160,22 @@ fast: a player should be able to think, and should not have to wait two years to
   gave nothing.
 - **Nothing may fail silently.** `withEffects` toasts when an action is refused. A cap the player
   cannot see is a dead click: the services cap (`svcRoom`) sat only in the engine, so the button
-  stayed live and nothing happened. Any new refusal needs a reason on the control too.
+  stayed live and nothing happened. Any new refusal needs a reason on the control too. The reason
+  must be computed **per control**, not for the cheapest one: the repay card greyed its $1B button
+  against the $250M test and said nothing. After `S.over` every non-`always` action toasts rather
+  than returning silently.
+- **Never index a text table off a pipe entry without a fallback.** The engine pushes six kinds
+  (`mw`, `proj`, `invest`, `firm`, `port`, `svc`); the Progress drawer assumed anything that wasn't
+  a project or a port was an `INVEST` id, so one school in the queue threw inside `render()` and
+  blanked the whole panel. `pipeLabel()` handles all six and falls back on an unknown kind.
+- **Saves heal, they do not get thrown away.** `s.firms`, `s.ind`, `s.bar`, `s.lvl` and the rest
+  were added inside v6 without a key bump, so older codes were missing them. `heal(s)` (called from
+  `syncD`, so it runs on every load path) fills any absent key from a fresh `newGame` and never
+  overwrites a value the player earned. Bump the key only for a change that cannot be healed.
+- **CSS: specificity beats order, and two blocks share the 760px breakpoint.** `.dock .dbtn` in the
+  first block silently outranked `.dbtn` in the second, so none of the phone shrinking applied and
+  the speed buttons ran off a page that cannot scroll. Match the specificity when overriding, and
+  let `npm run panels` prove it at 390px.
 - **Live play** (`LIVE_MS_PER_MONTH`, `catchUp()`, `showAway()` in `src/ui/5-game.js`). A game started
   in live mode runs on the wall clock: one game month per real hour, recorded in `S.realAt`. On open,
   `catchUp()` steps the months owed, collects what finished, and `showAway()` reports it. **Crises that

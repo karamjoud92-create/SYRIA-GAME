@@ -74,14 +74,14 @@ function decisionDeck(){
   // 5. nothing is being made here
   if (isOpen('sectors')){
     const k = Object.keys(INVEST).filter(id => INVEST[id].sector && (!INVEST[id].supply || isOpen('supply'))
-      && S.reserves >= INVEST[id].usd && (S.invests[id] || 0) < (INVEST[id].max || 3)
+      && S.reserves >= investCost(S, id)
       && !S.pipe.some(q => q.kind === 'invest' && q.id === id) && !(INVEST[id].req && !INVEST[id].req(S)))
       .sort((a, b) => (INVEST[b].jobs || 0) - (INVEST[a].jobs || 0))[0];
     if (k && !decSkipped('inv_' + k)){
       const x = INVEST[k], tx = L2(INV_TXT[k]);
       out.push({ id:'inv_' + k, icon:INV_TXT[k].icon, weight:50 + (joblessNat(S) - 40) * 0.5, why:t('decSector'),
         title:tx[0], text:tx[1],
-        opts:[{ label:t('investBtn'), sub:fill(t('jobsChip'), ['+' + x.jobs]), chips:money(x.usd, 0),
+        opts:[{ label:t('investBtn'), sub:fill(t('jobsChip'), ['+' + x.jobs]), chips:money(investCost(S, k), 0),
           run:() => withEffects(tx[0], () => ACT.invest(S, k)) }] });
     }
   }

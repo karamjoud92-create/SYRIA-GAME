@@ -59,6 +59,9 @@ h2,h3,h4{ margin:0; line-height:1.15; font-weight:800; }
 .dl{ font-size:11px; font-weight:800; border-radius:99px; padding:0 5px; }
 .dl.up{ background:#dff1dd; color:var(--good); } .dl.down{ background:#fbe0de; color:var(--bad); } .dl.flat{ background:var(--card-2); color:var(--card-muted); }
 .hud .spacer{ flex:1; }
+/* Sound, language and menu travel together and hug the end of whatever row they land on. They
+   used to be three loose children, so a wrapping HUD could split them across two rows. */
+.hud .hudbtns{ display:flex; flex-wrap:nowrap; gap:8px; margin-inline-start:auto; align-items:center; }
 .iconbtn{ width:44px; height:44px; border-radius:14px; border:0; background:var(--card); color:var(--card-ink); font-size:19px; box-shadow:var(--shadow); display:grid; place-items:center; }
 .iconbtn.lang{ width:auto; padding:0 12px; font-size:14px; font-weight:700; display:flex; gap:5px; white-space:nowrap; }
 .mission{ margin:0 14px 6px; background:var(--gold); color:var(--gold-ink); border-radius:12px; padding:5px 14px; font-weight:700; font-size:14px; box-shadow:var(--shadow); display:flex; justify-content:space-between; gap:10px; }
@@ -233,7 +236,10 @@ details summary{ cursor:pointer; font-size:13px; color:var(--card-muted); font-w
 .notes{ margin:0; padding-inline-start:18px; font-size:14px; } .notes li{ margin-bottom:5px; }
 
 /* ===== dock ===== */
-.dock{ display:flex; align-items:center; gap:10px; padding:10px 14px 12px; }
+/* Wraps at every width. Between the phone breakpoint and a wide desktop the row used to overflow
+   in one line, so the fastest-speed button sat off the edge of a page that cannot scroll. */
+.dock{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 14px 12px; }
+.dock > *{ min-width:0; }
 .dgroup{ display:flex; gap:4px; background:var(--card); border-radius:20px; padding:5px; box-shadow:var(--shadow); }
 .dbtn{ position:relative; border:0; background:none; color:var(--card-ink); border-radius:15px; padding:5px 12px 4px; display:flex; flex-direction:column; align-items:center; min-width:72px; }
 .dbtn .di{ font-size:23px; line-height:1.1; }
@@ -367,15 +373,18 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 @keyframes flup{ 0%,40%{ box-shadow:0 0 0 6px rgba(63,154,74,.45); transform:scale(1.12); } 100%{ box-shadow:0 0 0 0 rgba(63,154,74,0); transform:none; } }
 @keyframes fldown{ 0%,40%{ box-shadow:0 0 0 6px rgba(214,59,68,.45); transform:scale(1.12); } 100%{ box-shadow:0 0 0 0 rgba(214,59,68,0); transform:none; } }
 @keyframes numup{ 0%,40%{ color:var(--good); } } @keyframes numdown{ 0%,40%{ color:var(--bad); } }
-#effectbox{ position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:8; width:min(460px, 92%); pointer-events:none; }
-.board.has-drawer #effectbox{ left:calc(50% + 214px); width:min(420px, calc(100% - 470px)); }
-.board.has-prov.has-drawer #effectbox{ left:calc(50% + 30px); }
+/* Logical, not physical: in Arabic the drawer is on the right, so a hard left: offset used to
+   park this box on top of the drawer's close button. inset-inline + margin-inline:auto centres it
+   in whatever space is left, whichever way the page runs. */
+#effectbox{ position:absolute; top:12px; inset-inline:0; margin-inline:auto; z-index:8; width:min(460px, 92%); pointer-events:none; }
+.board.has-drawer #effectbox{ inset-inline-start:440px; inset-inline-end:10px; width:min(420px, calc(100% - 470px)); }
+.board.has-prov.has-drawer #effectbox{ inset-inline-start:440px; inset-inline-end:390px; }
 .effect{ pointer-events:auto; position:relative; background:var(--card); color:var(--card-ink); border-radius:18px; padding:12px 14px; box-shadow:0 6px 0 rgba(10,14,30,.35), 0 0 0 3px var(--gold); animation:pop .3s cubic-bezier(.2,1.4,.4,1); }
 .effect .close{ position:absolute; top:8px; inset-inline-end:8px; width:28px; height:28px; font-size:13px; background:var(--card-2); }
 .effect .et{ font-weight:800; font-size:15px; margin-bottom:6px; padding-inline-end:30px; }
 .effect .erow{ display:flex; gap:8px; align-items:flex-start; margin-top:5px; }
 .effect .el{ flex:0 0 92px; font-size:12px; font-weight:800; color:var(--card-muted); padding-top:2px; }
-@media (max-width: 1250px){ .board.has-drawer #effectbox, .board.has-prov.has-drawer #effectbox{ left:50%; width:min(460px, 92%); } }
+@media (max-width: 1250px){ .board.has-drawer #effectbox, .board.has-prov.has-drawer #effectbox{ inset-inline:0; width:min(460px, 92%); } }
 @media (max-width: 760px){ .hud .iconbtn{ width:34px; height:34px; font-size:15px; border-radius:11px; padding:0; } .turn .yr{ font-size:17px; } .ring{ width:36px; height:36px; } .turn{ gap:6px; } #effectbox{ top:auto; bottom:10px; } .effect .el{ flex-basis:70px; } .mbarwrap{ width:70px; } }
 
 @media (prefers-reduced-motion: reduce){ .res .bub, .res .num, .effect, .mbarwrap i.run{ animation:none !important; } }
@@ -403,6 +412,7 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   body{ font-size:14.5px; }
   .iconbtn.lang .lt2{ display:none; } .turn .ss{ display:block; }
   .hud{ flex-wrap:wrap; gap:6px; padding:8px 8px 6px; }
+  .hud .hudbtns{ margin-inline-start:0; }   /* on a phone they wrap to their own row; don't leave a hole */
   .turn .yr{ font-size:20px; } .ring{ width:42px; height:42px; } .ring .ic{ font-size:17px; }
   .tray{ order:3; width:100%; justify-content:space-between; border-radius:14px; padding:3px; }
   .res{ flex-direction:column; gap:1px; padding:3px 2px; flex:1; align-items:center; text-align:center; }
@@ -424,10 +434,12 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
   .drawer, .pcard{ inset:auto 0 0 0; width:auto; max-height:72%; top:auto; border-radius:22px 22px 0 0; }
   .board.has-drawer .advisors, .board.has-prov .advisors{ display:none; }
   .dock{ padding:8px; gap:6px; flex-wrap:wrap; }
-  .dgroup{ flex:1; justify-content:space-around; border-radius:16px; }
-  .dbtn{ min-width:0; padding:4px 4px 3px; flex:1; } .dbtn .di{ font-size:20px; } .dbtn .dt{ font-size:10.5px; }
+  .dock .dgroup{ flex:1 1 auto; min-width:0; justify-content:space-around; border-radius:16px; }
+  .dock .dbtn{ min-width:0; padding:4px 3px 3px; flex:1 1 auto; } .dbtn .di{ font-size:20px; } .dbtn .dt{ font-size:10.5px; }
   .influence{ padding:4px 10px 4px 5px; } .influence .st{ width:26px; height:26px; font-size:14px; } .influence .n{ font-size:16px; }
-  .endturn{ flex:1; justify-content:center; font-size:17px; padding:11px 16px; }
+  .endturn{ flex:1 1 auto; justify-content:center; font-size:17px; padding:11px 16px; }
+  .dock .clock, .dock .liveclock{ flex:1 0 100%; min-width:0; }
+  .dock .cbtn{ min-width:0; flex:1 1 auto; }
   .modal{ padding:18px 16px; border-radius:22px; } .modal h2{ font-size:24px; } .lede{ font-size:16px; }
 }
 

@@ -149,6 +149,8 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 10. CLAUDE.md: "Extraction earns more dollars per dollar spent; industry employs people."
   //     It was the other way round on both counts. Ports, logistics and power are held
   //     generous in every arm so neither capacity nor blackouts confound the comparison.
+  //     The three supply sectors sit out: they do not export, they multiply what everything
+  //     else fetches, so counting them as "industry" flattened the whole trade-off to a tie.
   const inv = await page.evaluate(() => {
     const mk = () => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 99999; s.treasury = 9999;
       ACT.decree(s, 'tribal'); ACT.decree(s, 'northeast');
@@ -156,26 +158,29 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
       s.policy.capex = 40; s.policy.oilHome = 1; return s; };
     const usdIn = s => s.last.ledger.usd.reduce((a, r) => a + r[1], 0) / s.last.dt;
     let base = mk(); for (let i = 0; i < 60; i++) base = step(base);
-    const b = usdIn(base), bj = joblessNat(base), out = { extraction: [], industry: [] }, jobs = { extraction: [], industry: [] };
+    const b = usdIn(base), bj = joblessNat(base), out = { extraction: [], industry: [], supply: [] }, jobs = { extraction: [], industry: [], supply: [] };
     for (const k of Object.keys(INVEST)){
       if (k === 'logistics') continue;
-      let s = mk(); const lvl = INVEST[k].max || 1;
+      let s = mk(); const lvl = 3, ladder = 1 + 1.4 + 1.96;   // three levels at the escalating price
       if (s.ind[k] !== undefined) s.ind[k] = lvl; else s.invests[k] = lvl;
       for (let i = 0; i < lvl; i++){ if (k === 'oilwells') s.res.oilCap += 20; if (k === 'refinery') s.res.refinery += 20;
         if (k === 'gasfield') s.res.gas += 5; if (k === 'phosphate') s.res.phos += 0.35; if (k === 'farm') s.res.farm += 1; }
       if (k === 'offshore'){ s.res.offshore = true; s.res.oilCap += 30; }
       for (let i = 0; i < 60; i++) s = step(s);
-      const kind = INVEST[k].sector ? 'industry' : 'extraction';
-      out[kind].push((usdIn(s) - b) * 2 / (INVEST[k].usd * lvl));
+      const kind = INVEST[k].supply ? 'supply' : INVEST[k].sector ? 'industry' : 'extraction';
+      out[kind].push((usdIn(s) - b) * 2 / (INVEST[k].usd * ladder));
       jobs[kind].push(bj - joblessNat(s));
     }
     const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
-    return { xUsd: avg(out.extraction), iUsd: avg(out.industry), xJob: avg(jobs.extraction), iJob: avg(jobs.industry) };
+    return { xUsd: avg(out.extraction), iUsd: avg(out.industry), sUsd: avg(out.supply),
+      xJob: avg(jobs.extraction), iJob: avg(jobs.industry), sJob: avg(jobs.supply) };
   });
   ok(inv.xUsd > inv.iUsd,
-    `${tag}: extraction earns more dollars per dollar spent (${inv.xUsd.toFixed(2)} vs ${inv.iUsd.toFixed(2)} a year per $ put in)`);
+    `${tag}: extraction earns more dollars per dollar spent (${inv.xUsd.toFixed(3)} vs ${inv.iUsd.toFixed(3)} a year per $ put in)`);
   ok(inv.iJob > inv.xJob * 2,
     `${tag}: and industry is what employs people (${inv.iJob.toFixed(1)}pp of unemployment vs ${inv.xJob.toFixed(1)}pp)`);
+  ok(inv.sUsd > inv.xUsd && inv.sJob > inv.xJob,
+    `${tag}: and the supply sectors are the cheapest dollars of all, because they lift everything else (${inv.sUsd.toFixed(3)} per $, ${inv.sJob.toFixed(1)}pp of unemployment)`);
 
   // 11. "What a state is actually for" — the comment above SERVICES. Building schools and
   //     clinics to need used to LOWER your score, because upkeep at full coverage cost more

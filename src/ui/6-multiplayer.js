@@ -136,7 +136,12 @@ ensureFrame = function(){
   if (!$('#mpbox')){ const b = $('#board'); if (b){ const d = document.createElement('div'); d.id = 'mpbox'; b.appendChild(d); } }
 };
 const mpBaseHUD = renderHUD;
-renderHUD = function(P){ return mpBaseHUD(P) + mpHudBtn(); };
+// The scoreboard chip belongs inside the button group, not loose after it — otherwise the HUD
+// wraps between the menu button and the chip and they end up on opposite edges.
+renderHUD = function(P){
+  const h = mpBaseHUD(P), b = mpHudBtn();
+  return h.includes('<!--hudbtns-->') ? h.replace('<!--hudbtns-->', () => b) : h + b;
+};
 const mpBaseRender = render;
 render = function(force){
   mpBaseRender(force);
