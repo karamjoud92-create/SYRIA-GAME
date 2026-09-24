@@ -17,28 +17,33 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   for (let i = 0; i < 8; i++) { const x = await page.$('.modal .btn.primary'); if (x) await x.click(); await page.waitForTimeout(40); }
   await clear(page);
 
-  // --- month 0: a small game ---
+  // --- level 1: a small game ---
   const dock0 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
   ok(dock0.length === 4 && ['guide','policy','money','people'].every(k => dock0.includes(k)),
-     `${tag}: month 0 offers 4 panels, not 8 (${dock0.join(',')})`);
+     `${tag}: level 1 offers 4 panels, not 8 (${dock0.join(',')})`);
   const layers0 = await page.$$eval('.layers button', e => e.length);
-  ok(layers0 === 1, `${tag}: month 0 has one map layer (${layers0})`);
+  ok(layers0 === 1, `${tag}: level 1 has one map layer (${layers0})`);
   await page.click('.dbtn[data-v=policy]'); await page.waitForTimeout(200);
   const dials0 = await page.$$eval('.drawer .pol h3', e => e.length);
-  ok(dials0 === 3, `${tag}: month 0 has 3 policy dials, not 9 (${dials0})`);
+  ok(dials0 === 3, `${tag}: level 1 has 3 policy dials, not 9 (${dials0})`);
   await clear(page);
 
-  // --- the stages open up ---
-  await jump(page, 8); await clear(page);
+  // --- the LEVELS open it up, not the calendar. Waiting must buy nothing. ---
+  await jump(page, 60); await clear(page);
+  const dockWait = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
+  ok(dockWait.length === 4, `${tag}: five years of doing nothing opens nothing (${dockWait.length} panels)`);
+  const setLvl = async n => { await page.evaluate(v => { S.lvl = v; render(true); }, n); await page.waitForTimeout(200); };
+
+  await setLvl(2);
   const dock1 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
-  ok(dock1.includes('decrees'), `${tag}: decrees open in year 1 (${dock1.length} panels)`);
-  await jump(page, 10); await clear(page);
+  ok(dock1.includes('decrees'), `${tag}: decrees arrive at level 2 (${dock1.length} panels)`);
+  await setLvl(4);
   const dock2 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
-  ok(dock2.includes('trade') && dock2.includes('progress'), `${tag}: trade and progress open in year 2 (${dock2.length} panels)`);
-  await jump(page, 20); await clear(page);
+  ok(dock2.includes('trade') && dock2.includes('progress'), `${tag}: trade opens at level 4 (${dock2.length} panels)`);
+  await setLvl(7);
   const dock3 = await page.$$eval('.dbtn', e => e.map(n => n.dataset.v));
   const layers3 = await page.$$eval('.layers button', e => e.length);
-  ok(dock3.length === 8 && layers3 === 4, `${tag}: by year 4 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
+  ok(dock3.length === 8 && layers3 === 4, `${tag}: by level 7 the whole game is open (${dock3.length} panels, ${layers3} layers)`);
 
   // --- schools, clinics, universities ---
   await page.evaluate(() => { UI.drawer = 'people'; UI.sub.people = 'services'; render(true); }); await page.waitForTimeout(250);
@@ -60,15 +65,16 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // --- four advisors, and a way to shut them up ---
   await clear(page);
   const faces = await page.$$eval('.portrait', e => e.length);
-  ok(faces === 4, `${tag}: four advisors by year 4 (${faces})`);
+  ok(faces === 4, `${tag}: four advisors once the game is open (${faces})`);
   await page.click('.advhide'); await page.waitForTimeout(200);
   ok(!(await page.$('.bubble')), `${tag}: the hide button silences them`);
 
   // --- supply sectors exist ---
   await page.evaluate(() => { UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); }); await page.waitForTimeout(250);
+  await page.evaluate(() => { S.lvl = 6; UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); }); await page.waitForTimeout(250);
   const invMid = await page.$$eval('.dcard.inv [data-act=invest]', e => e.map(n => n.dataset.id));
-  ok(!invMid.includes('logistics'), `${tag}: supply is still closed before the last stage (${invMid.length} sectors)`);
-  await jump(page, 10); await clear(page);   // past the last stage
+  ok(!invMid.includes('logistics'), `${tag}: supply is still closed at level 6 (${invMid.length} sectors)`);
+  await page.evaluate(() => { S.lvl = 7; render(true); }); await clear(page);   // the last thing to open
   await page.evaluate(() => { UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); }); await page.waitForTimeout(250);
   const inv = await page.$$eval('.dcard.inv [data-act=invest]', e => e.map(n => n.dataset.id));
   ok(['logistics','coldchain','packaging'].every(k => inv.includes(k)), `${tag}: supply sectors open last (${inv.length} sectors in all)`);

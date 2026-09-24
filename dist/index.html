@@ -668,6 +668,75 @@ const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
 // out of growth and the wall is your economy rather than a number in a table.
 const invLvl = (s, id) => (s.invests && s.invests[id]) || 0;
 const investCost = (s, id) => Math.round(INVEST[id].usd * Math.pow(1.4, invLvl(s, id)));
+// ---------- levels: the spine of the game ----------
+// A town hall, for a country. The level is not a read-out of how well you are doing — it is a
+// **gate**. It decides which panels and sectors exist at all, and how far each factory and berth
+// can be pushed. Nothing is ever permanently capped, because the ladder itself never ends: past
+// the summit the targets keep scaling and the ceiling keeps rising with them.
+//
+// Each level names two to four things to achieve. Meet them all and a national plan starts on
+// its own — `LEVEL_MONTHS` of work — and when the plan lands, so does the level. **Once a plan
+// has started it always finishes**: taking it away because a number slipped back for a month
+// would punish the player for work they had already done.
+const LEVEL_MONTHS = 4;
+const LEVEL_MAX = 10;          // the summit is named and has a victory screen; levels go on past it
+const INV_HEADROOM = 2;        // a factory or berth may run this far ahead of the country itself
+const invCap = s => (s.lvl || 1) + INV_HEADROOM;
+
+// A target the player can read off the dashboard. `down` marks the ones where lower is better,
+// so unemployment and anger read the right way round on the checklist.
+const NEED = {
+  built:  n => ({ id:'built',  want:n, get:s => PROVS.filter(p => s.provs[p.id].project === true).length }),
+  power:  n => ({ id:'power',  want:n, get:s => nationalHours(s), dp:1 }),
+  calm:   n => ({ id:'calm',   want:n, get:s => natUnrest(s), down:true }),
+  jobs:   n => ({ id:'jobs',   want:n, get:s => joblessNat(s), down:true }),
+  trust:  n => ({ id:'trust',  want:n, get:s => s.trust }),
+  usd:    n => ({ id:'usd',    want:n, get:s => s.reserves }),
+  berth:  n => ({ id:'berth',  want:n, get:s => Math.max(s.ports.latakia.lvl, s.ports.tartus.lvl) }),
+  mills:  n => ({ id:'mills',  want:n, get:s => Object.values(s.ind || {}).reduce((a, b) => a + b, 0) }),
+  wage:   n => ({ id:'wage',   want:n, get:s => realWage(s) }),
+  edu:    n => ({ id:'edu',    want:n, get:s => s.edu }),
+  health: n => ({ id:'health', want:n, get:s => s.health }),
+  indep:  n => ({ id:'indep',  want:n, get:s => s.sov }),
+  score:  n => ({ id:'score',  want:n, get:s => s.score || 0 }),
+};
+
+// What each level asks for, and what it hands over. A level's targets must be reachable with
+// what the PREVIOUS levels unlocked — that is the whole loop: unlock a thing, use it to earn
+// the next unlock. Berths come at 4, so "a second berth" is level 5's ask, not level 4's.
+const LEVELS = [
+  null,
+  { need:[] },                                                       // 1  where everyone starts
+  { need:[NEED.built(1), NEED.calm(46)] },                           // 2  fix one place
+  { need:[NEED.power(6), NEED.usd(450)] },                           // 3  keep the lights on
+  { need:[NEED.built(2), NEED.calm(44)] },                           // 4  money and rubble
+  { need:[NEED.berth(2), NEED.power(8)] },                           // 5  reach the world
+  { need:[NEED.mills(3), NEED.jobs(50)] },                           // 6  make things here
+  { need:[NEED.mills(6), NEED.wage(32)] },                           // 7  wages worth having
+  { need:[NEED.power(10), NEED.jobs(45), NEED.built(4)] },           // 8  a country that works
+  { need:[NEED.edu(42), NEED.health(46), NEED.indep(45)] },          // 9  standing on its own
+  { need:[NEED.score(62), NEED.jobs(32), NEED.edu(52), NEED.built(7)] },   // 10 Syria rebuilt
+];
+
+// Past the summit the ladder keeps going rather than stopping, so there is always something
+// to build. It asks for more of what it always asked for, and a score that has to hold up.
+function levelNeeds(s){
+  const n = s.lvl || 1;
+  if (n < LEVELS.length - 1) return LEVELS[n + 1].need;
+  const k = n - (LEVELS.length - 1) + 1;
+  return [NEED.mills(8 + k * 4), NEED.built(Math.min(PROVS.length, 7 + k)), NEED.score(62 + k * 2)];
+}
+// Which level each kind of action becomes legal at. This lives in the ENGINE, not the UI: what
+// a president is allowed to do is game logic, and while it sat only in isOpen() the balance sim
+// happily built factories years before any real player could have, so the table it printed was
+// describing a game nobody was playing. The UI's UNLOCK map gates the panels and must agree.
+const OPEN_AT = { ports:4, partners:4, sectors:5, firms:5, services:6, unis:7, supply:7 };
+const openAt = (s, k) => (s.lvl || 1) >= OPEN_AT[k];
+
+const needMet = (s, d) => d.down ? d.get(s) <= d.want : d.get(s) >= d.want;
+const levelReady = s => levelNeeds(s).every(d => needMet(s, d));
+const levelPlan = s => (s.pipe || []).find(p => p.kind === 'lvl') || null;
+
 // The country's own level, the way a town hall has one: it only ever goes up, and it counts the
 // things a president actually built rather than how the score happens to be reading today.
 function levelPoints(s){
@@ -809,7 +878,10 @@ function newGame(seed, diff = 'learner', mission = null){
 }
 function startGame(seed, diff, mission){
   const s = newGame(seed, diff, mission);
-  if (mission){ MISSIONS[mission].setup(s); s.mission = { id:mission, start:s.t, end:s.t + MISSIONS[mission].months }; }
+  // A mission is a 48-month set piece, not a ladder to climb: dropping a player into a fuel
+  // crisis and then telling them ports are a level-4 unlock would make it unwinnable. Missions
+  // hand over the whole toolkit and let the scenario be the difficulty.
+  if (mission){ s.lvl = LEVEL_MAX; MISSIONS[mission].setup(s); s.mission = { id:mission, start:s.t, end:s.t + MISSIONS[mission].months }; }
   s.score = legacy(s).avg; return s;
 }
 
@@ -890,6 +962,7 @@ function step(state, dt = MONTH, policyOverride){
     if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl += 1; notes.push(['portDone', item.id, p.lvl]); }
     if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); }
     if (item.kind === 'firm'){ s.ind[item.sector] = (s.ind[item.sector] || 0) + item.lvls; notes.push(['firmDone', item.id, item.sector, item.lvls]); }
+    if (item.kind === 'lvl'){ s.lvl = Math.max(s.lvl || 1, item.to); notes.push(['lvlDone', s.lvl]); }
     return false;
   });
 
@@ -1079,7 +1152,13 @@ function step(state, dt = MONTH, policyOverride){
   s.cls = classes(s);
   s.t = endT;
   s.score = legacy(s).avg;
-  s.lvl = Math.max(s.lvl || 1, countryLevel(s));
+  // The level is EARNED, never computed. It used to be raised straight from levelPoints(), which
+  // made it a read-out of the score rather than a gate you work towards.
+  if (!levelPlan(s) && levelReady(s)){
+    const to = (s.lvl || 1) + 1;
+    s.pipe.push({ due:s.t + LEVEL_MONTHS, kind:'lvl', to });
+    notes.push(['lvlStart', to, LEVEL_MONTHS]);
+  }
   s.last = { ledger:L, notes, dt, privB:privB / dt, maxContagion, clogged:s.clogged, oil,
     why:{ fx, pct:pct * 100, trustParts:tp, angerParts:ap } };
   return s;
@@ -1169,6 +1248,9 @@ const ACT = {
   },
   invest(s, id){
     const x = INVEST[id], cost = investCost(s, id);
+    if (invLvl(s, id) >= invCap(s)) return false;   // raise the country to push a sector further
+    if (x.supply && !openAt(s, 'supply')) return false;
+    if (x.sector && !x.supply && !openAt(s, 'sectors')) return false;
     if (s.reserves < cost || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'invest' && p.id === id)) return false;
     if (id === 'offshore' && s.res.offshore) return false;   // one gamble, not a ladder
     s.reserves -= cost; s.pipe.push({ due:s.t + x.months, kind:'invest', id }); s.invests[id] = (s.invests[id] || 0) + 1;
@@ -1177,6 +1259,7 @@ const ACT = {
   },
   firmDeal(s, id, sector){
     const f = FIRMS[id];
+    if (!openAt(s, 'firms')) return false;
     if (!f || s.firms[id] || !f.sectors.includes(sector) || !f.ok(s)) return false;
     s.firms[id] = { sector, lvls:f.lvls, since:s.t };
     s.sov = clamp(s.sov - f.sov, 0, 100);
@@ -1185,6 +1268,8 @@ const ACT = {
   },
   portUpgrade(s, id){
     const p = s.ports[id], cost = portCost(p.lvl);
+    if (p.lvl >= invCap(s)) return false;           // same ceiling as the sectors
+    if (!openAt(s, 'ports')) return false;
     if (s.reserves < cost || s.pipe.some(x => x.kind === 'port' && x.id === id)) return false;
     s.reserves -= cost; s.pipe.push({ due:s.t + PORT_UPGRADE.months, kind:'port', id }); s.log.push([s.t, 'portStart', id]); return true;
   },
@@ -1197,6 +1282,7 @@ const ACT = {
   oilHome(s, v){ s.policy.oilHome = v; return true; },
   service(s, id){
     const x = SERVICES[id];
+    if (!openAt(s, id === 'unis' ? 'unis' : 'services')) return false;
     if (s.reserves < x.usd || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'svc' && p.id === id)) return false;
     if (!svcRoom(s, id)) return false;
     s.reserves -= x.usd; s.treasury -= x.syp;
@@ -1204,6 +1290,7 @@ const ACT = {
     s.log.push([s.t, 'svcStart', id, x.months]); return true;
   },
   deal(s, id){
+    if (!openAt(s, 'partners')) return false;
     const x = PARTNERS[id]; if (s.deals[id] || s.pc < x.pc || (x.usd && s.reserves < x.usd) || (x.signReq && !x.signReq(s))) return false;
     s.pc -= x.pc; if (x.usd) s.reserves -= x.usd; s.sov -= x.sov;
     s.deals[id] = { signed:s.t, on:x.ok(s) };
@@ -1397,7 +1484,7 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, FIRMS, FIRM_IDS, firmProfits, firmShareOf, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, LEVELS, LEVEL_MAX, LEVEL_MONTHS, levelNeeds, levelReady, levelPlan, needMet, invCap, NEED, OPEN_AT, openAt, natUnrest, joblessNat, grip, hasDecree, portCost, FIRMS, FIRM_IDS, firmProfits, firmShareOf, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
 
 const MAP = {"W":800,"H":734.0,"paths":{"quneitra":"M14.4,586.1L20.7,589.7L18.8,594.0L20.0,598.2L22.1,595.8L28.9,597.1L27.6,610.5L30.9,614.9L26.9,629.8L31.7,640.6L25.3,639.5L26.3,646.2L4.1,670.8L13.3,658.6L15.2,648.7L19.8,641.5L16.3,634.8L15.1,618.9L10.6,617.0L12.8,605.6L10.1,603.9L9.6,597.0L5.4,593.5L9.5,587.6L4.9,584.4L10.4,580.7L11.7,573.8L17.6,570.2L17.6,573.8L12.8,580.0L14.4,586.1Z","homs":"M80.3,395.8L70.4,386.2L64.7,395.1L46.7,394.7L47.5,389.3L55.7,374.4L66.1,363.5L67.8,356.1L70.9,355.0L70.5,358.8L74.2,362.5L77.5,359.5L83.7,362.2L92.8,347.4L95.8,347.8L95.2,351.3L100.6,354.9L138.3,343.7L143.5,346.6L150.2,360.9L166.3,351.1L170.9,353.0L176.1,348.6L184.1,353.7L188.6,345.7L193.2,345.6L195.1,342.7L208.3,342.4L213.3,345.8L214.9,332.9L222.6,328.0L242.1,323.1L251.9,327.7L255.9,338.7L272.8,355.3L276.3,352.1L280.6,339.5L303.0,326.4L302.8,317.9L309.8,303.3L310.0,284.5L356.0,286.0L423.1,304.0L435.2,313.8L446.6,334.9L447.4,349.8L535.0,476.4L311.7,614.2L262.7,574.1L231.4,556.1L223.3,544.9L219.2,534.5L192.0,509.5L184.2,495.4L175.7,493.9L161.8,485.5L137.9,453.6L128.3,457.3L113.1,454.8L105.8,457.6L100.9,448.4L103.2,443.0L95.6,435.2L96.4,425.0L87.3,418.9L85.4,414.5L73.6,414.7L71.7,411.6L79.4,405.8L80.0,399.6L85.7,399.4L86.2,394.8L80.3,395.8Z","tartus":"M46.7,394.7L29.6,391.8L17.3,351.6L21.3,337.3L19.8,324.5L28.7,311.5L25.0,302.2L36.3,308.3L57.4,305.3L63.7,307.8L64.2,333.5L60.8,337.0L49.7,340.2L50.6,344.1L64.5,345.4L70.9,355.0L66.9,356.9L66.1,363.5L55.7,374.4L47.5,389.3L46.7,394.7Z","rif":"M80.3,480.4L90.4,479.1L92.0,474.0L105.8,457.6L113.1,454.8L128.3,457.3L137.9,453.6L161.8,485.5L175.7,493.9L184.2,495.4L192.0,509.5L219.2,534.5L223.3,544.9L231.4,556.1L262.7,574.1L311.7,614.2L213.0,678.8L187.6,653.5L184.4,641.3L175.6,640.7L169.4,637.1L162.8,626.5L148.8,622.0L141.4,607.9L132.3,600.5L101.9,605.0L101.3,600.3L94.7,590.2L84.2,597.1L79.1,604.4L67.0,598.3L61.5,590.8L58.9,600.3L37.0,607.3L28.6,603.4L28.1,596.6L22.1,595.8L20.0,598.2L18.8,594.0L20.7,589.7L14.4,586.1L13.4,578.0L17.6,573.8L17.6,570.2L23.6,565.7L25.2,556.1L35.6,552.5L37.9,547.5L23.8,539.6L27.1,529.5L39.3,513.8L49.9,508.8L53.2,511.9L61.1,508.5L76.2,512.8L77.5,507.8L70.7,505.7L65.4,500.1L80.3,480.4ZM70.2,550.8L73.5,551.1L75.5,553.7L75.6,558.1L74.5,561.3L71.7,564.1L71.3,565.9L69.0,565.5L61.7,561.8L59.0,563.6L58.4,562.1L60.9,559.4L58.1,558.0L56.2,558.2L55.3,555.6L59.9,552.9L63.5,552.8L70.2,550.8Z","hasakeh":"M780.0,0.0L781.5,5.4L789.8,5.8L796.3,12.5L795.0,22.5L800.0,38.5L732.7,106.2L680.8,118.4L667.7,142.1L662.9,185.2L675.7,214.9L677.6,224.4L677.5,249.1L671.5,259.6L634.4,257.1L607.4,248.8L502.3,146.5L488.0,120.7L469.5,112.0L458.7,112.4L450.9,103.3L447.1,92.6L486.0,85.3L511.8,75.9L537.0,64.5L563.9,47.0L577.4,43.8L599.4,32.9L622.0,29.6L658.6,38.1L692.1,36.5L755.8,21.9L780.0,0.0Z","raqqa":"M416.3,97.4L447.1,92.6L450.9,103.3L458.7,112.4L468.9,111.9L480.5,116.6L488.0,120.7L490.7,126.1L471.1,213.9L469.8,224.5L475.1,227.6L423.1,304.0L356.0,286.0L310.0,284.5L277.1,249.9L280.0,227.8L295.4,199.5L283.9,186.1L281.2,173.4L292.2,158.0L324.8,151.3L345.1,137.9L351.1,128.3L354.2,112.3L353.7,100.6L344.8,104.4L342.6,99.3L343.1,97.0L350.7,95.1L350.1,85.1L360.9,92.4L397.8,91.3L416.3,97.4Z","aleppo":"M300.7,61.0L337.4,71.9L350.1,85.1L351.7,91.6L350.2,95.7L342.6,97.2L344.0,103.9L352.3,100.1L354.4,102.5L351.8,125.8L344.0,139.1L324.8,151.3L292.2,158.0L281.2,173.4L283.9,186.1L295.4,199.5L280.0,227.8L276.3,247.8L302.0,276.7L240.5,275.3L222.7,265.6L195.1,266.7L169.0,253.9L164.6,248.4L160.2,236.0L165.1,231.8L165.3,228.0L153.6,220.2L140.1,198.5L139.2,189.5L126.2,182.7L120.6,175.5L133.2,162.6L134.1,158.0L125.4,145.4L111.3,149.3L103.9,146.5L104.6,139.3L99.7,134.3L97.4,126.3L101.2,116.1L105.8,84.6L110.6,76.3L110.2,72.8L149.2,83.6L155.7,90.5L155.2,100.0L159.9,103.2L166.0,98.7L182.6,97.6L207.1,101.2L232.1,86.8L252.0,82.7L288.5,64.5L300.7,61.0Z","idlib":"M104.6,162.1L113.8,159.3L111.3,149.3L124.8,145.3L134.1,158.0L133.2,162.6L120.6,175.5L126.2,182.7L139.2,189.5L140.1,198.5L152.6,218.8L165.6,228.6L160.2,236.0L164.6,248.4L169.0,253.9L179.5,259.7L171.6,271.4L166.0,274.7L162.7,281.7L164.6,284.3L170.1,281.3L170.4,289.8L163.5,293.8L155.0,293.5L155.2,280.8L153.2,278.1L146.3,286.9L142.0,288.0L132.9,279.4L111.2,283.1L97.8,280.7L91.8,275.2L84.5,276.5L80.5,267.2L82.8,236.3L75.1,235.1L72.4,231.1L65.2,231.5L63.9,229.8L67.8,226.6L66.9,224.0L51.4,224.1L54.3,205.4L56.9,201.1L65.6,200.1L66.6,194.9L69.0,193.9L76.3,194.9L76.4,169.6L78.4,164.1L76.7,162.1L86.8,164.8L93.2,160.7L104.6,162.1Z","latakia":"M39.4,213.7L51.9,220.1L52.7,224.8L67.9,225.4L61.9,231.5L61.0,237.4L57.2,241.9L60.2,252.3L57.5,278.2L63.7,307.8L57.4,305.3L36.3,308.3L25.0,302.2L23.1,298.3L24.7,293.4L23.5,279.3L11.4,266.0L5.7,266.6L6.6,261.2L0.0,255.2L6.6,250.8L5.7,242.7L9.2,240.7L14.1,231.0L13.5,224.8L9.0,216.1L17.7,215.7L22.6,206.1L30.9,204.7L33.7,213.2L39.4,213.7Z","suwayda":"M213.0,678.8L131.8,733.5L116.2,733.0L111.8,729.6L95.4,727.6L96.7,709.7L92.8,703.8L94.2,699.2L88.3,695.4L81.6,695.4L81.4,688.1L87.4,682.2L76.0,676.2L77.0,658.4L73.8,649.0L74.3,641.6L84.6,633.4L98.6,633.1L97.4,625.5L92.3,625.1L90.1,616.3L90.3,609.8L93.9,606.1L132.3,600.5L141.4,607.9L148.8,622.0L162.8,626.5L169.4,637.1L175.6,640.7L184.4,641.3L187.6,653.5L213.0,678.8Z","daraa":"M26.5,678.7L5.6,670.3L26.3,646.2L25.3,639.5L31.7,640.6L26.9,629.8L30.9,614.9L27.6,610.5L28.6,603.4L36.3,607.4L50.9,603.6L58.9,600.3L61.5,590.8L67.0,598.3L79.1,604.4L84.2,597.1L95.1,590.6L101.3,600.3L101.9,605.0L91.2,608.4L90.1,616.3L92.3,625.1L97.3,625.3L98.8,632.8L83.7,633.8L74.5,641.2L73.7,648.2L77.0,658.4L76.0,676.2L87.4,682.2L81.4,688.1L81.4,695.1L88.3,695.4L94.2,699.2L92.8,703.8L96.7,709.7L95.4,727.6L78.1,723.3L54.6,702.6L41.2,704.1L34.0,690.8L33.7,683.9L27.9,683.6L26.5,678.7Z","deir":"M671.5,259.6L665.8,268.1L657.4,313.8L659.0,370.8L633.0,424.2L626.7,430.4L597.2,438.4L535.0,476.4L447.4,349.8L447.0,336.2L439.0,318.6L423.1,304.0L475.1,227.6L469.8,224.5L471.1,213.9L490.7,126.1L502.3,146.5L607.4,248.8L634.4,257.1L671.5,259.6Z","hama":"M179.5,259.7L196.0,266.9L222.7,265.6L235.1,273.7L250.7,276.8L302.0,276.7L310.0,284.5L309.2,305.8L302.8,317.9L302.5,327.1L280.6,339.5L276.3,352.1L272.4,355.4L255.9,338.7L251.9,327.7L242.5,323.1L222.6,328.0L214.9,332.9L213.3,345.8L208.3,342.4L195.1,342.7L193.2,345.6L188.6,345.7L184.1,353.7L176.1,348.6L170.9,353.0L166.3,351.1L150.2,360.9L143.5,346.6L139.5,343.8L100.6,354.9L95.2,351.3L95.8,347.8L92.8,347.4L87.4,353.9L84.7,361.9L77.5,359.5L74.2,362.5L64.5,345.4L50.6,344.1L49.7,340.2L61.3,336.8L65.1,330.1L63.4,302.1L57.5,278.2L60.2,252.3L57.3,241.3L63.9,229.8L82.8,236.3L80.5,267.2L84.5,276.5L91.8,275.2L97.8,280.7L117.3,283.4L132.9,279.4L142.0,288.0L146.3,286.9L153.2,278.1L155.2,280.8L154.6,293.2L163.5,293.8L170.6,289.4L169.8,281.0L162.8,283.4L165.4,275.7L171.6,271.4L179.5,259.7Z","damascus":"M70.2,550.8L73.5,551.1L75.5,553.7L75.6,558.1L74.5,561.3L71.7,564.1L71.3,565.9L69.0,565.5L61.7,561.8L59.0,563.6L58.4,562.1L60.9,559.4L58.1,558.0L56.2,558.2L55.3,555.6L59.9,552.9L63.5,552.8L70.2,550.8Z"},"cent":{"quneitra":[21.6,620.2],"homs":[308.9,449.8],"tartus":[42.3,348.9],"rif":[134.4,566.1],"hasakeh":[583.3,129.0],"raqqa":[383.7,196.0],"aleppo":[205.5,168.7],"idlib":[102.7,219.4],"latakia":[31.0,256.8],"suwayda":[138.4,666.0],"daraa":[45.7,658.9],"deir":[545.1,295.4],"hama":[186.2,298.1],"damascus":[67.6,558.8]}};
 
@@ -1946,6 +2033,23 @@ Object.assign(STR.en, {
   investBtn:'Invest', needsCalmEast:'Needs the east calmer (anger below 70)',
   portsTitle:'Export capacity', portsSub:'Ports and border crossings limit how much you can sell abroad.', portsUse:'Exports want {0} a year. Ports and crossings can move {1}.',
   clogged:'Ports are jammed: {0} a year of exports can’t leave the country.', portLvl:'Berth level {0}', portState:'Run by the state', portForeign:'Run by a foreign operator',
+  need_built:'Rebuild {0} of the provinces', need_power:'Get electricity to {0} hours a day', need_calm:'Bring anger down to {0}',
+  need_jobs:'Get people without work under {0}%', need_trust:'Reach {0} trust', need_usd:'Hold ${0}M in reserves',
+  need_berth:'Upgrade a port to level {0}', need_mills:'Build {0} levels of factories', need_wage:'Pay a real wage of ${0}',
+  need_edu:'Reach {0} in schooling', need_health:'Reach {0} in health', need_indep:'Keep independence at {0} or above',
+  need_score:'Reach a score of {0}',
+  needNow:'Now {0} — you need {1}', needDone:'Done: {0}',
+  lvlReached:'Level {0}', lvlNextTargets:'To reach level {0}', lvlProgress:'{0} of {1} targets met',
+  lvlBuilding:'The national plan lands in {0}', lvlCapNow:'Factories and berths can now be pushed to level {0}.',
+  lvlPlanNow:'Every target met. A national plan has started — the new level lands in {0}.',
+  lvlCapped:'Level {0} is as far as this can go until the country reaches the next level.',
+  lvlTargets:'Your targets', lvlTargetsSub:'Meet all of these and a national plan starts. When it finishes, the country levels up and more of the game opens.',
+  lvlNothing:'Nothing is locked any more — keep building.',
+  summitTitle:'Syria rebuilt', summitSub:'Level 10, in the year {0}',
+  summitText:'You took a country with four hours of power a day and half its people out of work, and you gave it back something that runs. This was the thing the game asked you to do.',
+  summitOn:'The game does not stop here. The ladder keeps going, the targets keep rising, and your twenty-year verdict is still ahead.',
+  summitGo:'Keep going ▶',
+  builtLbl:'Provinces rebuilt', poorLbl:'People who are poor',
   upgrade:'Upgrade', upgradeTxt:'{0} and {1}. Moves more exports and earns more fees.', concession:'Hand to a foreign operator', concessionTxt:'+$100M now, and they upgrade it for free. They keep 15% of port fees. Independence −4.',
   partnersSub:'Each deal has gains, costs and conditions. If a condition breaks, the deal pauses until you fix it.',
   dealActive:'Active', dealPaused:'Paused: condition broken', dealSign:'Sign deal', needs:'Needs:',
@@ -2029,6 +2133,23 @@ Object.assign(STR.ar, {
   investBtn:'استثمر', needsCalmEast:'يحتاج شرقاً أهدأ (غضب أقل من 70)',
   portsTitle:'قدرة التصدير', portsSub:'الموانئ والمعابر الحدودية تحدّد كم يمكنك أن تبيع للخارج.', portsUse:'الصادرات تحتاج {0} سنوياً. الموانئ والمعابر تنقل {1}.',
   clogged:'الموانئ مزدحمة: صادرات بقيمة {0} سنوياً لا تستطيع مغادرة البلاد.', portLvl:'مستوى المرفأ {0}', portState:'تديره الدولة', portForeign:'يديره مشغّل أجنبي',
+  need_built:'أعد بناء {0} من المحافظات', need_power:'أوصل الكهرباء إلى {0} ساعة يومياً', need_calm:'اخفض الغضب إلى {0}',
+  need_jobs:'اخفض نسبة من بلا عمل تحت {0}%', need_trust:'ارفع الثقة إلى {0}', need_usd:'احتفظ بـ {0} مليون دولار احتياطياً',
+  need_berth:'طوّر ميناءً إلى المستوى {0}', need_mills:'ابنِ {0} مستويات من المصانع', need_wage:'ادفع راتباً حقيقياً قدره {0}$',
+  need_edu:'ارفع التعليم إلى {0}', need_health:'ارفع الصحة إلى {0}', need_indep:'أبقِ الاستقلال عند {0} أو أعلى',
+  need_score:'اوصل إلى نتيجة {0}',
+  needNow:'الآن {0} — تحتاج {1}', needDone:'تحقق: {0}',
+  lvlReached:'المستوى {0}', lvlNextTargets:'للوصول إلى المستوى {0}', lvlProgress:'{0} من {1} أهداف',
+  lvlBuilding:'الخطة الوطنية تكتمل خلال {0}', lvlCapNow:'يمكن الآن دفع المصانع والأرصفة حتى المستوى {0}.',
+  lvlPlanNow:'تحققت كل الأهداف. بدأت خطة وطنية — المستوى الجديد يصل خلال {0}.',
+  lvlCapped:'المستوى {0} هو أقصى ما يمكن بلوغه حتى تصل البلاد إلى المستوى التالي.',
+  lvlTargets:'أهدافك', lvlTargetsSub:'حقّق هذه كلها فتبدأ خطة وطنية. وعند انتهائها ترتفع البلاد مستوى وينفتح المزيد من اللعبة.',
+  lvlNothing:'لم يعد شيء مقفلاً — تابع البناء.',
+  summitTitle:'سوريا أُعيد بناؤها', summitSub:'المستوى 10، في عام {0}',
+  summitText:'أخذت بلداً فيه أربع ساعات كهرباء يومياً ونصف أهله بلا عمل، وأعدته بلداً يعمل. هذا ما طلبته منك اللعبة.',
+  summitOn:'اللعبة لا تتوقف هنا. السلّم يستمر، والأهداف ترتفع، وحكم العشرين سنة ما زال أمامك.',
+  summitGo:'تابع ▶',
+  builtLbl:'محافظات أُعيد بناؤها', poorLbl:'نسبة الفقراء',
   upgrade:'طوّر', upgradeTxt:'{0} و{1}. ينقل صادرات أكثر ويكسب رسوماً أكثر.', concession:'سلّمه لمشغّل أجنبي', concessionTxt:'+100 مليون$ الآن، ويطوّره مجاناً، لكنه يأخذ 15% من رسوم الميناء. الاستقلال −4.',
   partnersSub:'لكل اتفاق مكاسب وتكاليف وشروط. إذا اختلّ شرط، يتوقف الاتفاق حتى تصلحه.',
   dealActive:'فعّال', dealPaused:'متوقف: شرط مختلّ', dealSign:'وقّع الاتفاق', needs:'يحتاج:',
@@ -2056,11 +2177,11 @@ DEC_TXT.braingain.en[2] = 'The economy grows a little faster every month, and mo
 DEC_TXT.vocational.en[2] = 'Unemployment falls a little every month, everywhere. Costs $20M a year.'; DEC_TXT.vocational.ar[2] = 'البطالة تنخفض قليلاً كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
 FAC_TXT.wb.en[1] = 'Money that goes straight into power stations. It arrives as electricity 12 months later.'; FAC_TXT.wb.ar[1] = 'أموال تذهب مباشرة إلى محطات الكهرباء، وتصل كهرباءً بعد 12 شهراً.';
 NOTE.en.wbGrid = 'World Bank money is building {0} MW of power (ready in 12 months).'; NOTE.ar.wbGrid = 'أموال البنك الدولي تبني {0} ميغاواط (جاهزة بعد 12 شهراً).';
-Object.assign(NOTE.en, { svcStart:'Started building {0}. Ready in {1}.', svcDone:'{0} opened. That is {1} built so far.',
+Object.assign(NOTE.en, { lvlStart:'Every target met. A national plan for level {0} has started — {1} of work.', lvlDone:'The country reached level {0}.', svcStart:'Started building {0}. Ready in {1}.', svcDone:'{0} opened. That is {1} built so far.',
   portDone:'{0} port reached level {1}.', dealOn:'Deal with {0} is active again.', dealOff:'Deal with {0} paused: a condition broke.', dealSign:'Signed a deal with {0}.',
   investStart:'Investment started: {0}. Ready in {1}.', investDone:'Investment finished: {0}.', offshoreHit:'Offshore drilling struck gas! +10 million m³ a day.', offshoreDry:'Offshore well came up dry. The $150M is gone.',
   portStart:'Upgrading {0} port. Ready in 12 months.', portConcession:'{0} port handed to a foreign operator. +$100M.', projStartShort:'Construction started in {0}.' });
-Object.assign(NOTE.ar, { svcStart:'بدأ بناء {0}. يجهز خلال {1}.', svcDone:'افتُتحت {0}. صار المبني {1} حتى الآن.',
+Object.assign(NOTE.ar, { lvlStart:'تحققت كل الأهداف. بدأت خطة وطنية للمستوى {0} — {1} من العمل.', lvlDone:'بلغت البلاد المستوى {0}.', svcStart:'بدأ بناء {0}. يجهز خلال {1}.', svcDone:'افتُتحت {0}. صار المبني {1} حتى الآن.',
   portDone:'وصل ميناء {0} إلى المستوى {1}.', dealOn:'عاد الاتفاق مع {0} للعمل.', dealOff:'توقف الاتفاق مع {0}: اختلّ أحد الشروط.', dealSign:'وُقّع اتفاق مع {0}.',
   investStart:'بدأ الاستثمار: {0}. يجهز خلال {1}.', investDone:'اكتمل الاستثمار: {0}.', offshoreHit:'الحفر البحري وجد غازاً! +10 مليون م³ يومياً.', offshoreDry:'البئر البحرية جافة. ضاعت الـ150 مليون$.',
   portStart:'تطوير ميناء {0}. يجهز خلال 12 شهراً.', portConcession:'سُلّم ميناء {0} لمشغّل أجنبي. +100 مليون$.', projStartShort:'بدأ البناء في {0}.' });
@@ -2230,6 +2351,32 @@ NOTE.ar.firmSigned = '{0} \u0633\u062a\u0628\u0646\u064a \u0641\u064a {1}.';
 NOTE.ar.firmDone = '{0} \u0627\u0641\u062a\u062a\u062d\u062a \u0645\u0635\u0627\u0646\u0639\u0647\u0627 \u0641\u064a {1}.';
 LEDGER.en.profitsOut = 'Profits leaving with foreign owners';
 LEDGER.ar.profitsOut = '\u0623\u0631\u0628\u0627\u062d \u062a\u062e\u0631\u062c \u0645\u0639 \u0627\u0644\u0645\u0644\u0627\u0643 \u0627\u0644\u0623\u062c\u0627\u0646\u0628';
+
+// ===== levels: the spine of the game =====
+// Ten named levels. The name is what the country has become, the line under it is what that
+// actually means for someone living there — never a ledger sentence.
+const LEVEL_TXT = {
+  1:{ en:['Caretaker','You have a palace, a broken grid and fourteen provinces that are not sure they want you.'],
+      ar:['حارس الدولة','لديك قصر وشبكة كهرباء مكسورة وأربع عشرة محافظة غير متأكدة أنها تريدك.'] },
+  2:{ en:['The lights come on','One province has something that works again. People noticed.'],
+      ar:['عادت الأنوار','محافظة واحدة فيها شيء يعمل من جديد. الناس لاحظوا.'] },
+  3:{ en:['Somebody is in charge','The power holds and the palace is believed more often than not.'],
+      ar:['هناك من يحكم','الكهرباء صامدة، والقصر صار يُصدَّق أكثر مما يُكذَّب.'] },
+  4:{ en:['Open for business','Rubble is being cleared and there are dollars in the bank to clear more.'],
+      ar:['البلد يفتح أبوابه','الركام يُرفع، وفي المصرف دولارات لرفع المزيد.'] },
+  5:{ en:['A door to the world','Ships call at your port because it is worth calling at.'],
+      ar:['باب إلى العالم','السفن ترسو في مينائك لأنه صار يستحق الرسو.'] },
+  6:{ en:['Making things again','Factories, not just wellheads. People go to work in the morning.'],
+      ar:['نصنع من جديد','مصانع لا آبار فقط. الناس يخرجون إلى العمل في الصباح.'] },
+  7:{ en:['A wage worth having','A salary buys a week of food instead of two days of it.'],
+      ar:['راتب يستحق','الراتب يشتري طعام أسبوع بدل يومين.'] },
+  8:{ en:['A country that works','The lights, the jobs and the rebuilt towns hold together at the same time.'],
+      ar:['بلد يعمل','الكهرباء والعمل والمدن المعادة تصمد كلها معاً.'] },
+  9:{ en:['Standing on its own','Clinics, factories and decisions that are still yours to make.'],
+      ar:['يقف على قدميه','عيادات ومصانع وقرارات ما زالت قرارك.'] },
+  10:{ en:['Syria rebuilt','Not finished — countries never are — but no longer a country being repaired.'],
+      ar:['سوريا أُعيد بناؤها','لم تنتهِ — البلدان لا تنتهي — لكنها لم تعد بلداً قيد الإصلاح.'] },
+};
 
 // ===== Text: play with friends (shared scoreboard). Every string needs en + ar. =====
 Object.assign(STR.en, {
@@ -3528,18 +3675,34 @@ const GAME_MONTHS = 240;                        // twenty years, then history ha
 const LIVE_MS_PER_MONTH = 3600 * 1000;
 const LIVE_CATCHUP_MAX = 240;                   // never simulate more than a whole presidency at once
 const LIVE_QUEUE_MAX = 3;                       // crises that waited for you, rather than being decided
-const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
-function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
+// The game opens up by LEVEL, not by calendar. It used to be months 0/7/15/27/45, which meant
+// trade arrived in year 2 whether or not you had built anything — a clock, not a progression.
+// Now each level hands over panels, dials and sectors, and you reach it by doing the things on
+// its checklist. Every level's targets are reachable with what the PREVIOUS levels gave you:
+// capex arrives at 2 because level 3 asks for six hours of power, berths at 4 because level 5
+// asks for a second one. Break that chain and the game dead-ends.
 const UNLOCK = {
-  guide:0, policy:0, money:0, people:0, layerUnrest:0, projects:0,
-  decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
-  trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2, firms:2,
-  services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
-  supply:4, unis:4,
+  guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
+  decrees:2, layerPower:2, polCapex:2, polTax:2, families:2,
+  progress:3, chains:3, layerDamage:3, polPrint:3, polRecon:3,
+  trade:4, ports:4, partners:4, layerJobs:4,
+  sectors:5, firms:5,
+  services:6, polIntervene:6, polCrackdown:6,
+  supply:7, unis:7,
 };
-const isOpen = f => stageNow() >= (UNLOCK[f] === undefined ? 0 : UNLOCK[f]);
-// what each stage hands over, for the announcement
-const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['subServices', 'sectorTitle'], ['extractTitle', 'svcUnis']];
+const lvlNow = () => (S && S.lvl) || 1;
+const isOpen = f => lvlNow() >= (UNLOCK[f] === undefined ? 1 : UNLOCK[f]);
+// what each level hands over, for the announcement. Index is the level itself.
+const LEVEL_GIFTS = [[], [],
+  ['dDecrees', 'layerPower', 'polCapexName'],
+  ['dProgress', 'dChains'],
+  ['dTrade', 'subPorts'],
+  ['sectorTitle', 'subFirms'],
+  ['subServices', 'polCrackdownName'],
+  ['extractTitle', 'svcUnis'],
+  [], [], []];
+// Kept so old code and tests that ask "which stage is this" still answer sensibly.
+function stageNow(){ return Math.max(0, Math.min(4, lvlNow() - 1)); }
 
 // ---------- time words ----------
 function monthsTxt(n){
@@ -3723,13 +3886,12 @@ function tick(){
 }
 function advance(){
   if (S.over) return;                           // a finished presidency does not keep running
-  const prevScore = S.score, prev = S, prevStage = stageNow();
+  const prevScore = S.score, prev = S;
   S = step(S); syncD();
   UI.flash = {};
   [['cash', s => s.treasury, 1.5, true], ['usd', s => s.reserves, 12, true], ['fx', s => s.parallel, 1.5, false], ['pay', s => realWage(s), 0.3, true], ['trust', s => s.trust, 0.35, true], ['anger', s => natUnrest(s), 0.35, false], ['power', s => nationalHours(s), 0.08, true]]
     .forEach(([k, g, thr, goodUp]) => { const d = g(S) - g(prev); if (Math.abs(d) >= thr) UI.flash[k] = (d > 0) === goodUp ? 'up' : 'down'; });
   S.last.notes.forEach(n => { const k = n[0]; if (['projDone','investDone','portDone','gridDone'].includes(k)) sfx('done'); else if (k === 'dealOff' || k === 'facFrozen' || (k === 'offshore' && !n[1])) sfx('bad'); else if (k === 'offshore' || k === 'dealOn') sfx('cycle'); else if (k === 'grant') sfx('coin'); });
-  if ((S.lvl || 1) > (prev.lvl || 1)){ toast('⭐ ' + fill(t('levelUp'), [S.lvl]), 'year'); sfx('cycle'); }
   if (S.score - prevScore >= 0.4) sfx('up'); else if (S.score - prevScore <= -0.4) sfx('down'); else sfx('tick');
   S.last.notes.forEach(n => { S.log.push([S.t, ...n]); toast(noteText([S.t, ...n])); });
   if (S.log.length > 80) S.log = S.log.slice(-80);
@@ -3738,7 +3900,12 @@ function advance(){
   if (S.t % 6 === 0){ const nc = detectCycles(); if (nc.length){ S.cycles = (S.cycles || []).concat(nc); UI.newCycle = true; UI.queue = nc.map(id => ['cycle', id]); } }
   const fail = checkFail(S);
   if (fail){ S.over = { fail:fail.id }; setSpeed(0); persist(); render(true); sfx('fail'); return showFail(fail.id); }
-  if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
+  // Reaching a level is the game's reward moment: it stops the clock and shows what it opened.
+  // The summit gets a victory screen of its own, and the ladder carries on afterwards.
+  if ((S.lvl || 1) > (prev.lvl || 1)){
+    setSpeed(0); persist(); render(true); sfx('cycle');
+    return (S.lvl === LEVEL_MAX) ? showSummit() : showLevelUp(S.lvl);
+  }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
   if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
   if (!S.mission && S.t >= GAME_MONTHS * (S.chapter || 1)){ S.over = { won:true, chapter:S.chapter || 1 }; setSpeed(0); persist(); render(true); sfx('year'); return showLegacy(); }
@@ -3813,6 +3980,8 @@ function noteText(n){
     case 'private': return '';
     case 'event': return fill(t('youChose'), [L2(EV_TXT[a])[0], L2(EV_TXT[a])[2][b][0]]);
     case 'svcStart': return fill(N.svcStart, [svcLabel(a), monthsTxt(b)]);
+    case 'lvlStart': return fill(N.lvlStart, [a, monthsTxt(b)]);
+    case 'lvlDone': return fill(N.lvlDone, [a]);
     case 'svcDone': return fill(N.svcDone, [svcLabel(a), b]);
     case 'portDone': return fill(N.portDone, [PORT_NAME[LANG][a], b]);
     case 'portStart': case 'portConcession': return fill(N[k], [PORT_NAME[LANG][a]]);
@@ -3906,12 +4075,15 @@ function renderHUD(P){
   const sc = S.score, P6 = P, dsc = P6.score - sc, g = gradeOf(sc);
   const pop = UI.scoreDelta && Math.abs(UI.scoreDelta) >= 0.4 ? `<span class="spop ${UI.scoreDelta > 0 ? 'up' : 'down'}">${sign(UI.scoreDelta, 1)}</span>` : '';
   UI.scoreDelta = 0;
-  const lv = S.lvl || 1, nextAt = Math.pow(lv, 2) * 1.2, pts = levelPoints(S), prevAt = Math.pow(lv - 1, 2) * 1.2;
-  const toNext = clamp((pts - prevAt) / Math.max(1, nextAt - prevAt) * 100, 0, 100);
+  // The bar is how many of this level's targets are met, not an abstract point total. A player
+  // can look at it and know what to do; levelPoints() could only ever be stared at.
+  const lv = S.lvl || 1, nd = levelNeeds(S), met = nd.filter(d => needMet(S, d)).length;
+  const plan = levelPlan(S);
+  const toNext = plan ? 100 : clamp(nd.length ? met / nd.length * 100 : 0, 0, 100);
   return `<button class="turn lvl" data-act="showScore" aria-label="${fill(t('levelN'), [lv])}">${ring}<div>
       <div class="yr">${fill(t('levelN'), [lv])}</div>
       <div class="ss">${S.chapter > 1 ? fill(t('chapterN'), [S.chapter]) + ' · ' : ''}${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div>
-      <div class="mbarwrap lvlbar" title="${t('toNextLevel')}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
+      <div class="mbarwrap lvlbar${plan ? ' building' : ''}" title="${plan ? fill(t('lvlBuilding'), [monthsTxt(plan.due - S.t)]) : fill(t('lvlProgress'), [met, nd.length])}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
     <button class="scorebadge g-${g}" data-act="showScore" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
@@ -4114,7 +4286,8 @@ function renderTradeResources(){
     const maxed = id === 'offshore' && r.offshore && r.offshore !== 'drilling';
     const cost = investCost(S, id);
     const v = investValue(id), pb = v > 0.5 ? cost / v + x.months / 12 : null;
-    let why = ''; if (!running && !maxed){ if (S.reserves < cost) why = fill(t('needsUsd'), [cost]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
+    const capped = count >= invCap(S);   // a ceiling the player cannot see is a dead click
+    let why = ''; if (!running && !maxed){ if (capped) why = fill(t('lvlCapped'), [invCap(S)]); else if (S.reserves < cost) why = fill(t('needsUsd'), [cost]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
     const built = count ? `<span class="chip up">${fill(t('levelN'), [count])}</span>` : '';
     const status = running ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(running.due - S.t)])}</span>` : maxed ? `<span class="chip up">${id === 'offshore' ? (r.offshore === 'found' ? '✅ ' + (A ? 'وُجد غاز' : 'Gas found') : '❌ ' + (A ? 'بئر جافة' : 'Dry well')) : t('maxed')}</span>`
       : `<button class="btn primary" data-act="invest" data-id="${id}" ${why ? 'disabled' : ''}>${t('investBtn')}</button>`;
@@ -4138,7 +4311,7 @@ function renderTradePorts(){
     const p = S.ports[id], up = S.pipe.find(x => x.kind === 'port' && x.id === id);
     return `<div class="dcard port"><h4>⚓ ${PORT_NAME[LANG][id]}</h4><div class="stars">${Array.from({ length:Math.max(3, p.lvl) }, (_, i) => `<span class="${i < p.lvl ? 'on' : ''}">⚓</span>`).join('')} <span class="small muted">${fill(t('portLvl'), [p.lvl])} · ${p.op === 'foreign' ? t('portForeign') : t('portState')}</span></div>
       ${up ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(up.due - S.t)])}</span>` :
-      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl)), monthsTxt(PORT_UPGRADE.months)])}</span>${S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
+      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) || p.lvl >= invCap(S) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl)), monthsTxt(PORT_UPGRADE.months)])}</span>${p.lvl >= invCap(S) ? `<span class="t">${fill(t('lvlCapped'), [invCap(S)])}</span>` : S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
         ${p.op === 'state' ? `<button class="opt mini" data-act="portCon" data-id="${id}"><b>🤝 ${t('concession')}</b><span class="t">${t('concessionTxt')}</span></button>` : ''}</div>`}</div>`;
   }).join('');
   return h;
@@ -4205,6 +4378,24 @@ function renderGuide(){
     }).join('');
   } else {
     h += `<p class="mpnote" style="margin-top:0">✅ ${t('guideDone')}</p>`;
+  }
+  // The level checklist. This is the spine of the game now, so it sits in the only panel that is
+  // open from month 0 to the end: a player must always be able to see what the country is
+  // working towards and how far off it is, never guess.
+  {
+    const plan = levelPlan(S), lv = S.lvl || 1;
+    h += `<h3 class="bh">⭐ ${fill(t('lvlReached'), [lv])} — ${esc(levelName(lv))}</h3>`;
+    if (plan){
+      h += `<div class="quest done"><div class="qt">🏗️ ${t('lvlTargets')}</div>
+        <h4>${fill(t('lvlReached'), [plan.to])}</h4>
+        <p>${esc(fill(t('lvlPlanNow'), [monthsTxt(plan.due - S.t)]))}</p></div>`;
+    } else {
+      const nd = levelNeeds(S), met = nd.filter(d => needMet(S, d)).length;
+      h += `<p class="small muted" style="margin-top:0">${esc(t('lvlTargetsSub'))}</p>`;
+      h += `<div class="row" style="margin-bottom:8px"><span class="chip${met === nd.length ? ' up' : ''}">${fill(t('lvlProgress'), [met, nd.length])}</span>
+        <span class="chip">🏭 ${fill(t('lvlCapNow'), [invCap(S)])}</span></div>`;
+      h += needRows(S);
+    }
   }
 
   // what to do next, in one line, from whichever adviser is most worried
@@ -4295,6 +4486,7 @@ function pipeLabel(i){
   if (i.kind === 'proj') return '🏗️ ' + esc(PN(i.id));
   if (i.kind === 'port') return '⚓ ' + esc((PORT_NAME[LANG] || {})[i.id] || i.id);
   if (i.kind === 'svc') return (SVC_ICON[i.id] || '🏫') + ' ' + esc(svcLabel(i.id) || i.id);
+  if (i.kind === 'lvl') return '⭐ ' + esc(fill(t('lvlReached'), [i.to]));
   if (i.kind === 'firm'){
     const f = FIRM_TXT[i.id], sec = INV_TXT[i.sector];
     return '🏢 ' + esc((f ? L2(f)[1] : i.id) + (sec ? ' — ' + L2(sec)[0] : ''));
@@ -4456,11 +4648,47 @@ function nextPending(){
 }
 
 // ---------- milestone, crisis, endings ----------
-function showStage(st){
-  const gifts = (STAGE_GIFTS[st] || []).map(k => t(k));
-  modal(`<div class="tut-icon" aria-hidden="true">🔓</div><h2>${t('stageTitle')}</h2>
-    <p class="lede">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>
+function levelName(n){ const a = L2(LEVEL_TXT[Math.min(n, LEVEL_MAX)] || LEVEL_TXT[LEVEL_MAX]); return a[0]; }
+function levelBlurb(n){ const a = L2(LEVEL_TXT[Math.min(n, LEVEL_MAX)] || LEVEL_TXT[LEVEL_MAX]); return a[1]; }
+// One row per target: what it asks, where you are, and whether it is done. The same rows draw
+// in the Guide while you are working and in the level-up screen once you are not.
+function needRows(s){
+  return levelNeeds(s).map(d => {
+    const have = d.get(s), ok = needMet(s, d), n = v => d.dp ? v.toFixed(d.dp) : Math.round(v);
+    return `<div class="gstep lvlstep${ok ? ' done' : ' now'}"><span class="gmark">${ok ? '✅' : '⬜'}</span>
+      <div><b>${esc(fill(t('need_' + d.id), [n(d.want)]))}</b>
+      <p style="margin:2px 0 0">${esc(fill(t(ok ? 'needDone' : 'needNow'), [n(have), n(d.want)]))}</p></div></div>`;
+  }).join('');
+}
+function showLevelUp(n){
+  const gifts = (LEVEL_GIFTS[n] || []).map(k => t(k)).filter(Boolean);
+  modal(`<div class="tut-icon" aria-hidden="true">⭐</div><h2>${fill(t('lvlReached'), [n])}</h2>
+    <div class="src">${esc(levelName(n))}</div>
+    <p class="lede">${esc(levelBlurb(n))}</p>
+    ${gifts.length ? `<h3 class="bh">🔓 ${t('stageTitle')}</h3>
+      <p class="lede" style="font-size:16px">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>` : ''}
+    <div class="tipbox">${esc(fill(t('lvlCapNow'), [invCap(S)]))}</div>
+    <h3 class="bh">🎯 ${fill(t('lvlNextTargets'), [n + 1])}</h3>
+    ${needRows(S)}
     <div class="row"><button class="btn primary" data-act="close">${t('stageGo')}</button></div>`);
+}
+// The summit. Not an ending — there is no dead end any more — but the moment the game says
+// you did the thing it spent twenty years asking you to do.
+function showSummit(){
+  const Lg = legacy(S), cl = classes(S), A = AR();
+  modal(`<div class="tut-icon" aria-hidden="true">🕊️</div><h2>${t('summitTitle')}</h2>
+    <div class="src">${fill(t('summitSub'), [yearNow(S)])}</div>
+    <p class="lede">${t('summitText')}</p>
+    <div class="scores">
+      <div class="row spread"><span>🏆 ${t('score')}</span><b>${Math.round(Lg.avg)} ${Lg.grade}</b></div>
+      <div class="row spread"><span>💡 ${L2(GLOSS.power).name}</span><b>${nationalHours(S).toFixed(1)}${A ? 'س' : 'h'}</b></div>
+      <div class="row spread"><span>💼 ${L2(GLOSS.jobs).name}</span><b>${Math.round(joblessNat(S))}%</b></div>
+      <div class="row spread"><span>🎓 ${t('eduName')}</span><b>${Math.round(S.edu)}</b></div>
+      <div class="row spread"><span>🏗️ ${t('builtLbl')}</span><b>${PROVS.filter(p => S.provs[p.id].project === true).length} / ${PROVS.length}</b></div>
+      <div class="row spread"><span>👥 ${t('poorLbl')}</span><b>${Math.round(cl.poor)}%</b></div>
+    </div>
+    <div class="tipbox">${t('summitOn')}</div>
+    <div class="row"><button class="btn primary" data-act="close">${t('summitGo')}</button></div>`);
 }
 function showMilestone(){
   const yrs = S.t / 12, Lg = legacy(S), chs = whyLive();
@@ -4890,7 +5118,7 @@ function decisionDeck(){
   // 5. nothing is being made here
   if (isOpen('sectors')){
     const k = Object.keys(INVEST).filter(id => INVEST[id].sector && (!INVEST[id].supply || isOpen('supply'))
-      && S.reserves >= investCost(S, id)
+      && S.reserves >= investCost(S, id) && (S.invests[id] || 0) < invCap(S)
       && !S.pipe.some(q => q.kind === 'invest' && q.id === id) && !(INVEST[id].req && !INVEST[id].req(S)))
       .sort((a, b) => (INVEST[b].jobs || 0) - (INVEST[a].jobs || 0))[0];
     if (k && !decSkipped('inv_' + k)){

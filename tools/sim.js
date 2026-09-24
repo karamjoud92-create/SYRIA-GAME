@@ -14,7 +14,7 @@ function run(name, fn, seed=7, diff='learner', months=240, sell=false){
                    :okOpts.sort((a,b)=>keep(b)-keep(a))[0])||ev.opts.at(-1);
       E.applyEffects(s,o.eff);} }
   const L=E.legacy(s);
-  console.log(name.padEnd(10),diff.padEnd(9), fail?('FAIL '+fail.id+' @'+(s.t/12).toFixed(1)+'y'):'survived', 'score',L.avg.toFixed(0),L.grade,'res',s.reserves.toFixed(0),'fx',s.parallel.toFixed(0),'pay',E.realWage(s).toFixed(0),'hrs',E.nationalHours(s).toFixed(1),'cap',s.cap.toFixed(0),'clog',(s.clogged||0).toFixed(0),'indep',s.sov.toFixed(0));
+  console.log(name.padEnd(10),diff.padEnd(9), fail?('FAIL '+fail.id+' @'+(s.t/12).toFixed(1)+'y'):'survived', 'score',L.avg.toFixed(0),L.grade,'res',s.reserves.toFixed(0),'fx',s.parallel.toFixed(0),'pay',E.realWage(s).toFixed(0),'hrs',E.nationalHours(s).toFixed(1),'cap',s.cap.toFixed(0),'clog',(s.clogged||0).toFixed(0),'indep',s.sov.toFixed(0),'LVL',s.lvl||1,'mills',Object.values(s.ind||{}).reduce((a,b)=>a+b,0));
 }
 const passive=()=>{};
 const smart=(s,m)=>{ const P=s.policy; P.fuel='market'; P.tax='aggressive'; P.crackdown=true; P.capex=s.reserves>450?40:s.reserves>220?20:0; P.recon=s.treasury>20?10:0; P.print=s.treasury<0?5:0;

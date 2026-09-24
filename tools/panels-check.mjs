@@ -23,7 +23,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 1. Every kind of thing under construction draws. The Progress drawer used to assume every
   //    pipe entry was a factory, so a school or a firm in the queue threw and blanked the panel.
   await page.evaluate(() => {
-    S.t = 60; S.reserves = 9000; S.treasury = 400;
+    S.t = 60; S.lvl = 10; S.reserves = 9000; S.treasury = 400;
     S.pipe = [{ due:S.t + 4, kind:'proj', id:'homs', leak:0, mode:'fast' },
               { due:S.t + 5, kind:'port', id:'latakia' },
               { due:S.t + 6, kind:'invest', id:'textiles' },
@@ -44,7 +44,8 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // 2. A sector card quotes the price of the NEXT level, not the first one forever, and there
   //    is no ceiling to hit. It used to say $35M at level 6 and then refuse the click.
-  await page.evaluate(() => { S.invests.textiles = 5; S.ind.textiles = 5; S.pipe = []; UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); });
+  // sectors are a level-5 unlock and cap at level+2, so a country that has earned them
+  await page.evaluate(() => { S.lvl = 12; S.invests.textiles = 5; S.ind.textiles = 5; S.pipe = []; UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); });
   await page.waitForTimeout(250);
   const card = await page.evaluate(() => {
     const h = [...document.querySelectorAll('.dcard.inv')].find(e => e.querySelector('[data-id=textiles]'));
@@ -107,7 +108,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   const healed = await page.evaluate(() => ({ firms:!!S.firms, ind:!!S.ind, bar:S.bar !== undefined, lvl:S.lvl !== undefined, svc:!!S.svc, pop:S.popM !== undefined }));
   ok(Object.values(healed).every(Boolean), `${tag}: and the missing fields are filled in (${JSON.stringify(healed)})`);
   const before = errs.length;
-  await page.evaluate(() => { S.t = 30; UI.drawer = 'trade'; UI.sub.trade = 'firms'; render(true); });
+  await page.evaluate(() => { S.lvl = 10; UI.drawer = 'trade'; UI.sub.trade = 'firms'; render(true); });
   await page.waitForTimeout(250);
   const firmsHtml = await page.evaluate(() => (document.querySelector('.drawer .body') || { innerText:'' }).innerText.trim().length);
   ok(errs.length === before && firmsHtml > 40, `${tag}: Companies opens on that old save (${firmsHtml} chars, ${errs.length - before} new errors)`);
@@ -116,7 +117,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 7. Nothing the player has to press may sit off the edge. The page does not scroll, so a
   //    button past the edge is a button that does not exist. Test it with every panel unlocked
   //    and every extra chip showing — the crowded case is the one that breaks.
-  await page.evaluate(() => { S.t = 60; S.clogged = 40; MP.room = 'TEST7'; MP.name = 'A'; UI.drawer = null; render(true); });
+  await page.evaluate(() => { S.lvl = 10; S.clogged = 40; MP.room = 'TEST7'; MP.name = 'A'; UI.drawer = null; render(true); });
   await page.waitForTimeout(250);
   const panels = await page.evaluate(() => document.querySelectorAll('.dock [data-act=drawer]').length);
   ok(panels >= 8, `${tag}: all ${panels} panels are open for the crowded test`);
@@ -160,7 +161,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   await clear(page);
 
   // 10. No English abbreviation may leak into Arabic. The oil split read "30k".
-  await page.evaluate(() => { S.t = 30; UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); });
+  await page.evaluate(() => { S.lvl = 10; UI.drawer = 'trade'; UI.sub.trade = 'resources'; render(true); });
   await page.waitForTimeout(250);
   const split = await page.$eval('.rcard.oil .split', e => e.innerText.replace(/\s+/g, ' ').trim());
   ok(tag === 'en' ? /k/.test(split) : !/[A-Za-z]/.test(split), `${tag}: the oil split is written in this language ("${split}")`);

@@ -83,6 +83,23 @@ Object.assign(STR.en, {
   investBtn:'Invest', needsCalmEast:'Needs the east calmer (anger below 70)',
   portsTitle:'Export capacity', portsSub:'Ports and border crossings limit how much you can sell abroad.', portsUse:'Exports want {0} a year. Ports and crossings can move {1}.',
   clogged:'Ports are jammed: {0} a year of exports can’t leave the country.', portLvl:'Berth level {0}', portState:'Run by the state', portForeign:'Run by a foreign operator',
+  need_built:'Rebuild {0} of the provinces', need_power:'Get electricity to {0} hours a day', need_calm:'Bring anger down to {0}',
+  need_jobs:'Get people without work under {0}%', need_trust:'Reach {0} trust', need_usd:'Hold ${0}M in reserves',
+  need_berth:'Upgrade a port to level {0}', need_mills:'Build {0} levels of factories', need_wage:'Pay a real wage of ${0}',
+  need_edu:'Reach {0} in schooling', need_health:'Reach {0} in health', need_indep:'Keep independence at {0} or above',
+  need_score:'Reach a score of {0}',
+  needNow:'Now {0} — you need {1}', needDone:'Done: {0}',
+  lvlReached:'Level {0}', lvlNextTargets:'To reach level {0}', lvlProgress:'{0} of {1} targets met',
+  lvlBuilding:'The national plan lands in {0}', lvlCapNow:'Factories and berths can now be pushed to level {0}.',
+  lvlPlanNow:'Every target met. A national plan has started — the new level lands in {0}.',
+  lvlCapped:'Level {0} is as far as this can go until the country reaches the next level.',
+  lvlTargets:'Your targets', lvlTargetsSub:'Meet all of these and a national plan starts. When it finishes, the country levels up and more of the game opens.',
+  lvlNothing:'Nothing is locked any more — keep building.',
+  summitTitle:'Syria rebuilt', summitSub:'Level 10, in the year {0}',
+  summitText:'You took a country with four hours of power a day and half its people out of work, and you gave it back something that runs. This was the thing the game asked you to do.',
+  summitOn:'The game does not stop here. The ladder keeps going, the targets keep rising, and your twenty-year verdict is still ahead.',
+  summitGo:'Keep going ▶',
+  builtLbl:'Provinces rebuilt', poorLbl:'People who are poor',
   upgrade:'Upgrade', upgradeTxt:'{0} and {1}. Moves more exports and earns more fees.', concession:'Hand to a foreign operator', concessionTxt:'+$100M now, and they upgrade it for free. They keep 15% of port fees. Independence −4.',
   partnersSub:'Each deal has gains, costs and conditions. If a condition breaks, the deal pauses until you fix it.',
   dealActive:'Active', dealPaused:'Paused: condition broken', dealSign:'Sign deal', needs:'Needs:',
@@ -166,6 +183,23 @@ Object.assign(STR.ar, {
   investBtn:'استثمر', needsCalmEast:'يحتاج شرقاً أهدأ (غضب أقل من 70)',
   portsTitle:'قدرة التصدير', portsSub:'الموانئ والمعابر الحدودية تحدّد كم يمكنك أن تبيع للخارج.', portsUse:'الصادرات تحتاج {0} سنوياً. الموانئ والمعابر تنقل {1}.',
   clogged:'الموانئ مزدحمة: صادرات بقيمة {0} سنوياً لا تستطيع مغادرة البلاد.', portLvl:'مستوى المرفأ {0}', portState:'تديره الدولة', portForeign:'يديره مشغّل أجنبي',
+  need_built:'أعد بناء {0} من المحافظات', need_power:'أوصل الكهرباء إلى {0} ساعة يومياً', need_calm:'اخفض الغضب إلى {0}',
+  need_jobs:'اخفض نسبة من بلا عمل تحت {0}%', need_trust:'ارفع الثقة إلى {0}', need_usd:'احتفظ بـ {0} مليون دولار احتياطياً',
+  need_berth:'طوّر ميناءً إلى المستوى {0}', need_mills:'ابنِ {0} مستويات من المصانع', need_wage:'ادفع راتباً حقيقياً قدره {0}$',
+  need_edu:'ارفع التعليم إلى {0}', need_health:'ارفع الصحة إلى {0}', need_indep:'أبقِ الاستقلال عند {0} أو أعلى',
+  need_score:'اوصل إلى نتيجة {0}',
+  needNow:'الآن {0} — تحتاج {1}', needDone:'تحقق: {0}',
+  lvlReached:'المستوى {0}', lvlNextTargets:'للوصول إلى المستوى {0}', lvlProgress:'{0} من {1} أهداف',
+  lvlBuilding:'الخطة الوطنية تكتمل خلال {0}', lvlCapNow:'يمكن الآن دفع المصانع والأرصفة حتى المستوى {0}.',
+  lvlPlanNow:'تحققت كل الأهداف. بدأت خطة وطنية — المستوى الجديد يصل خلال {0}.',
+  lvlCapped:'المستوى {0} هو أقصى ما يمكن بلوغه حتى تصل البلاد إلى المستوى التالي.',
+  lvlTargets:'أهدافك', lvlTargetsSub:'حقّق هذه كلها فتبدأ خطة وطنية. وعند انتهائها ترتفع البلاد مستوى وينفتح المزيد من اللعبة.',
+  lvlNothing:'لم يعد شيء مقفلاً — تابع البناء.',
+  summitTitle:'سوريا أُعيد بناؤها', summitSub:'المستوى 10، في عام {0}',
+  summitText:'أخذت بلداً فيه أربع ساعات كهرباء يومياً ونصف أهله بلا عمل، وأعدته بلداً يعمل. هذا ما طلبته منك اللعبة.',
+  summitOn:'اللعبة لا تتوقف هنا. السلّم يستمر، والأهداف ترتفع، وحكم العشرين سنة ما زال أمامك.',
+  summitGo:'تابع ▶',
+  builtLbl:'محافظات أُعيد بناؤها', poorLbl:'نسبة الفقراء',
   upgrade:'طوّر', upgradeTxt:'{0} و{1}. ينقل صادرات أكثر ويكسب رسوماً أكثر.', concession:'سلّمه لمشغّل أجنبي', concessionTxt:'+100 مليون$ الآن، ويطوّره مجاناً، لكنه يأخذ 15% من رسوم الميناء. الاستقلال −4.',
   partnersSub:'لكل اتفاق مكاسب وتكاليف وشروط. إذا اختلّ شرط، يتوقف الاتفاق حتى تصلحه.',
   dealActive:'فعّال', dealPaused:'متوقف: شرط مختلّ', dealSign:'وقّع الاتفاق', needs:'يحتاج:',
@@ -193,11 +227,11 @@ DEC_TXT.braingain.en[2] = 'The economy grows a little faster every month, and mo
 DEC_TXT.vocational.en[2] = 'Unemployment falls a little every month, everywhere. Costs $20M a year.'; DEC_TXT.vocational.ar[2] = 'البطالة تنخفض قليلاً كل شهر في كل مكان. تكلّف 20 مليون$ سنوياً.';
 FAC_TXT.wb.en[1] = 'Money that goes straight into power stations. It arrives as electricity 12 months later.'; FAC_TXT.wb.ar[1] = 'أموال تذهب مباشرة إلى محطات الكهرباء، وتصل كهرباءً بعد 12 شهراً.';
 NOTE.en.wbGrid = 'World Bank money is building {0} MW of power (ready in 12 months).'; NOTE.ar.wbGrid = 'أموال البنك الدولي تبني {0} ميغاواط (جاهزة بعد 12 شهراً).';
-Object.assign(NOTE.en, { svcStart:'Started building {0}. Ready in {1}.', svcDone:'{0} opened. That is {1} built so far.',
+Object.assign(NOTE.en, { lvlStart:'Every target met. A national plan for level {0} has started — {1} of work.', lvlDone:'The country reached level {0}.', svcStart:'Started building {0}. Ready in {1}.', svcDone:'{0} opened. That is {1} built so far.',
   portDone:'{0} port reached level {1}.', dealOn:'Deal with {0} is active again.', dealOff:'Deal with {0} paused: a condition broke.', dealSign:'Signed a deal with {0}.',
   investStart:'Investment started: {0}. Ready in {1}.', investDone:'Investment finished: {0}.', offshoreHit:'Offshore drilling struck gas! +10 million m³ a day.', offshoreDry:'Offshore well came up dry. The $150M is gone.',
   portStart:'Upgrading {0} port. Ready in 12 months.', portConcession:'{0} port handed to a foreign operator. +$100M.', projStartShort:'Construction started in {0}.' });
-Object.assign(NOTE.ar, { svcStart:'بدأ بناء {0}. يجهز خلال {1}.', svcDone:'افتُتحت {0}. صار المبني {1} حتى الآن.',
+Object.assign(NOTE.ar, { lvlStart:'تحققت كل الأهداف. بدأت خطة وطنية للمستوى {0} — {1} من العمل.', lvlDone:'بلغت البلاد المستوى {0}.', svcStart:'بدأ بناء {0}. يجهز خلال {1}.', svcDone:'افتُتحت {0}. صار المبني {1} حتى الآن.',
   portDone:'وصل ميناء {0} إلى المستوى {1}.', dealOn:'عاد الاتفاق مع {0} للعمل.', dealOff:'توقف الاتفاق مع {0}: اختلّ أحد الشروط.', dealSign:'وُقّع اتفاق مع {0}.',
   investStart:'بدأ الاستثمار: {0}. يجهز خلال {1}.', investDone:'اكتمل الاستثمار: {0}.', offshoreHit:'الحفر البحري وجد غازاً! +10 مليون م³ يومياً.', offshoreDry:'البئر البحرية جافة. ضاعت الـ150 مليون$.',
   portStart:'تطوير ميناء {0}. يجهز خلال 12 شهراً.', portConcession:'سُلّم ميناء {0} لمشغّل أجنبي. +100 مليون$.', projStartShort:'بدأ البناء في {0}.' });
@@ -367,3 +401,29 @@ NOTE.ar.firmSigned = '{0} \u0633\u062a\u0628\u0646\u064a \u0641\u064a {1}.';
 NOTE.ar.firmDone = '{0} \u0627\u0641\u062a\u062a\u062d\u062a \u0645\u0635\u0627\u0646\u0639\u0647\u0627 \u0641\u064a {1}.';
 LEDGER.en.profitsOut = 'Profits leaving with foreign owners';
 LEDGER.ar.profitsOut = '\u0623\u0631\u0628\u0627\u062d \u062a\u062e\u0631\u062c \u0645\u0639 \u0627\u0644\u0645\u0644\u0627\u0643 \u0627\u0644\u0623\u062c\u0627\u0646\u0628';
+
+// ===== levels: the spine of the game =====
+// Ten named levels. The name is what the country has become, the line under it is what that
+// actually means for someone living there — never a ledger sentence.
+const LEVEL_TXT = {
+  1:{ en:['Caretaker','You have a palace, a broken grid and fourteen provinces that are not sure they want you.'],
+      ar:['حارس الدولة','لديك قصر وشبكة كهرباء مكسورة وأربع عشرة محافظة غير متأكدة أنها تريدك.'] },
+  2:{ en:['The lights come on','One province has something that works again. People noticed.'],
+      ar:['عادت الأنوار','محافظة واحدة فيها شيء يعمل من جديد. الناس لاحظوا.'] },
+  3:{ en:['Somebody is in charge','The power holds and the palace is believed more often than not.'],
+      ar:['هناك من يحكم','الكهرباء صامدة، والقصر صار يُصدَّق أكثر مما يُكذَّب.'] },
+  4:{ en:['Open for business','Rubble is being cleared and there are dollars in the bank to clear more.'],
+      ar:['البلد يفتح أبوابه','الركام يُرفع، وفي المصرف دولارات لرفع المزيد.'] },
+  5:{ en:['A door to the world','Ships call at your port because it is worth calling at.'],
+      ar:['باب إلى العالم','السفن ترسو في مينائك لأنه صار يستحق الرسو.'] },
+  6:{ en:['Making things again','Factories, not just wellheads. People go to work in the morning.'],
+      ar:['نصنع من جديد','مصانع لا آبار فقط. الناس يخرجون إلى العمل في الصباح.'] },
+  7:{ en:['A wage worth having','A salary buys a week of food instead of two days of it.'],
+      ar:['راتب يستحق','الراتب يشتري طعام أسبوع بدل يومين.'] },
+  8:{ en:['A country that works','The lights, the jobs and the rebuilt towns hold together at the same time.'],
+      ar:['بلد يعمل','الكهرباء والعمل والمدن المعادة تصمد كلها معاً.'] },
+  9:{ en:['Standing on its own','Clinics, factories and decisions that are still yours to make.'],
+      ar:['يقف على قدميه','عيادات ومصانع وقرارات ما زالت قرارك.'] },
+  10:{ en:['Syria rebuilt','Not finished — countries never are — but no longer a country being repaired.'],
+      ar:['سوريا أُعيد بناؤها','لم تنتهِ — البلدان لا تنتهي — لكنها لم تعد بلداً قيد الإصلاح.'] },
+};

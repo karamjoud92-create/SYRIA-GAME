@@ -132,6 +132,75 @@ const indLvl = (s, k) => (s.ind && s.ind[k]) || 0;
 // out of growth and the wall is your economy rather than a number in a table.
 const invLvl = (s, id) => (s.invests && s.invests[id]) || 0;
 const investCost = (s, id) => Math.round(INVEST[id].usd * Math.pow(1.4, invLvl(s, id)));
+// ---------- levels: the spine of the game ----------
+// A town hall, for a country. The level is not a read-out of how well you are doing — it is a
+// **gate**. It decides which panels and sectors exist at all, and how far each factory and berth
+// can be pushed. Nothing is ever permanently capped, because the ladder itself never ends: past
+// the summit the targets keep scaling and the ceiling keeps rising with them.
+//
+// Each level names two to four things to achieve. Meet them all and a national plan starts on
+// its own — `LEVEL_MONTHS` of work — and when the plan lands, so does the level. **Once a plan
+// has started it always finishes**: taking it away because a number slipped back for a month
+// would punish the player for work they had already done.
+const LEVEL_MONTHS = 4;
+const LEVEL_MAX = 10;          // the summit is named and has a victory screen; levels go on past it
+const INV_HEADROOM = 2;        // a factory or berth may run this far ahead of the country itself
+const invCap = s => (s.lvl || 1) + INV_HEADROOM;
+
+// A target the player can read off the dashboard. `down` marks the ones where lower is better,
+// so unemployment and anger read the right way round on the checklist.
+const NEED = {
+  built:  n => ({ id:'built',  want:n, get:s => PROVS.filter(p => s.provs[p.id].project === true).length }),
+  power:  n => ({ id:'power',  want:n, get:s => nationalHours(s), dp:1 }),
+  calm:   n => ({ id:'calm',   want:n, get:s => natUnrest(s), down:true }),
+  jobs:   n => ({ id:'jobs',   want:n, get:s => joblessNat(s), down:true }),
+  trust:  n => ({ id:'trust',  want:n, get:s => s.trust }),
+  usd:    n => ({ id:'usd',    want:n, get:s => s.reserves }),
+  berth:  n => ({ id:'berth',  want:n, get:s => Math.max(s.ports.latakia.lvl, s.ports.tartus.lvl) }),
+  mills:  n => ({ id:'mills',  want:n, get:s => Object.values(s.ind || {}).reduce((a, b) => a + b, 0) }),
+  wage:   n => ({ id:'wage',   want:n, get:s => realWage(s) }),
+  edu:    n => ({ id:'edu',    want:n, get:s => s.edu }),
+  health: n => ({ id:'health', want:n, get:s => s.health }),
+  indep:  n => ({ id:'indep',  want:n, get:s => s.sov }),
+  score:  n => ({ id:'score',  want:n, get:s => s.score || 0 }),
+};
+
+// What each level asks for, and what it hands over. A level's targets must be reachable with
+// what the PREVIOUS levels unlocked — that is the whole loop: unlock a thing, use it to earn
+// the next unlock. Berths come at 4, so "a second berth" is level 5's ask, not level 4's.
+const LEVELS = [
+  null,
+  { need:[] },                                                       // 1  where everyone starts
+  { need:[NEED.built(1), NEED.calm(46)] },                           // 2  fix one place
+  { need:[NEED.power(6), NEED.usd(450)] },                           // 3  keep the lights on
+  { need:[NEED.built(2), NEED.calm(44)] },                           // 4  money and rubble
+  { need:[NEED.berth(2), NEED.power(8)] },                           // 5  reach the world
+  { need:[NEED.mills(3), NEED.jobs(50)] },                           // 6  make things here
+  { need:[NEED.mills(6), NEED.wage(32)] },                           // 7  wages worth having
+  { need:[NEED.power(10), NEED.jobs(45), NEED.built(4)] },           // 8  a country that works
+  { need:[NEED.edu(42), NEED.health(46), NEED.indep(45)] },          // 9  standing on its own
+  { need:[NEED.score(62), NEED.jobs(32), NEED.edu(52), NEED.built(7)] },   // 10 Syria rebuilt
+];
+
+// Past the summit the ladder keeps going rather than stopping, so there is always something
+// to build. It asks for more of what it always asked for, and a score that has to hold up.
+function levelNeeds(s){
+  const n = s.lvl || 1;
+  if (n < LEVELS.length - 1) return LEVELS[n + 1].need;
+  const k = n - (LEVELS.length - 1) + 1;
+  return [NEED.mills(8 + k * 4), NEED.built(Math.min(PROVS.length, 7 + k)), NEED.score(62 + k * 2)];
+}
+// Which level each kind of action becomes legal at. This lives in the ENGINE, not the UI: what
+// a president is allowed to do is game logic, and while it sat only in isOpen() the balance sim
+// happily built factories years before any real player could have, so the table it printed was
+// describing a game nobody was playing. The UI's UNLOCK map gates the panels and must agree.
+const OPEN_AT = { ports:4, partners:4, sectors:5, firms:5, services:6, unis:7, supply:7 };
+const openAt = (s, k) => (s.lvl || 1) >= OPEN_AT[k];
+
+const needMet = (s, d) => d.down ? d.get(s) <= d.want : d.get(s) >= d.want;
+const levelReady = s => levelNeeds(s).every(d => needMet(s, d));
+const levelPlan = s => (s.pipe || []).find(p => p.kind === 'lvl') || null;
+
 // The country's own level, the way a town hall has one: it only ever goes up, and it counts the
 // things a president actually built rather than how the score happens to be reading today.
 function levelPoints(s){
@@ -273,7 +342,10 @@ function newGame(seed, diff = 'learner', mission = null){
 }
 function startGame(seed, diff, mission){
   const s = newGame(seed, diff, mission);
-  if (mission){ MISSIONS[mission].setup(s); s.mission = { id:mission, start:s.t, end:s.t + MISSIONS[mission].months }; }
+  // A mission is a 48-month set piece, not a ladder to climb: dropping a player into a fuel
+  // crisis and then telling them ports are a level-4 unlock would make it unwinnable. Missions
+  // hand over the whole toolkit and let the scenario be the difficulty.
+  if (mission){ s.lvl = LEVEL_MAX; MISSIONS[mission].setup(s); s.mission = { id:mission, start:s.t, end:s.t + MISSIONS[mission].months }; }
   s.score = legacy(s).avg; return s;
 }
 
@@ -354,6 +426,7 @@ function step(state, dt = MONTH, policyOverride){
     if (item.kind === 'port'){ const p = s.ports[item.id]; p.lvl += 1; notes.push(['portDone', item.id, p.lvl]); }
     if (item.kind === 'svc'){ s.svc[item.id] = (s.svc[item.id] || 0) + 1; notes.push(['svcDone', item.id, s.svc[item.id]]); }
     if (item.kind === 'firm'){ s.ind[item.sector] = (s.ind[item.sector] || 0) + item.lvls; notes.push(['firmDone', item.id, item.sector, item.lvls]); }
+    if (item.kind === 'lvl'){ s.lvl = Math.max(s.lvl || 1, item.to); notes.push(['lvlDone', s.lvl]); }
     return false;
   });
 
@@ -543,7 +616,13 @@ function step(state, dt = MONTH, policyOverride){
   s.cls = classes(s);
   s.t = endT;
   s.score = legacy(s).avg;
-  s.lvl = Math.max(s.lvl || 1, countryLevel(s));
+  // The level is EARNED, never computed. It used to be raised straight from levelPoints(), which
+  // made it a read-out of the score rather than a gate you work towards.
+  if (!levelPlan(s) && levelReady(s)){
+    const to = (s.lvl || 1) + 1;
+    s.pipe.push({ due:s.t + LEVEL_MONTHS, kind:'lvl', to });
+    notes.push(['lvlStart', to, LEVEL_MONTHS]);
+  }
   s.last = { ledger:L, notes, dt, privB:privB / dt, maxContagion, clogged:s.clogged, oil,
     why:{ fx, pct:pct * 100, trustParts:tp, angerParts:ap } };
   return s;
@@ -633,6 +712,9 @@ const ACT = {
   },
   invest(s, id){
     const x = INVEST[id], cost = investCost(s, id);
+    if (invLvl(s, id) >= invCap(s)) return false;   // raise the country to push a sector further
+    if (x.supply && !openAt(s, 'supply')) return false;
+    if (x.sector && !x.supply && !openAt(s, 'sectors')) return false;
     if (s.reserves < cost || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'invest' && p.id === id)) return false;
     if (id === 'offshore' && s.res.offshore) return false;   // one gamble, not a ladder
     s.reserves -= cost; s.pipe.push({ due:s.t + x.months, kind:'invest', id }); s.invests[id] = (s.invests[id] || 0) + 1;
@@ -641,6 +723,7 @@ const ACT = {
   },
   firmDeal(s, id, sector){
     const f = FIRMS[id];
+    if (!openAt(s, 'firms')) return false;
     if (!f || s.firms[id] || !f.sectors.includes(sector) || !f.ok(s)) return false;
     s.firms[id] = { sector, lvls:f.lvls, since:s.t };
     s.sov = clamp(s.sov - f.sov, 0, 100);
@@ -649,6 +732,8 @@ const ACT = {
   },
   portUpgrade(s, id){
     const p = s.ports[id], cost = portCost(p.lvl);
+    if (p.lvl >= invCap(s)) return false;           // same ceiling as the sectors
+    if (!openAt(s, 'ports')) return false;
     if (s.reserves < cost || s.pipe.some(x => x.kind === 'port' && x.id === id)) return false;
     s.reserves -= cost; s.pipe.push({ due:s.t + PORT_UPGRADE.months, kind:'port', id }); s.log.push([s.t, 'portStart', id]); return true;
   },
@@ -661,6 +746,7 @@ const ACT = {
   oilHome(s, v){ s.policy.oilHome = v; return true; },
   service(s, id){
     const x = SERVICES[id];
+    if (!openAt(s, id === 'unis' ? 'unis' : 'services')) return false;
     if (s.reserves < x.usd || (x.req && !x.req(s)) || s.pipe.some(p => p.kind === 'svc' && p.id === id)) return false;
     if (!svcRoom(s, id)) return false;
     s.reserves -= x.usd; s.treasury -= x.syp;
@@ -668,6 +754,7 @@ const ACT = {
     s.log.push([s.t, 'svcStart', id, x.months]); return true;
   },
   deal(s, id){
+    if (!openAt(s, 'partners')) return false;
     const x = PARTNERS[id]; if (s.deals[id] || s.pc < x.pc || (x.usd && s.reserves < x.usd) || (x.signReq && !x.signReq(s))) return false;
     s.pc -= x.pc; if (x.usd) s.reserves -= x.usd; s.sov -= x.sov;
     s.deals[id] = { signed:s.t, on:x.ok(s) };
@@ -861,4 +948,4 @@ function applyEffects(s, e){
   if (e.prov) Object.entries(e.prov).forEach(([k, v]) => s.provs[k].u = clamp(s.provs[k].u + v, 0, 100));
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, natUnrest, joblessNat, grip, hasDecree, portCost, FIRMS, FIRM_IDS, firmProfits, firmShareOf, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { startGame, MISSIONS, newGame, step, checkFail, legacy, LEVELS, LEVEL_MAX, LEVEL_MONTHS, levelNeeds, levelReady, levelPlan, needMet, invCap, NEED, OPEN_AT, openAt, natUnrest, joblessNat, grip, hasDecree, portCost, FIRMS, FIRM_IDS, firmProfits, firmShareOf, svcRoom, investCost, invLvl, countryLevel, levelPoints, ACT_COOLDOWN, industryPower, popRatio, tradeProfile, pactsOn, PACT_KINDS, PACT_MAX, SOV_PER_USD, SERVICES, svcNeed, svcCover, classes, realWage, nationalHours, IND, INVEST, indJobsAt, tourismIncome, drawEvent, EVENTS, applyEffects, optionAllowed, PROVS, tierOf, ACT, oilNumbers, exportCapacity, MONTH, yearNow, monthOf };

@@ -28,11 +28,11 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(await page.$('.deck'), `${tag}: a new game opens with a decision to make`);
   ok(await page.$('.dbtn[data-v=guide] .badge'), `${tag}: the guide is one tap away, badged`);
   await page.evaluate(() => { UI.drawer = 'guide'; render(true); }); await page.waitForTimeout(200);
-  const steps = await page.$$eval('.gstep', e => e.length);
+  const steps = await page.$$eval('.gstep:not(.lvlstep)', e => e.length);
   ok(steps === 6, `${tag}: six first steps are listed (${steps})`);
-  const nowStep = await page.$$eval('.gstep.now b', e => e.map(n => n.textContent));
+  const nowStep = await page.$$eval('.gstep.now:not(.lvlstep) b', e => e.map(n => n.textContent));
   ok(nowStep.length === 1, `${tag}: exactly one step is highlighted as next (${nowStep[0]})`);
-  ok(await page.$('.gstep.now p'), `${tag}: the highlighted step explains itself`);
+  ok(await page.$('.gstep.now:not(.lvlstep) p'), `${tag}: the highlighted step explains itself`);
 
   // the badge counts what is left
   const badge = await page.textContent('.dbtn[data-v=guide] .badge');

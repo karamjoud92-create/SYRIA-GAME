@@ -43,18 +43,34 @@ const GAME_MONTHS = 240;                        // twenty years, then history ha
 const LIVE_MS_PER_MONTH = 3600 * 1000;
 const LIVE_CATCHUP_MAX = 240;                   // never simulate more than a whole presidency at once
 const LIVE_QUEUE_MAX = 3;                       // crises that waited for you, rather than being decided
-const STAGE_AT = [0, 7, 15, 27, 45];            // months at which stages 0..4 begin
-function stageNow(){ if (!S) return 0; let st = 0; for (let i = 0; i < STAGE_AT.length; i++) if (S.t >= STAGE_AT[i]) st = i; return st; }
+// The game opens up by LEVEL, not by calendar. It used to be months 0/7/15/27/45, which meant
+// trade arrived in year 2 whether or not you had built anything — a clock, not a progression.
+// Now each level hands over panels, dials and sectors, and you reach it by doing the things on
+// its checklist. Every level's targets are reachable with what the PREVIOUS levels gave you:
+// capex arrives at 2 because level 3 asks for six hours of power, berths at 4 because level 5
+// asks for a second one. Break that chain and the game dead-ends.
 const UNLOCK = {
-  guide:0, policy:0, money:0, people:0, layerUnrest:0, projects:0,
-  decrees:1, layerPower:1, polTax:1, polPrint:1, families:1,
-  trade:2, progress:2, chains:2, layerDamage:2, polCapex:2, polRecon:2, ports:2, partners:2, firms:2,
-  services:3, sectors:3, layerJobs:3, polIntervene:3, polCrackdown:3,
-  supply:4, unis:4,
+  guide:1, policy:1, money:1, people:1, layerUnrest:1, projects:1,
+  decrees:2, layerPower:2, polCapex:2, polTax:2, families:2,
+  progress:3, chains:3, layerDamage:3, polPrint:3, polRecon:3,
+  trade:4, ports:4, partners:4, layerJobs:4,
+  sectors:5, firms:5,
+  services:6, polIntervene:6, polCrackdown:6,
+  supply:7, unis:7,
 };
-const isOpen = f => stageNow() >= (UNLOCK[f] === undefined ? 0 : UNLOCK[f]);
-// what each stage hands over, for the announcement
-const STAGE_GIFTS = [[], ['dDecrees', 'layerPower'], ['dTrade', 'dProgress'], ['subServices', 'sectorTitle'], ['extractTitle', 'svcUnis']];
+const lvlNow = () => (S && S.lvl) || 1;
+const isOpen = f => lvlNow() >= (UNLOCK[f] === undefined ? 1 : UNLOCK[f]);
+// what each level hands over, for the announcement. Index is the level itself.
+const LEVEL_GIFTS = [[], [],
+  ['dDecrees', 'layerPower', 'polCapexName'],
+  ['dProgress', 'dChains'],
+  ['dTrade', 'subPorts'],
+  ['sectorTitle', 'subFirms'],
+  ['subServices', 'polCrackdownName'],
+  ['extractTitle', 'svcUnis'],
+  [], [], []];
+// Kept so old code and tests that ask "which stage is this" still answer sensibly.
+function stageNow(){ return Math.max(0, Math.min(4, lvlNow() - 1)); }
 
 // ---------- time words ----------
 function monthsTxt(n){
@@ -238,13 +254,12 @@ function tick(){
 }
 function advance(){
   if (S.over) return;                           // a finished presidency does not keep running
-  const prevScore = S.score, prev = S, prevStage = stageNow();
+  const prevScore = S.score, prev = S;
   S = step(S); syncD();
   UI.flash = {};
   [['cash', s => s.treasury, 1.5, true], ['usd', s => s.reserves, 12, true], ['fx', s => s.parallel, 1.5, false], ['pay', s => realWage(s), 0.3, true], ['trust', s => s.trust, 0.35, true], ['anger', s => natUnrest(s), 0.35, false], ['power', s => nationalHours(s), 0.08, true]]
     .forEach(([k, g, thr, goodUp]) => { const d = g(S) - g(prev); if (Math.abs(d) >= thr) UI.flash[k] = (d > 0) === goodUp ? 'up' : 'down'; });
   S.last.notes.forEach(n => { const k = n[0]; if (['projDone','investDone','portDone','gridDone'].includes(k)) sfx('done'); else if (k === 'dealOff' || k === 'facFrozen' || (k === 'offshore' && !n[1])) sfx('bad'); else if (k === 'offshore' || k === 'dealOn') sfx('cycle'); else if (k === 'grant') sfx('coin'); });
-  if ((S.lvl || 1) > (prev.lvl || 1)){ toast('⭐ ' + fill(t('levelUp'), [S.lvl]), 'year'); sfx('cycle'); }
   if (S.score - prevScore >= 0.4) sfx('up'); else if (S.score - prevScore <= -0.4) sfx('down'); else sfx('tick');
   S.last.notes.forEach(n => { S.log.push([S.t, ...n]); toast(noteText([S.t, ...n])); });
   if (S.log.length > 80) S.log = S.log.slice(-80);
@@ -253,7 +268,12 @@ function advance(){
   if (S.t % 6 === 0){ const nc = detectCycles(); if (nc.length){ S.cycles = (S.cycles || []).concat(nc); UI.newCycle = true; UI.queue = nc.map(id => ['cycle', id]); } }
   const fail = checkFail(S);
   if (fail){ S.over = { fail:fail.id }; setSpeed(0); persist(); render(true); sfx('fail'); return showFail(fail.id); }
-  if (stageNow() > prevStage){ setSpeed(0); persist(); render(true); sfx('cycle'); return showStage(stageNow()); }
+  // Reaching a level is the game's reward moment: it stops the clock and shows what it opened.
+  // The summit gets a victory screen of its own, and the ladder carries on afterwards.
+  if ((S.lvl || 1) > (prev.lvl || 1)){
+    setSpeed(0); persist(); render(true); sfx('cycle');
+    return (S.lvl === LEVEL_MAX) ? showSummit() : showLevelUp(S.lvl);
+  }
   if (S.mission && S.t >= S.mission.end){ S.over = { mission:MISSIONS[S.mission.id].check(S) }; setSpeed(0); persist(); render(true); return showMissionEnd(); }
   if (S.t % 12 === 0){ const ago = S.history.find(h => h.t === S.t - 12); toast(fill(t('newYear'), [yearNow(S), Math.round(S.score), ago ? sign(S.score - ago.score, 0) : '±0']), 'year'); sfx('year'); }
   if (!S.mission && S.t >= GAME_MONTHS * (S.chapter || 1)){ S.over = { won:true, chapter:S.chapter || 1 }; setSpeed(0); persist(); render(true); sfx('year'); return showLegacy(); }
@@ -328,6 +348,8 @@ function noteText(n){
     case 'private': return '';
     case 'event': return fill(t('youChose'), [L2(EV_TXT[a])[0], L2(EV_TXT[a])[2][b][0]]);
     case 'svcStart': return fill(N.svcStart, [svcLabel(a), monthsTxt(b)]);
+    case 'lvlStart': return fill(N.lvlStart, [a, monthsTxt(b)]);
+    case 'lvlDone': return fill(N.lvlDone, [a]);
     case 'svcDone': return fill(N.svcDone, [svcLabel(a), b]);
     case 'portDone': return fill(N.portDone, [PORT_NAME[LANG][a], b]);
     case 'portStart': case 'portConcession': return fill(N[k], [PORT_NAME[LANG][a]]);
@@ -421,12 +443,15 @@ function renderHUD(P){
   const sc = S.score, P6 = P, dsc = P6.score - sc, g = gradeOf(sc);
   const pop = UI.scoreDelta && Math.abs(UI.scoreDelta) >= 0.4 ? `<span class="spop ${UI.scoreDelta > 0 ? 'up' : 'down'}">${sign(UI.scoreDelta, 1)}</span>` : '';
   UI.scoreDelta = 0;
-  const lv = S.lvl || 1, nextAt = Math.pow(lv, 2) * 1.2, pts = levelPoints(S), prevAt = Math.pow(lv - 1, 2) * 1.2;
-  const toNext = clamp((pts - prevAt) / Math.max(1, nextAt - prevAt) * 100, 0, 100);
+  // The bar is how many of this level's targets are met, not an abstract point total. A player
+  // can look at it and know what to do; levelPoints() could only ever be stared at.
+  const lv = S.lvl || 1, nd = levelNeeds(S), met = nd.filter(d => needMet(S, d)).length;
+  const plan = levelPlan(S);
+  const toNext = plan ? 100 : clamp(nd.length ? met / nd.length * 100 : 0, 0, 100);
   return `<button class="turn lvl" data-act="showScore" aria-label="${fill(t('levelN'), [lv])}">${ring}<div>
       <div class="yr">${fill(t('levelN'), [lv])}</div>
       <div class="ss">${S.chapter > 1 ? fill(t('chapterN'), [S.chapter]) + ' · ' : ''}${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div>
-      <div class="mbarwrap lvlbar" title="${t('toNextLevel')}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
+      <div class="mbarwrap lvlbar${plan ? ' building' : ''}" title="${plan ? fill(t('lvlBuilding'), [monthsTxt(plan.due - S.t)]) : fill(t('lvlProgress'), [met, nd.length])}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
     <button class="scorebadge g-${g}" data-act="showScore" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
@@ -629,7 +654,8 @@ function renderTradeResources(){
     const maxed = id === 'offshore' && r.offshore && r.offshore !== 'drilling';
     const cost = investCost(S, id);
     const v = investValue(id), pb = v > 0.5 ? cost / v + x.months / 12 : null;
-    let why = ''; if (!running && !maxed){ if (S.reserves < cost) why = fill(t('needsUsd'), [cost]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
+    const capped = count >= invCap(S);   // a ceiling the player cannot see is a dead click
+    let why = ''; if (!running && !maxed){ if (capped) why = fill(t('lvlCapped'), [invCap(S)]); else if (S.reserves < cost) why = fill(t('needsUsd'), [cost]); else if (x.req && !x.req(S)) why = id === 'tourism' ? t('needsCalm') : t('needsCalmEast'); }
     const built = count ? `<span class="chip up">${fill(t('levelN'), [count])}</span>` : '';
     const status = running ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(running.due - S.t)])}</span>` : maxed ? `<span class="chip up">${id === 'offshore' ? (r.offshore === 'found' ? '✅ ' + (A ? 'وُجد غاز' : 'Gas found') : '❌ ' + (A ? 'بئر جافة' : 'Dry well')) : t('maxed')}</span>`
       : `<button class="btn primary" data-act="invest" data-id="${id}" ${why ? 'disabled' : ''}>${t('investBtn')}</button>`;
@@ -653,7 +679,7 @@ function renderTradePorts(){
     const p = S.ports[id], up = S.pipe.find(x => x.kind === 'port' && x.id === id);
     return `<div class="dcard port"><h4>⚓ ${PORT_NAME[LANG][id]}</h4><div class="stars">${Array.from({ length:Math.max(3, p.lvl) }, (_, i) => `<span class="${i < p.lvl ? 'on' : ''}">⚓</span>`).join('')} <span class="small muted">${fill(t('portLvl'), [p.lvl])} · ${p.op === 'foreign' ? t('portForeign') : t('portState')}</span></div>
       ${up ? `<span class="chip">⏳ ${fill(t('running'), [monthsTxt(up.due - S.t)])}</span>` :
-      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl)), monthsTxt(PORT_UPGRADE.months)])}</span>${S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
+      `<div class="contract"><button class="opt mini" data-act="portUp" data-id="${id}" ${S.reserves < portCost(p.lvl) || p.lvl >= invCap(S) ? 'disabled' : ''}><b>🏗️ ${t('upgrade')}</b><span class="t">${fill(t('upgradeTxt'), [usdM(portCost(p.lvl)), monthsTxt(PORT_UPGRADE.months)])}</span>${p.lvl >= invCap(S) ? `<span class="t">${fill(t('lvlCapped'), [invCap(S)])}</span>` : S.reserves < portCost(p.lvl) ? `<span class="t">${fill(t('needsUsd'), [portCost(p.lvl)])}</span>` : ''}</button>
         ${p.op === 'state' ? `<button class="opt mini" data-act="portCon" data-id="${id}"><b>🤝 ${t('concession')}</b><span class="t">${t('concessionTxt')}</span></button>` : ''}</div>`}</div>`;
   }).join('');
   return h;
@@ -720,6 +746,24 @@ function renderGuide(){
     }).join('');
   } else {
     h += `<p class="mpnote" style="margin-top:0">✅ ${t('guideDone')}</p>`;
+  }
+  // The level checklist. This is the spine of the game now, so it sits in the only panel that is
+  // open from month 0 to the end: a player must always be able to see what the country is
+  // working towards and how far off it is, never guess.
+  {
+    const plan = levelPlan(S), lv = S.lvl || 1;
+    h += `<h3 class="bh">⭐ ${fill(t('lvlReached'), [lv])} — ${esc(levelName(lv))}</h3>`;
+    if (plan){
+      h += `<div class="quest done"><div class="qt">🏗️ ${t('lvlTargets')}</div>
+        <h4>${fill(t('lvlReached'), [plan.to])}</h4>
+        <p>${esc(fill(t('lvlPlanNow'), [monthsTxt(plan.due - S.t)]))}</p></div>`;
+    } else {
+      const nd = levelNeeds(S), met = nd.filter(d => needMet(S, d)).length;
+      h += `<p class="small muted" style="margin-top:0">${esc(t('lvlTargetsSub'))}</p>`;
+      h += `<div class="row" style="margin-bottom:8px"><span class="chip${met === nd.length ? ' up' : ''}">${fill(t('lvlProgress'), [met, nd.length])}</span>
+        <span class="chip">🏭 ${fill(t('lvlCapNow'), [invCap(S)])}</span></div>`;
+      h += needRows(S);
+    }
   }
 
   // what to do next, in one line, from whichever adviser is most worried
@@ -810,6 +854,7 @@ function pipeLabel(i){
   if (i.kind === 'proj') return '🏗️ ' + esc(PN(i.id));
   if (i.kind === 'port') return '⚓ ' + esc((PORT_NAME[LANG] || {})[i.id] || i.id);
   if (i.kind === 'svc') return (SVC_ICON[i.id] || '🏫') + ' ' + esc(svcLabel(i.id) || i.id);
+  if (i.kind === 'lvl') return '⭐ ' + esc(fill(t('lvlReached'), [i.to]));
   if (i.kind === 'firm'){
     const f = FIRM_TXT[i.id], sec = INV_TXT[i.sector];
     return '🏢 ' + esc((f ? L2(f)[1] : i.id) + (sec ? ' — ' + L2(sec)[0] : ''));
@@ -971,11 +1016,47 @@ function nextPending(){
 }
 
 // ---------- milestone, crisis, endings ----------
-function showStage(st){
-  const gifts = (STAGE_GIFTS[st] || []).map(k => t(k));
-  modal(`<div class="tut-icon" aria-hidden="true">🔓</div><h2>${t('stageTitle')}</h2>
-    <p class="lede">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>
+function levelName(n){ const a = L2(LEVEL_TXT[Math.min(n, LEVEL_MAX)] || LEVEL_TXT[LEVEL_MAX]); return a[0]; }
+function levelBlurb(n){ const a = L2(LEVEL_TXT[Math.min(n, LEVEL_MAX)] || LEVEL_TXT[LEVEL_MAX]); return a[1]; }
+// One row per target: what it asks, where you are, and whether it is done. The same rows draw
+// in the Guide while you are working and in the level-up screen once you are not.
+function needRows(s){
+  return levelNeeds(s).map(d => {
+    const have = d.get(s), ok = needMet(s, d), n = v => d.dp ? v.toFixed(d.dp) : Math.round(v);
+    return `<div class="gstep lvlstep${ok ? ' done' : ' now'}"><span class="gmark">${ok ? '✅' : '⬜'}</span>
+      <div><b>${esc(fill(t('need_' + d.id), [n(d.want)]))}</b>
+      <p style="margin:2px 0 0">${esc(fill(t(ok ? 'needDone' : 'needNow'), [n(have), n(d.want)]))}</p></div></div>`;
+  }).join('');
+}
+function showLevelUp(n){
+  const gifts = (LEVEL_GIFTS[n] || []).map(k => t(k)).filter(Boolean);
+  modal(`<div class="tut-icon" aria-hidden="true">⭐</div><h2>${fill(t('lvlReached'), [n])}</h2>
+    <div class="src">${esc(levelName(n))}</div>
+    <p class="lede">${esc(levelBlurb(n))}</p>
+    ${gifts.length ? `<h3 class="bh">🔓 ${t('stageTitle')}</h3>
+      <p class="lede" style="font-size:16px">${gifts.map(g => esc(fill(t('newUnlocked'), [g]))).join('<br>')}</p>` : ''}
+    <div class="tipbox">${esc(fill(t('lvlCapNow'), [invCap(S)]))}</div>
+    <h3 class="bh">🎯 ${fill(t('lvlNextTargets'), [n + 1])}</h3>
+    ${needRows(S)}
     <div class="row"><button class="btn primary" data-act="close">${t('stageGo')}</button></div>`);
+}
+// The summit. Not an ending — there is no dead end any more — but the moment the game says
+// you did the thing it spent twenty years asking you to do.
+function showSummit(){
+  const Lg = legacy(S), cl = classes(S), A = AR();
+  modal(`<div class="tut-icon" aria-hidden="true">🕊️</div><h2>${t('summitTitle')}</h2>
+    <div class="src">${fill(t('summitSub'), [yearNow(S)])}</div>
+    <p class="lede">${t('summitText')}</p>
+    <div class="scores">
+      <div class="row spread"><span>🏆 ${t('score')}</span><b>${Math.round(Lg.avg)} ${Lg.grade}</b></div>
+      <div class="row spread"><span>💡 ${L2(GLOSS.power).name}</span><b>${nationalHours(S).toFixed(1)}${A ? 'س' : 'h'}</b></div>
+      <div class="row spread"><span>💼 ${L2(GLOSS.jobs).name}</span><b>${Math.round(joblessNat(S))}%</b></div>
+      <div class="row spread"><span>🎓 ${t('eduName')}</span><b>${Math.round(S.edu)}</b></div>
+      <div class="row spread"><span>🏗️ ${t('builtLbl')}</span><b>${PROVS.filter(p => S.provs[p.id].project === true).length} / ${PROVS.length}</b></div>
+      <div class="row spread"><span>👥 ${t('poorLbl')}</span><b>${Math.round(cl.poor)}%</b></div>
+    </div>
+    <div class="tipbox">${t('summitOn')}</div>
+    <div class="row"><button class="btn primary" data-act="close">${t('summitGo')}</button></div>`);
 }
 function showMilestone(){
   const yrs = S.t / 12, Lg = legacy(S), chs = whyLive();

@@ -74,7 +74,7 @@ function decisionDeck(){
   // 5. nothing is being made here
   if (isOpen('sectors')){
     const k = Object.keys(INVEST).filter(id => INVEST[id].sector && (!INVEST[id].supply || isOpen('supply'))
-      && S.reserves >= investCost(S, id)
+      && S.reserves >= investCost(S, id) && (S.invests[id] || 0) < invCap(S)
       && !S.pipe.some(q => q.kind === 'invest' && q.id === id) && !(INVEST[id].req && !INVEST[id].req(S)))
       .sort((a, b) => (INVEST[b].jobs || 0) - (INVEST[a].jobs || 0))[0];
     if (k && !decSkipped('inv_' + k)){

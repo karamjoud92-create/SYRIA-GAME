@@ -12,6 +12,10 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   const page = await b.newPage({ viewport: { width: 1400, height: 900 }, locale: loc });
   page.on('pageerror', e => errs.push(tag + ': ' + e.message));
   page.on('console', m => { const x = m.text(); if (m.type() === 'error' && !/ERR_CERT|fonts\.g/.test(x)) errs.push(tag + ' console: ' + x); });
+  // Levels gate which actions are legal at all. These checks are about what a refinery or a
+  // multinational DOES, not whether a brand-new president may build one, so they start from a
+  // country that has earned the right; the pacing itself is what npm run levels covers.
+  await page.addInitScript(() => { window.lvUp = s => { s.lvl = 12; return s; }; });
   await page.goto(file); await page.waitForTimeout(400);
   await page.click('[data-act=newgame][data-v=learner]');
   for (let i = 0; i < 8; i++) { const x = await page.$('.modal .btn.primary'); if (x) await x.click(); await page.waitForTimeout(50); }
@@ -40,7 +44,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 2. a decree signed in the first month works exactly as well as one signed later.
   //    s.decrees[id] stores the month it was signed, and month 0 is a real month.
   const m0 = await page.evaluate(() => {
-    const sign = t => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 900; s.treasury = 300;
+    const sign = t => { let s = lvUp(newGame(7, 'learner')); s.pc = 500; s.reserves = 900; s.treasury = 300;
       for (let i = 0; i < t; i++) s = step(s);
       ACT.decree(s, 'integrity');
       for (let i = 0; i < 24; i++) s = step(s); return s.corr; };
@@ -51,7 +55,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 3. the statistics office does what its name says, and the game no longer claims
   //    the dashboard is guessing when it is not
   const st = await page.evaluate(() => {
-    const leak = on => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 3000; s.treasury = 300;
+    const leak = on => { let s = lvUp(newGame(7, 'learner')); s.pc = 500; s.reserves = 3000; s.treasury = 300;
       if (on) ACT.decree(s, 'stats'); ACT.project(s, 'aleppo', 'tender');
       return s.pipe.find(p => p.kind === 'proj').leak; };
     return { off: leak(false), on: leak(true) };
@@ -62,9 +66,9 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // 4. the twice-a-year rule on raises, gifts and relief is the engine's, not the button's
   const cd = await page.evaluate(() => {
-    const spam = fn => { let s = newGame(7, 'learner'); let n = 0;
+    const spam = fn => { let s = lvUp(newGame(7, 'learner')); let n = 0;
       for (let i = 0; i < 10; i++) if (fn(s)) n++; return n; };
-    let back = newGame(7, 'learner'); ACT.gift(back);
+    let back = lvUp(newGame(7, 'learner')); ACT.gift(back);
     for (let i = 0; i < 6; i++) back = step(back);
     return { gift: spam(s => ACT.gift(s)), wage: spam(s => ACT.wage(s, 25)),
       relief: spam(s => ACT.relief(s)), returns: ACT.gift(back) };
@@ -76,7 +80,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 5. "Keep the lights on so workshops can run" — the jobs glossary says it, so it must be true.
   //    Extraction is meant to shrug a blackout off; making things is not.
   const pw = await page.evaluate(() => {
-    const run = mw => { let s = newGame(7, 'learner');
+    const run = mw => { let s = lvUp(newGame(7, 'learner'));
       s.ind = { textiles:3, food:3, pharma:3, cement:3, telecom:3, tourism:0, logistics:3, coldchain:3, packaging:3 };
       s.mw = mw; s.reserves = 3000;
       for (let i = 0; i < 24; i++) s = step(s);
@@ -92,7 +96,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 6. a province in revolt burns, and the score counts what is standing rather than the effort
   const war = await page.evaluate(() => {
     const total = s => PROVS.reduce((a, p) => a + s.provs[p.id].dmg, 0);
-    const run = burn => { let s = newGame(7, 'learner'); s.reserves = 6000; s.treasury = 4000;
+    const run = burn => { let s = lvUp(newGame(7, 'learner')); s.reserves = 6000; s.treasury = 4000;
       for (let i = 0; i < 120; i++){ s.policy.recon = 20; s.treasury = Math.max(s.treasury, 400);
         if (burn) ['aleppo','rif','homs'].forEach(k => s.provs[k].mod = 70);
         else PROVS.forEach(p => s.provs[p.id].mod = -20);
@@ -108,7 +112,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 7. the border crackdown is a decision, not a button: it used to be better on score, trust,
   //    anger, corruption AND cash at once, with no cost written anywhere
   const cr = await page.evaluate(() => {
-    const run = on => { let s = newGame(7, 'learner'); s.reserves = 4000;
+    const run = on => { let s = lvUp(newGame(7, 'learner')); s.reserves = 4000;
       for (let i = 0; i < 120; i++){ const P = s.policy; P.crackdown = on; P.fuel = 'market'; P.tax = 'aggressive';
         P.capex = s.reserves > 450 ? 40 : 20;
         s = step(s); s.reserves = Math.max(s.reserves, 600); }
@@ -125,7 +129,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 8. a refinery you can pay for should pay you back. It used to lose money: base capacity
   //    covered three quarters of production on day one, so bought capacity had nothing to do.
   const rf = await page.evaluate(() => {
-    const mk = (oh, refs) => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 6000; s.treasury = 500;
+    const mk = (oh, refs) => { let s = lvUp(newGame(7, 'learner')); s.pc = 500; s.reserves = 6000; s.treasury = 500;
       ACT.decree(s, 'tribal'); ACT.decree(s, 'northeast'); s.policy.oilHome = oh; s.res.refinery = 14 + 20 * refs;
       const o = oilNumbers(s); return o.home * 3.0 + o.exp * 1.8; };
     return { homeNone: mk(1, 0), homeThree: mk(1, 3), sellNone: mk(0, 0), sellThree: mk(0, 3) };
@@ -139,7 +143,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   // 9. living standards are not one salary: two countries on identical government pay, one
   //    with nearly everyone working and one with nobody, used to score exactly the same
   const lv = await page.evaluate(() => {
-    const mk = jl => { let s = newGame(7, 'learner'); s.wage = 9000; s.parallel = 125;
+    const mk = jl => { let s = lvUp(newGame(7, 'learner')); s.wage = 9000; s.parallel = 125;
       PROVS.forEach(p => s.provs[p.id].jobless = jl); return legacy(s).comp.Livelihoods; };
     return { working: mk(5), idle: mk(60), wage: 9000 / 125 };
   });
@@ -152,7 +156,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   //     The three supply sectors sit out: they do not export, they multiply what everything
   //     else fetches, so counting them as "industry" flattened the whole trade-off to a tie.
   const inv = await page.evaluate(() => {
-    const mk = () => { let s = newGame(7, 'learner'); s.pc = 500; s.reserves = 99999; s.treasury = 9999;
+    const mk = () => { let s = lvUp(newGame(7, 'learner')); s.pc = 500; s.reserves = 99999; s.treasury = 9999;
       ACT.decree(s, 'tribal'); ACT.decree(s, 'northeast');
       s.ports.latakia.lvl = 3; s.ports.tartus.lvl = 3; s.ind.logistics = 3; s.mw = 14000;
       s.policy.capex = 40; s.policy.oilHome = 1; return s; };
@@ -186,7 +190,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   //     clinics to need used to LOWER your score, because upkeep at full coverage cost more
   //     than every lira of tax and customs put together.
   const sv = await page.evaluate(() => {
-    const play = on => { let s = newGame(7, 'learner'); s.reserves = 6000; s.treasury = 600;
+    const play = on => { let s = lvUp(newGame(7, 'learner')); s.reserves = 6000; s.treasury = 600;
       for (let i = 0; i < 180; i++){ const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive'; P.crackdown = true;
         P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 20 ? 10 : 0;
         if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
@@ -204,12 +208,12 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // 12. how many people live here used to change nothing but school coverage
   const pop = await page.evaluate(() => {
-    const run = n => { let s = newGame(7, 'learner'); s.ind = { textiles:3, food:3, pharma:3 };
+    const run = n => { let s = lvUp(newGame(7, 'learner')); s.ind = { textiles:3, food:3, pharma:3 };
       for (let i = 0; i < 12; i++){ s.popM = n; s = step(s); }
       const l = k => (s.last.ledger.syp.find(r => r[0] === k) || [0, 0])[1] / s.last.dt;
       return { bread: l('bread'), wages: l('wages'), tax: l('taxes'), hours: nationalHours(s), jobless: joblessNat(s) }; };
     // a country that is actually run: people stay and slowly come back
-    let grow = newGame(7, 'learner'); grow.reserves = 6000; grow.treasury = 600;
+    let grow = lvUp(newGame(7, 'learner')); grow.reserves = 6000; grow.treasury = 600;
     for (let i = 0; i < 240; i++){ const P = grow.policy; P.fuel = 'market'; P.tax = 'aggressive';
       P.capex = grow.reserves > 450 ? 40 : 20;
       if (realWage(grow) < grow.expWage - 4 && grow.treasury > 10) ACT.wage(grow, 10);
@@ -225,7 +229,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // 13. and losing your people is not a way to win
   const flee = await page.evaluate(() => {
-    const play = bleed => { let s = newGame(7, 'learner'); s.reserves = 6000; s.treasury = 600;
+    const play = bleed => { let s = lvUp(newGame(7, 'learner')); s.reserves = 6000; s.treasury = 600;
       for (let i = 0; i < 180; i++){ const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive'; P.crackdown = true;
         P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 20 ? 10 : 0;
         if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
@@ -243,7 +247,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   //     trust of 70 takes a decade) against a hardcoded +2.5 drift, and no trade term at all —
   //     so the one thing a player builds, exports, could not move it.
   const lira = await page.evaluate(() => {
-    let s = newGame(7, 'learner'); const path = [];
+    let s = lvUp(newGame(7, 'learner')); const path = [];
     for (let m = 0; m < 240; m++){
       const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive'; P.crackdown = true;
       P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 20 ? 10 : 0;
@@ -262,19 +266,47 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(lira.end < lira.start, `${tag}: and twenty years of it ends stronger than it started ($${lira.start} -> $${lira.end.toFixed(0)})`);
   ok(lira.peak < lira.start * 1.35, `${tag}: without ever running away first (worst was $${lira.peak.toFixed(0)})`);
 
-  // 15. nothing has a ceiling, and twenty years is a chapter rather than a full stop
+  // 15. the ceiling is the LEVEL, and the level is earned. Nothing is capped forever, because
+  //     the country's own level never stops rising - that is the whole Clash-of-Clans shape.
   const grow = await page.evaluate(() => {
-    let s = newGame(7, 'learner'); s.reserves = 9e9; s.treasury = 9e6;
+    // a country at level 1 may push a sector to 3 and no further, whatever it can afford
+    let low = newGame(7, 'learner'); low.reserves = 9e9; low.treasury = 9e6; low.lvl = 1;
+    let refusedAt = null;
+    for (let i = 0; i < 6; i++){
+      if (!ACT.invest(low, 'oilwells')){ refusedAt = low.invests.oilwells || 0; break; }
+      for (let j = 0; j < 9; j++) low = step(low); low.reserves = 9e9;
+    }
+    // the same country, one level higher, may go further - the ceiling lifted, it did not vanish
+    low.lvl = 2; const afterLift = ACT.invest(low, 'oilwells');
+    // and high up the ladder it keeps going, each rung dearer than the last
+    let s = lvUp(newGame(7, 'learner')); s.reserves = 9e9; s.treasury = 9e6;
     const c1 = investCost(s, 'textiles');
     for (let i = 0; i < 8; i++){ ACT.invest(s, 'textiles'); for (let j = 0; j < 7; j++) s = step(s); s.reserves = 9e9; }
     for (let i = 0; i < 8; i++){ ACT.portUpgrade(s, 'latakia'); for (let j = 0; j < 9; j++) s = step(s); s.reserves = 9e9; }
-    return { firstCost: c1, laterCost: investCost(s, 'textiles'), mills: s.invests.textiles, berth: s.ports.latakia.lvl, lvl: s.lvl };
+    return { refusedAt, capAt1: invCap({ lvl:1 }), afterLift,
+      firstCost: c1, laterCost: investCost(s, 'textiles'), mills: s.invests.textiles, berth: s.ports.latakia.lvl };
   });
+  ok(grow.refusedAt === grow.capAt1,
+    `${tag}: a level-1 country is stopped at ${grow.capAt1} of a thing, however rich it is (stopped at ${grow.refusedAt})`);
+  ok(grow.afterLift, `${tag}: and one more level lets it build the next one`);
   ok(grow.mills > 3 && grow.berth > 3,
-    `${tag}: factories and berths have no ceiling (${grow.mills} mills, berth level ${grow.berth})`);
+    `${tag}: high up the ladder there is still no end in sight (${grow.mills} mills, berth level ${grow.berth})`);
   ok(grow.laterCost > grow.firstCost * 3,
     `${tag}: and every one costs more than the last ($${grow.firstCost}M -> $${grow.laterCost}M)`);
-  ok(grow.lvl > 5, `${tag}: building raises the country's level (level ${grow.lvl})`);
+  // the level is EARNED from milestones, never computed from what you happen to own
+  const earned = await page.evaluate(() => {
+    let s = newGame(7, 'learner'); s.reserves = 9e9; s.treasury = 9e6; s.ind = { textiles:9, food:9 };
+    for (let i = 0; i < 6; i++) s = step(s);
+    const boughtLevel = s.lvl;
+    let t = newGame(7, 'learner');
+    t.provs.aleppo.project = true;                       // meet level 2's targets honestly
+    PROVS.forEach(p => { t.provs[p.id].u = 30; });
+    let plan = null, landed = 0;
+    for (let i = 0; i < 24; i++){ t = step(t); if (!plan) plan = levelPlan(t); if (t.lvl > 1){ landed = t.t; break; } }
+    return { boughtLevel, planStarted: !!plan, landed, lvl: t.lvl };
+  });
+  ok(earned.boughtLevel === 1, `${tag}: owning things does not buy a level (still level ${earned.boughtLevel})`);
+  ok(earned.planStarted && earned.lvl === 2, `${tag}: meeting the targets does, after the plan is built (level ${earned.lvl} at month ${earned.landed})`);
   const chap = await page.evaluate(() => {
     const before = { chapter: S.chapter, over: S.over };
     S.over = { won: true, chapter: S.chapter || 1 }; nextChapter();
@@ -286,7 +318,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // 16. multinationals: somebody else's money, your choice of sector, their cut forever
   const firms = await page.evaluate(() => {
-    const run = give => { let s = newGame(7, 'learner'); s.reserves = 3000; s.treasury = 600;
+    const run = give => { let s = lvUp(newGame(7, 'learner')); s.reserves = 3000; s.treasury = 600;
       for (let i = 0; i < 240; i++){ const P = s.policy; P.fuel = 'market'; P.tax = 'aggressive';
         P.capex = s.reserves > 450 ? 40 : 20; P.recon = s.treasury > 40 ? 10 : 0;
         if (realWage(s) < s.expWage - 4 && s.treasury > 10) ACT.wage(s, 10);
@@ -298,7 +330,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
         s = step(s); }
       const out = (s.last.ledger.usd.find(r => r[0] === 'profitsOut') || [0, 0])[1] / s.last.dt;
       return { score: s.score, out: Math.abs(out), tex: s.ind.textiles || 0 }; };
-    let sov = newGame(7, 'learner'); sov.trust = 55; sov.corr = 44; sov.edu = 42; sov.cap = 32;
+    let sov = lvUp(newGame(7, 'learner')); sov.trust = 55; sov.corr = 44; sov.edu = 42; sov.cap = 32;
     const before = sov.sov; ACT.firmDeal(sov, 'anadolu', 'textiles');
     return { none: run(null), best: run('logistics'), worst: run('textiles'), sovBefore: before, sovAfter: sov.sov };
   });

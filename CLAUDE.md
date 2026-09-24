@@ -38,6 +38,11 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run indep`  → independence end to end: it is a dashboard number from month 0, it explains itself,
   selling it costs trust, influence, export dollars and calm, the score panel shows all six parts, and
   money buys it back — but never past where you started. Both languages.
+- `npm run levels` → the spine: the Guide lists this level's targets and where you stand, **eight
+  years of doing nothing opens nothing**, meeting every target starts a national plan and the plan
+  finishes even if the country slips back, a sector stops at level + 2 with the reason on the card,
+  one more level lifts it, no level asks for something it has not been given, the summit shows a
+  victory screen, and past it the targets and the ceiling both keep rising. Both languages.
 - `npm run itch`   → the build inside an itch.io-shaped sandboxed iframe, twice: once with storage
   allowed and once with it **denied**. itch serves an HTML game in an iframe on its own domain,
   where `localStorage` can throw outright and Google Fonts is a third-party request. The game must
@@ -159,16 +164,37 @@ fast: a player should be able to think, and should not have to wait two years to
   export value, free levels that unclog the ports) is a coup, and pointing one at your biggest
   earner is a mistake that bleeds for the rest of the game. Any new firm needs both: a real gift and
   a cut that grows with your success, or it is free money like the old crackdown was.
-- **Levels and chapters — nothing has a ceiling.** Every sector, berth and service is a ladder:
-  `investCost(s, id)` and `portCost(lvl)` charge about 40% more for each level while what a level
-  returns stays linear, so growth is paid for out of growth and the wall is the economy rather than
-  a number in a table. `countryLevel(s)` is the headline number in the corner where the year used to
-  be — a square root of `levelPoints(s)`, so every level asks more than the last, and `s.lvl`
-  ratchets so it is a record of what was built. Twenty years is a **chapter**, not an end:
-  `nextChapter()` records the grade, carries the same Syria forward and raises the floor of the bar,
-  so the game never finishes in one sitting. Watch for caps hiding in two places — the port cap was
-  in `ACT.portUpgrade` *and* in the pipe handler, so paying for a fourth berth took the money and
-  gave nothing.
+- **Levels are the spine of the game.** A town hall, for a country. `s.lvl` is **earned, never
+  computed** — it used to be raised straight from `levelPoints()`, which made it a read-out of the
+  score rather than something to work towards, and the game opened up on a *calendar* (`STAGE_AT`
+  months 0/7/15/27/45) whether or not the player had done anything at all. Both are gone.
+  - `LEVELS[n].need` is two to four targets built from `NEED.*`. Meet them all and `step()` pushes
+    a `kind:'lvl'` plan into `s.pipe` for `LEVEL_MONTHS`; when the plan lands, the level does.
+    **Once a plan starts it always finishes** — taking it back because a number dipped for a month
+    would punish work already paid for.
+  - **Every level's targets must be reachable with what EARLIER levels handed over.** Berths open
+    at 4 because level 5 asks for a second one; sectors at 5 because level 6 asks for mills. Break
+    that chain and the game dead-ends — `npm run levels` fails if a level asks for something it
+    has not been given.
+  - **Do not gate on a number that dips before it climbs.** Trust falls for three years while taxes
+    bite, and education decays until schools are standing. Both were early targets once and each
+    created a three-year dead zone the player could not act their way out of. They live at 9 and 10.
+  - `invCap(s)` = `s.lvl + INV_HEADROOM`. A sector or berth may run two levels ahead of the country
+    and no further — **but nothing is capped forever, because the ladder itself never ends**: past
+    the summit `levelNeeds()` keeps scaling and the ceiling keeps rising. `investCost` still charges
+    ~40% more per level, so the wall is the economy as well as the gate.
+  - **`OPEN_AT` lives in the ENGINE, not the UI.** What a president is allowed to do is game logic.
+    While it sat only in `isOpen()` the balance sim happily built factories years before any real
+    player could, so the table it printed described a game nobody was playing. The UI's `UNLOCK`
+    map gates the panels and must agree with it.
+  - **Level 10 is the summit** (`LEVEL_MAX`) and has a victory screen — the answer to "you lose but
+    you never win". It is not an ending: levels continue past it and the 20-year chapter still runs.
+  - **Missions get `LEVEL_MAX` at setup.** A 48-month set piece is not a ladder; dropping a player
+    into a fuel crisis and then telling them ports are a level-4 unlock makes it unwinnable.
+  - Pacing on `builder`/learner: L5 (sectors) ~4.7y, L7 (all of it) ~6.2y, summit ~13.9y, L15 by 20y.
+    Watch for caps hiding in two places — the port cap was in `ACT.portUpgrade` *and* the pipe
+    handler, and `max:3` outlived its removal in the `INVEST` table and two UI files.
+
 - **Nothing may fail silently.** `withEffects` toasts when an action is refused. A cap the player
   cannot see is a dead click: the services cap (`svcRoom`) sat only in the engine, so the button
   stayed live and nothing happened. Any new refusal needs a reason on the control too. The reason
@@ -211,11 +237,11 @@ fast: a player should be able to think, and should not have to wait two years to
   fire while the player is away are queued in `S.pending`, never answered for them** — they are asked
   on return, up to `LIVE_QUEUE_MAX`. Catch-up is capped at a whole presidency. `UI.live` is opt-in and
   defaults false, so the speed buttons and every existing browser test are untouched.
-- **Progressive unlock** (`STAGE_AT`, `UNLOCK`, `isOpen()` in `src/ui/5-game.js`). The game opens in stages at
-  months 0 / 7 / 15 / 27 / 45: three panels, three policy dials and one map layer to start, the whole game by
-  year 4. Gate new UI by adding a key to `UNLOCK` and wrapping the control in `isOpen('key')` — and add it to
-  `STAGE_GIFTS` so the unlock is announced. This is engine-independent: `stageNow()` reads only `S.t`, so the
-  balance sim and missions are unaffected.
+- **Progressive unlock** (`UNLOCK`, `isOpen()` in `src/ui/5-game.js`). Four panels, three dials and one
+  map layer at level 1; all eight panels and four layers by level 7. Gate new UI by adding a key to
+  `UNLOCK` with the **level** it opens at, wrap the control in `isOpen('key')`, and add it to
+  `LEVEL_GIFTS` so the unlock is announced. If the new thing is an *action* and not just a panel, it
+  also needs an `OPEN_AT` entry in the engine, or the sim will use it before a player could.
 - `src/ui/6-multiplayer.js` — the lobby, the scoreboard panel and the header chip. It **wraps** `render`, `advance`,
   `begin`, `renderHUD`, `ensureFrame`, `startScreen` and `menu` rather than redefining them, so single-player
   behaviour is untouched. Add to the wrappers, don't copy the originals.

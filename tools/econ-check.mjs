@@ -13,6 +13,9 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   page.on('console', m => { const x = m.text(); if (m.type() === 'error' && !/ERR_CERT|fonts\.g/.test(x)) errs.push(tag + ' console: ' + x); });
   await page.goto(file); await page.waitForTimeout(400);
   await page.click('[data-act=newgame][data-v=learner]');
+  // the sectors are a level-5 and level-7 unlock now; this suite is about what they do once the
+  // country has earned them, so hand it a country that has (npm run levels covers the earning)
+  await page.evaluate(() => { if (typeof S !== 'undefined' && S) S.lvl = 12; });
   for (let i = 0; i < 8; i++) { const x = await page.$('.modal .btn.primary'); if (x) await x.click(); await page.waitForTimeout(50); }
   await clear(page);
 
