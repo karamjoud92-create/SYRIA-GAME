@@ -127,7 +127,7 @@ function saveCodeModal(){
   const ta = $('#modal textarea'); if (ta){ ta.focus(); ta.select(); }
 }
 function loadCodeModal(err){
-  modal(`<h2>📥 ${t('loadCode')}</h2>${err ? `<p class="bad">${t('badCode')}</p>` : ''}<textarea class="code" id="codein" placeholder="${t('pasteCode')}"></textarea>
+  modal(`<h2>📥 ${t('loadCode')}</h2>${err ? `<p class="bad">${t(UI.loadErr === 'newer' ? 'badCodeNewer' : UI.loadErr === 'broken' ? 'badCodeBroken' : 'badCode')}</p>` : ''}<textarea class="code" id="codein" placeholder="${t('pasteCode')}"></textarea>
   <div class="row"><button class="btn primary" data-act="doload">${t('load')}</button><button class="btn" data-act="${UI.started ? 'close' : 'startscreen'}">${t('back')}</button></div>`);
 }
 function compareRows(a, b){

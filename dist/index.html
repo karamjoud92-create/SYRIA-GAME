@@ -1470,7 +1470,7 @@ en:{
   disclaimer:'A simplified game, not a prediction. The $108B war-damage total comes from the World Bank’s 2025 assessment; other numbers are rough estimates. Map boundaries: Natural Earth.',
   missionsTitle:'Short missions', missionGoal:'Goal', seasonsLeft:'{0} seasons left', back:'Back',
   menuSaved:'Your game saves automatically in this browser.', backToGame:'Back to game', howToPlay:'How to play', newGame:'New game',
-  saveCode:'Copy save code', loadCode:'Load save code', saveCopied:'Save code copied. Paste it into Load save code on any device to continue.', pasteCode:'Paste a save code', load:'Load', badCode:'That code didn’t work. Copy the whole code and try again.',
+  saveCode:'Copy save code', loadCode:'Load save code', saveCopied:'Save code copied. Paste it into Load save code on any device to continue.', pasteCode:'Paste a save code', load:'Load', badCode:'That code didn’t work. Copy the whole code and try again.', badCodeNewer:'That save is from a newer version of the game. Open the latest link, then try again.', badCodeBroken:'That code is damaged — part of it is missing or was changed. Copy the whole code and try again.', restoredBak:'Your last save was damaged, so we opened the backup from just before it.',
   language:'العربية', next:'Next', startPlaying:'Start playing', gotIt:'Got it', why:'Why it matters:', how:'How to improve it:',
   cycleFound:'You discovered a cycle', cycleVicious:'Vicious cycle', cycleVirtuous:'Virtuous cycle', keepGoing:'Keep going',
   quiet:'A quiet season.', wasted:'lost',
@@ -1535,7 +1535,7 @@ ar:{
   disclaimer:'لعبة مبسّطة وليست توقعاً للمستقبل. رقم دمار الحرب البالغ 108 مليارات دولار مأخوذ من تقييم البنك الدولي لعام 2025، وبقية الأرقام تقديرات تقريبية. حدود الخريطة: Natural Earth.',
   missionsTitle:'مهمات قصيرة', missionGoal:'الهدف', seasonsLeft:'بقي {0} مواسم', back:'رجوع',
   menuSaved:'تُحفظ لعبتك تلقائياً في هذا المتصفح.', backToGame:'العودة إلى اللعبة', howToPlay:'طريقة اللعب', newGame:'لعبة جديدة',
-  saveCode:'نسخ رمز الحفظ', loadCode:'تحميل رمز حفظ', saveCopied:'تم نسخ رمز الحفظ. الصقه في «تحميل رمز حفظ» على أي جهاز لتكمل.', pasteCode:'الصق رمز الحفظ', load:'تحميل', badCode:'الرمز لم يعمل. انسخ الرمز كاملاً وحاول مجدداً.',
+  saveCode:'نسخ رمز الحفظ', loadCode:'تحميل رمز حفظ', saveCopied:'تم نسخ رمز الحفظ. الصقه في «تحميل رمز حفظ» على أي جهاز لتكمل.', pasteCode:'الصق رمز الحفظ', load:'تحميل', badCode:'الرمز لم يعمل. انسخ الرمز كاملاً وحاول مجدداً.', badCodeNewer:'هذا الحفظ من نسخة أحدث من اللعبة. افتح آخر رابط ثم حاول مجدداً.', badCodeBroken:'الرمز تالف — جزء منه ناقص أو مُعدّل. انسخ الرمز كاملاً وحاول مجدداً.', restoredBak:'آخر حفظ كان تالفاً، ففتحنا النسخة الاحتياطية التي قبله.',
   language:'English', next:'التالي', startPlaying:'ابدأ اللعب', gotIt:'فهمت', why:'لماذا يهم:', how:'كيف تحسّنه:',
   cycleFound:'اكتشفتَ حلقة', cycleVicious:'حلقة مفرغة', cycleVirtuous:'حلقة إيجابية', keepGoing:'تابع',
   quiet:'موسم هادئ.', wasted:'ضاع',
@@ -3385,7 +3385,7 @@ function saveCodeModal(){
   const ta = $('#modal textarea'); if (ta){ ta.focus(); ta.select(); }
 }
 function loadCodeModal(err){
-  modal(`<h2>📥 ${t('loadCode')}</h2>${err ? `<p class="bad">${t('badCode')}</p>` : ''}<textarea class="code" id="codein" placeholder="${t('pasteCode')}"></textarea>
+  modal(`<h2>📥 ${t('loadCode')}</h2>${err ? `<p class="bad">${t(UI.loadErr === 'newer' ? 'badCodeNewer' : UI.loadErr === 'broken' ? 'badCodeBroken' : 'badCode')}</p>` : ''}<textarea class="code" id="codein" placeholder="${t('pasteCode')}"></textarea>
   <div class="row"><button class="btn primary" data-act="doload">${t('load')}</button><button class="btn" data-act="${UI.started ? 'close' : 'startscreen'}">${t('back')}</button></div>`);
 }
 function compareRows(a, b){
@@ -3555,10 +3555,106 @@ const gradeOf = v => v >= 75 ? 'A' : v >= 62 ? 'B' : v >= 50 ? 'C' : v >= 38 ? '
 // ---------- saves ----------
 function snap(s){ return { t:s.t, popM:s.popM, cash:s.treasury, usd:s.reserves, fx:s.parallel, pay:realWage(s), trust:s.trust, anger:natUnrest(s), power:nationalHours(s), score:s.score, jobs:joblessNat(s), bar:s.bar || 0,
   print:s.policy.print, capex:s.policy.capex, corr:s.corr, cap:s.cap, mw:s.mw, debt:s.debt, privB:(s.last && s.last.privB) || 0, contagion:(s.last && s.last.maxContagion) || 0 }; }
-function persist(){ STORE[UI.active] = { S }; STORE.active = UI.active; try { localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e){} }
+// A save outlives the build that wrote it, and a save that parses is not a save that is safe
+// to play. Every load goes: version -> migrate -> heal -> validate -> play, and one that fails
+// any step is refused out loud rather than handed the country in a broken state.
+const SAVE_V = 6, BAK = KEY + '-bak';
+
+// vN -> vN+1, pure, applied in order. **Keep every one forever** - deleting a migration strands
+// every save written before it. Empty today because v6 is current; the chain is what makes the
+// next shape change three lines instead of a redesign, and it is why heal() can stay what it
+// is: a filler for keys that were only ever *added* within v6, never ones that changed meaning.
+const MIGRATIONS = {};
+
+function migrate(s){
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return { err:'broken' };
+  let v = s.v === undefined ? 1 : s.v;
+  if (typeof v !== 'number' || !isFinite(v)) return { err:'broken' };
+  if (v > SAVE_V) return { err:'newer' };          // from a later build: refuse, never guess
+  while (v < SAVE_V){
+    const m = MIGRATIONS[v]; if (!m) return { err:'broken' };
+    s = m(s); v += 1; s.v = v;
+  }
+  return { s };
+}
+
+// Truncated codes, hand-edited ones and half-written storage all parse as JSON. Check the
+// shape before playing it, and drop ids that no longer exist rather than letting a panel throw.
+const SAVE_NUMS = ['t','treasury','reserves','parallel','official','m2','infl','wage','debt','pc',
+  'trust','corr','sov','comp','cap','mw','demand','popM','edu','health'];
+const SAVE_MAPS = ['policy','res','ind','svc','ports','provs','deals','invests','decrees','firms','flags'];
+function validate(s){
+  for (const k of SAVE_NUMS) if (typeof s[k] !== 'number' || !isFinite(s[k])) return 'number:' + k;
+  if (s.t < 0 || s.t > GAME_MONTHS * 50) return 'range:t';
+  if (s.popM <= 0 || s.popM > 500) return 'range:popM';
+  for (const k of SAVE_MAPS) if (!s[k] || typeof s[k] !== 'object' || Array.isArray(s[k])) return 'map:' + k;
+  for (const k of ['pipe','history','log']) if (!Array.isArray(s[k])) return 'list:' + k;
+  for (const p of PROVS){
+    const q = s.provs[p.id];
+    if (!q || typeof q.u !== 'number' || !isFinite(q.u)) return 'prov:' + p.id;
+  }
+  for (const k of ['latakia','tartus']){
+    const h = s.ports[k]; if (!h || typeof h.lvl !== 'number' || !isFinite(h.lvl)) return 'port:' + k;
+  }
+  // content removed in a later build must not crash a panel - drop it quietly
+  for (const k of Object.keys(s.ind)) if (!INVEST[k]) delete s.ind[k];
+  for (const k of Object.keys(s.invests)) if (!INVEST[k]) delete s.invests[k];
+  for (const k of Object.keys(s.firms)) if (!FIRMS[k]) delete s.firms[k];
+  s.pipe = s.pipe.filter(i => i && typeof i.due === 'number' && isFinite(i.due));
+  return null;
+}
+
+// heal() can fill in anything, which means it can also manufacture a whole game out of
+// {"v":6} - rubble loaded as a country, and the player's real save quietly replaced by a new
+// one. So a save has to prove it *was* a game before we start repairing it. PROVS has never
+// changed and cannot without a migration, so a save missing even one province is corrupt
+// rather than old, and heal() must not be allowed to paper over it.
+function core(s){
+  if (typeof s.t !== 'number' || !isFinite(s.t)) return 'core:t';
+  if (typeof s.reserves !== 'number' || typeof s.treasury !== 'number') return 'core:money';
+  if (!s.policy || typeof s.policy !== 'object' || Array.isArray(s.policy)) return 'core:policy';
+  if (!s.provs || typeof s.provs !== 'object' || Array.isArray(s.provs)) return 'core:provs';
+  for (const p of PROVS){
+    const q = s.provs[p.id];
+    if (!q || typeof q.u !== 'number' || !isFinite(q.u)) return 'core:prov:' + p.id;
+  }
+  return null;
+}
+
+// The one door every save comes through, from storage or from a pasted code.
+function accept(raw){
+  const m = migrate(raw); if (m.err) return m;
+  const rubble = core(m.s); if (rubble) return { err:'broken', detail:rubble };
+  heal(m.s);
+  const bad = validate(m.s); if (bad) return { err:'broken', detail:bad };
+  return { s:m.s };
+}
+
+// The previous save is kept one deep. It is only ever rotated from a value a running game
+// already wrote, so the backup is always a whole save, never a half-written one.
+function persist(){
+  STORE[UI.active] = { S }; STORE.active = UI.active;
+  try {
+    const next = JSON.stringify(STORE), prev = localStorage.getItem(KEY);
+    if (prev && prev !== next) localStorage.setItem(BAK, prev);
+    localStorage.setItem(KEY, next);
+  } catch(e){
+    // out of room: the backup is the older, smaller copy - drop it and keep the live game
+    try { localStorage.removeItem(BAK); localStorage.setItem(KEY, JSON.stringify(STORE)); } catch(e2){}
+  }
+}
 function restore(){
-  try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (!o) return false; STORE = o; UI.active = o.active || 'campaign';
-    const slot = STORE[UI.active]; if (!slot || !slot.S || slot.S.v !== 6) return false; S = slot.S; syncD(); UI.started = true; return true; } catch(e){ return false; }
+  for (const key of [KEY, BAK]){
+    let o = null; try { o = JSON.parse(localStorage.getItem(key) || 'null'); } catch(e){}
+    if (!o || typeof o !== 'object') continue;
+    const act = o.active === 'mission' ? 'mission' : 'campaign', slot = o[act];
+    if (!slot || !slot.S) continue;
+    const r = accept(slot.S); if (r.err) continue;   // damaged: fall through to the backup
+    STORE = o; UI.active = act; slot.S = r.s; S = r.s; syncD(); UI.started = true;
+    UI.fromBak = key === BAK;   // told to the player once the frame exists
+    return true;
+  }
+  return false;
 }
 // Months owed since the tab was closed. Nothing here decides anything for the player: crises
 // that would have fired are queued and asked on return, never answered on their behalf.
@@ -3594,8 +3690,13 @@ function begin(diff, mission){
 }
 function saveCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({ v:6, S, active:UI.active })))); }
 function loadCode(code){
-  try { const o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!o.S || o.S.v !== 6) return false;
-    UI.active = o.active || 'campaign'; S = o.S; syncD(); setSpeed(0); UI.started = true; persist(); return true; } catch(e){ return false; }
+  let o = null;
+  try { o = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); } catch(e){ UI.loadErr = 'broken'; return false; }
+  if (!o || !o.S){ UI.loadErr = 'broken'; return false; }
+  const r = accept(o.S);
+  if (r.err){ UI.loadErr = r.err; return false; }   // say why it failed, not just that it did
+  UI.active = o.active === 'mission' ? 'mission' : 'campaign';
+  S = r.s; syncD(); setSpeed(0); UI.started = true; persist(); return true;
 }
 function pcLeft(){ return S.pc; }
 function usdLeft(){ return S.reserves; }
@@ -4469,6 +4570,7 @@ document.addEventListener('keydown', ev => {
   if (restore()){
     const away = catchUp();
     render(true); setSpeed(UI.speed);
+    if (UI.fromBak){ UI.fromBak = false; toast('\u{1F6DF} ' + t('restoredBak')); }
     if (away && away.months) return showAway(away);
     if (S.over){ return S.over.fail ? showFail(S.over.fail) : S.over.won ? showLegacy() : showMissionEnd(); }
     if (S.pending && S.pending.length) return nextPending();

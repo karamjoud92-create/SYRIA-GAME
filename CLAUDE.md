@@ -38,6 +38,11 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run indep`  → independence end to end: it is a dashboard number from month 0, it explains itself,
   selling it costs trust, influence, export dollars and calm, the score panel shows all six parts, and
   money buys it back — but never past where you started. Both languages.
+- `npm run saves`  → saves, end to end: a code round-trips, a save from a newer build is refused
+  and says so, a truncated or hand-edited one changes nothing, a sector that no longer exists is
+  dropped rather than crashed on, an old save still opens healed, **a damaged save falls back to
+  the backup instead of costing the player their country**, two unusable copies mean a fresh start,
+  and the migration chain carries an older save up. Both languages.
 - `npm run panels` → the panels themselves: every kind of thing under construction draws, a greyed
   button always says why, an old save still opens every drawer, the floating effect box never
   covers the drawer beside it, and **no header or dock button sits off the edge** at 1920 / 1400 /
@@ -168,10 +173,28 @@ fast: a player should be able to think, and should not have to wait two years to
   (`mw`, `proj`, `invest`, `firm`, `port`, `svc`); the Progress drawer assumed anything that wasn't
   a project or a port was an `INVEST` id, so one school in the queue threw inside `render()` and
   blanked the whole panel. `pipeLabel()` handles all six and falls back on an unknown kind.
-- **Saves heal, they do not get thrown away.** `s.firms`, `s.ind`, `s.bar`, `s.lvl` and the rest
-  were added inside v6 without a key bump, so older codes were missing them. `heal(s)` (called from
-  `syncD`, so it runs on every load path) fills any absent key from a fresh `newGame` and never
-  overwrites a value the player earned. Bump the key only for a change that cannot be healed.
+- **Saves: version → migrate → core → heal → validate → play.** One door, `accept(raw)`, for
+  storage and pasted codes alike, because a save that *parses* is not a save that is safe to play.
+  - `migrate()` walks `MIGRATIONS` as pure `vN → vN+1` steps and refuses a save from a **newer**
+    build rather than guessing at fields it does not know. **Keep every migration forever** —
+    deleting one strands every save written before it. The map is empty while v6 is current; the
+    chain is what makes the next shape change three lines instead of a redesign.
+  - `core()` runs **before** `heal()`. `heal()` can fill in anything, which means it can
+    manufacture a whole game out of `{"v":6}` — rubble loading as a country and quietly replacing
+    the player's real save. So a save must prove it *was* a game first: the clock, the money, the
+    dials and **all fourteen provinces**. `PROVS` cannot change without a migration, so a province
+    missing means corruption, not age.
+  - `heal(s)` then fills any key added inside v6 from a fresh `newGame`, never overwriting a value
+    the player earned — that is what keeps old codes working without a key bump.
+  - `validate()` checks types and ranges (no NaN, no strings where numbers go) and **drops content
+    that no longer exists** — a sector id removed in a patch must not take a panel down with it.
+  - `persist()` keeps the previous save one deep in `KEY + '-bak'`, rotated only from a value a
+    running game already wrote, and `restore()` falls back to it. Out of quota, the backup is
+    dropped before the live game. Before this, one bad write cost a player twenty years.
+  - A refusal says **which** refusal it was (`badCodeNewer` / `badCodeBroken`), in both languages.
+  - `npm run saves` covers all of it. Two clues it is right: the suite found the `core()` hole
+    while being written, and tightening `restore()` broke a panels test that had been clearing
+    only the primary key.
 - **CSS: specificity beats order, and two blocks share the 760px breakpoint.** `.dock .dbtn` in the
   first block silently outranked `.dbtn` in the second, so none of the phone shrinking applied and
   the speed buttons ran off a page that cannot scroll. Match the specificity when overriding, and
@@ -224,4 +247,10 @@ fast: a player should be able to think, and should not have to wait two years to
 See `docs/PROGRESS.md` for what has been built, the decisions worth not undoing, and what is still open.
 
 ## Saves
-Browser `localStorage` key `transition-syria-v6`, plus copy/paste save codes (base64 JSON). Bump the key/`state.v` if the state shape changes incompatibly (v6 added `pv.jobless`, `s.ind` and `s.bar`, and dropped `pv.mines`).
+Browser `localStorage` key `transition-syria-v6`, the previous save one deep in
+`transition-syria-v6-bak`, plus copy/paste save codes (base64 JSON). v6 added `pv.jobless`,
+`s.ind` and `s.bar`, and dropped `pv.mines`.
+
+**Prefer a migration to a key bump.** A bump throws away every country anyone is playing. Add a
+`MIGRATIONS[6] = s => …` and raise `SAVE_V` instead; bump the key only for a change no migration
+can express. Whatever you do, run `npm run saves` — and add the new shape to it.

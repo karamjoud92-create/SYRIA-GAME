@@ -146,7 +146,7 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(grouped.same, `${tag}: sound, language and menu share a row (tops ${grouped.ys.join('/')})`);
 
   // 9. "Back" on the load screen goes back to the start screen, not into a game nobody chose.
-  await page.evaluate(() => { localStorage.removeItem('transition-syria-v6'); });
+  await page.evaluate(() => { localStorage.removeItem('transition-syria-v6'); localStorage.removeItem('transition-syria-v6-bak'); });
   await page.reload(); await page.waitForTimeout(500);
   await page.click('[data-act=loadcode]'); await page.waitForTimeout(250);
   const backAct = await page.evaluate(() => { const e = [...document.querySelectorAll('#modal .btn')].find(x => x.dataset.act !== 'doload'); return e && e.dataset.act; });
