@@ -38,6 +38,12 @@ fast: a player should be able to think, and should not have to wait two years to
 - `npm run indep`  → independence end to end: it is a dashboard number from month 0, it explains itself,
   selling it costs trust, influence, export dollars and calm, the score panel shows all six parts, and
   money buys it back — but never past where you started. Both languages.
+- `npm run itch`   → the build inside an itch.io-shaped sandboxed iframe, twice: once with storage
+  allowed and once with it **denied**. itch serves an HTML game in an iframe on its own domain,
+  where `localStorage` can throw outright and Google Fonts is a third-party request. The game must
+  open, play a year, draw its panels and attempt a save without ever throwing into the loop — no
+  save must mean no saving, never no playing. Run it before every `butler push`; see
+  `docs/PUBLISHING.md`.
 - `npm run saves`  → saves, end to end: a code round-trips, a save from a newer build is refused
   and says so, a truncated or hand-edited one changes nothing, a sector that no longer exists is
   dropped rather than crashed on, an old save still opens healed, **a damaged save falls back to
@@ -245,6 +251,8 @@ fast: a player should be able to think, and should not have to wait two years to
 
 ## Where we are
 See `docs/PROGRESS.md` for what has been built, the decisions worth not undoing, and what is still open.
+`docs/PUBLISHING.md` is how the game reaches players on itch.io — the two switches that decide
+whether an HTML5 upload is playable or merely downloadable, and what the iframe changes.
 
 ## Saves
 Browser `localStorage` key `transition-syria-v6`, the previous save one deep in

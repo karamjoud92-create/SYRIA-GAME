@@ -20,7 +20,8 @@
     "live": "node build.js && node tools/live-check.mjs",
     "trade": "node build.js && node tools/trade-check.mjs",
     "panels": "node build.js && node tools/panels-check.mjs",
-    "saves": "node build.js && node tools/saves-check.mjs"
+    "saves": "node build.js && node tools/saves-check.mjs",
+    "itch": "node build.js && node tools/itch-check.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"
