@@ -106,6 +106,30 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   });
   ok(chain.length === 0, `${tag}: no level asks for something it has not been given yet (${chain.join('; ') || 'chain intact'})`);
 
+  // 6b. Every gift a level promises must be a written name in BOTH languages. Four of them were
+  //     raw keys the first time this panel drew — "polCapexName" is not a thing to look forward to.
+  const giftWords = await page.evaluate(() => {
+    const bad = [];
+    for (let n = 1; n < LEVEL_GIFTS.length; n++)
+      for (const k of (LEVEL_GIFTS[n] || [])){ const v = t(k); if (!v || v === k) bad.push(`L${n}:${k}`); }
+    return bad;
+  });
+  ok(giftWords.length === 0, `${tag}: every unlock a level promises has a name (${giftWords.join(', ') || 'all written'})`);
+
+  // 6c. The level block in the corner IS the way in. It used to open the score panel.
+  await page.evaluate(() => { S.lvl = 3; UI.drawer = null; render(true); }); await page.waitForTimeout(200);
+  const block = await page.evaluate(() => {
+    const e = document.querySelector('.turn.lvl');
+    return e && { act: e.dataset.act, goal: (e.querySelector('.lvgoal') || {}).textContent || '' };
+  });
+  ok(block && block.act === 'levels', `${tag}: tapping the level opens the ladder, not the score panel (${block && block.act})`);
+  ok(block && /\d/.test(block.goal), `${tag}: and the corner says how close the next level is ("${(block.goal || '').trim()}")`);
+  await page.click('.turn.lvl'); await page.waitForTimeout(350);
+  const panel = await page.evaluate(() => (document.querySelector('#modal') || { innerText:'' }).innerText);
+  ok(panel.length > 200 && !/undefined|\{0\}/.test(panel), `${tag}: the ladder panel opens and is written (${panel.length} chars)`);
+  ok((panel.match(/\n/g) || []).length > 12, `${tag}: it shows the whole road, not just this rung`);
+  await clear(page);
+
   // 7. There is something to WIN. The summit names itself, shows what was built, and says the
   //    game carries on — the complaint was "you lose but you never win".
   await page.evaluate(() => { S.lvl = LEVEL_MAX; showSummit(); }); await page.waitForTimeout(300);

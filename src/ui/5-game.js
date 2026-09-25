@@ -448,11 +448,17 @@ function renderHUD(P){
   const lv = S.lvl || 1, nd = levelNeeds(S), met = nd.filter(d => needMet(S, d)).length;
   const plan = levelPlan(S);
   const toNext = plan ? 100 : clamp(nd.length ? met / nd.length * 100 : 0, 0, 100);
-  return `<button class="turn lvl" data-act="showScore" aria-label="${fill(t('levelN'), [lv])}">${ring}<div>
-      <div class="yr">${fill(t('levelN'), [lv])}</div>
-      <div class="ss">${S.chapter > 1 ? fill(t('chapterN'), [S.chapter]) + ' · ' : ''}${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)}</div>
-      <div class="mbarwrap lvlbar${plan ? ' building' : ''}" title="${plan ? fill(t('lvlBuilding'), [monthsTxt(plan.due - S.t)]) : fill(t('lvlProgress'), [met, nd.length])}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
-    <button class="scorebadge g-${g}" data-act="showScore" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${t('score')} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
+  // The level block IS the town hall: it says where you are, how close the next one is, and
+  // tapping it opens the whole ladder. It used to open the score panel, which is a different
+  // thing entirely, and the progress bar had no label at all.
+  const lvReady = !plan && nd.length && met === nd.length;
+  const lvSub = plan ? '🏗️ ' + fill(t('lvlBuilding'), [monthsTxt(plan.due - S.t)])
+    : nd.length ? '🎯 ' + fill(t('lvlProgress'), [met, nd.length]) : '';
+  return `<button class="turn lvl" data-act="levels" aria-label="${fill(t('levelN'), [lv])}">${ring}<div>
+      <div class="yr">${fill(t('levelN'), [lv])}${plan || lvReady ? `<span class="lvdot" aria-hidden="true">${plan ? '🏗️' : '⭐'}</span>` : ''}</div>
+      <div class="ss lvgoal">${esc(lvSub)}</div>
+      <div class="mbarwrap lvlbar${plan ? ' building' : ''}"><i style="width:${toNext.toFixed(0)}%"></i></div></div></button>
+    <button class="scorebadge g-${g}" data-act="showScore" aria-label="${t('score')}: ${Math.round(sc)}"><span class="sg">${g}</span><span><span class="sn">${Math.round(sc)}</span><span class="sl">${S.chapter > 1 ? fill(t('chapterN'), [S.chapter]) + ' · ' : ''}${esc(MONTHS[LANG][monthOf(S)])} ${yearNow(S)} <span class="dl ${dsc > 0.05 ? 'up' : dsc < -0.05 ? 'down' : 'flat'}">${dsc > 0.05 ? '▲' : dsc < -0.05 ? '▼' : '•'} ${sign(dsc, 1)}</span></span></span>${pop}</button>
     <div class="tray" role="group">
       ${res('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
       ${res('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
@@ -735,24 +741,13 @@ const guideLeft = () => GUIDE_TASKS.filter(x => !guideDone(x.id)).length;
 function renderGuide(){
   const left = guideLeft(), A = AR();
   let h = '';
-  if (left){
-    const next = GUIDE_TASKS.find(x => !guideDone(x.id));
-    h += `<h3 class="bh" style="margin-top:0">🧭 ${t('guideSteps')} <span class="chip">${fill(t('guideLeft'), [left])}</span></h3>`;
-    h += GUIDE_TASKS.map(x => {
-      const ok = guideDone(x.id), isNext = !ok && x.id === next.id;
-      return `<div class="gstep${ok ? ' done' : ''}${isNext ? ' now' : ''}">
-        <span class="gmark" aria-hidden="true">${ok ? '✅' : isNext ? x.icon : '⚪'}</span>
-        <div><b>${esc(t('gt_' + x.id))}</b>${isNext ? `<p>${esc(t('gw_' + x.id))}</p>${x.go ? `<button class="btn small primary" data-act="advgo" data-go="${x.go}">${t('showMe')}</button>` : ''}` : ''}</div></div>`;
-    }).join('');
-  } else {
-    h += `<p class="mpnote" style="margin-top:0">✅ ${t('guideDone')}</p>`;
-  }
-  // The level checklist. This is the spine of the game now, so it sits in the only panel that is
-  // open from month 0 to the end: a player must always be able to see what the country is
-  // working towards and how far off it is, never guess.
+  // The level checklist comes FIRST. It is the spine of the game, and the Guide is the only
+  // panel open from month 0 to the end, so a player must always be able to see what the country
+  // is working towards and how far off it is. It used to sit under six other things, off-screen.
   {
     const plan = levelPlan(S), lv = S.lvl || 1;
-    h += `<h3 class="bh">⭐ ${fill(t('lvlReached'), [lv])} — ${esc(levelName(lv))}</h3>`;
+    h += `<h3 class="bh" style="margin-top:0">⭐ ${fill(t('lvlReached'), [lv])} — ${esc(levelName(lv))}
+      <button class="btn small" data-act="levels">${t('lvlLadder')} →</button></h3>`;
     if (plan){
       h += `<div class="quest done"><div class="qt">🏗️ ${t('lvlTargets')}</div>
         <h4>${fill(t('lvlReached'), [plan.to])}</h4>
@@ -764,6 +759,20 @@ function renderGuide(){
         <span class="chip">🏭 ${fill(t('lvlCapNow'), [invCap(S)])}</span></div>`;
       h += needRows(S);
     }
+  }
+
+  // the six first steps, while a new player still has them
+  if (left){
+    const next = GUIDE_TASKS.find(x => !guideDone(x.id));
+    h += `<h3 class="bh">🧭 ${t('guideSteps')} <span class="chip">${fill(t('guideLeft'), [left])}</span></h3>`;
+    h += GUIDE_TASKS.map(x => {
+      const ok = guideDone(x.id), isNext = !ok && x.id === next.id;
+      return `<div class="gstep${ok ? ' done' : ''}${isNext ? ' now' : ''}">
+        <span class="gmark" aria-hidden="true">${ok ? '✅' : isNext ? x.icon : '⚪'}</span>
+        <div><b>${esc(t('gt_' + x.id))}</b>${isNext ? `<p>${esc(t('gw_' + x.id))}</p>${x.go ? `<button class="btn small primary" data-act="advgo" data-go="${x.go}">${t('showMe')}</button>` : ''}` : ''}</div></div>`;
+    }).join('');
+  } else {
+    h += `<p class="mpnote">✅ ${t('guideDone')}</p>`;
   }
 
   // what to do next, in one line, from whichever adviser is most worried
@@ -1028,6 +1037,41 @@ function needRows(s){
       <p style="margin:2px 0 0">${esc(fill(t(ok ? 'needDone' : 'needNow'), [n(have), n(d.want)]))}</p></div></div>`;
   }).join('');
 }
+// The whole ladder in one place, opened by tapping the level in the corner. A player should
+// never have to go hunting in a drawer to find out what the country is working towards.
+function showLevels(){
+  const lv = S.lvl || 1, plan = levelPlan(S), nd = levelNeeds(S), met = nd.filter(d => needMet(S, d)).length;
+  const next = lv + 1;
+  // what the next level hands over, so the targets have a visible prize
+  const gifts = (LEVEL_GIFTS[next] || []).map(k => t(k)).filter(Boolean);
+  const past = (S.chapters || []).length;
+  let h = `<div class="tut-icon" aria-hidden="true">${lv >= LEVEL_MAX ? '🕊️' : '⭐'}</div>
+    <h2>${fill(t('levelN'), [lv])} — ${esc(levelName(lv))}</h2>
+    <div class="src">${esc(levelBlurb(lv))}</div>`;
+  if (plan){
+    h += `<div class="quest done" style="margin-top:14px"><div class="qt">🏗️ ${t('lvlTargets')}</div>
+      <h4>${fill(t('lvlReached'), [plan.to])}</h4>
+      <p>${esc(fill(t('lvlPlanNow'), [monthsTxt(plan.due - S.t)]))}</p></div>`;
+  } else {
+    h += `<h3 class="bh">🎯 ${fill(t('lvlNextTargets'), [next])}</h3>
+      <div class="row" style="margin-bottom:8px"><span class="chip${met === nd.length ? ' up' : ''}">${fill(t('lvlProgress'), [met, nd.length])}</span></div>
+      ${needRows(S)}`;
+  }
+  if (gifts.length) h += `<h3 class="bh">🔓 ${fill(t('lvlOpensAt'), [next])}</h3>
+    <p class="lede" style="font-size:16px">${gifts.map(g => esc(g)).join(' · ')}</p>`;
+  h += `<div class="tipbox">${esc(fill(t('lvlCapNow'), [invCap(S)]))}</div>`;
+  // the ladder itself, so the summit is visible from the bottom of it
+  h += `<h3 class="bh">🪜 ${t('lvlLadder')}</h3><div class="ladder">`;
+  for (let n = 1; n <= LEVEL_MAX; n++){
+    const cls = n < lv ? 'done' : n === lv ? 'here' : '';
+    h += `<div class="rung ${cls}"><b>${n}</b><span>${esc(levelName(n))}</span>${n === LEVEL_MAX ? '<i>🕊️</i>' : n === lv ? '<i>📍</i>' : n < lv ? '<i>✅</i>' : ''}</div>`;
+  }
+  if (lv > LEVEL_MAX) h += `<div class="rung here"><b>${lv}</b><span>${esc(levelName(lv))}</span><i>📍</i></div>`;
+  h += `</div>`;
+  if (past) h += `<p class="small muted">${fill(t('chapterDone'), [past])}</p>`;
+  h += `<div class="row"><button class="btn primary" data-act="close">${t('gotIt')}</button></div>`;
+  modal(h);
+}
 function showLevelUp(n){
   const gifts = (LEVEL_GIFTS[n] || []).map(k => t(k)).filter(Boolean);
   modal(`<div class="tut-icon" aria-hidden="true">⭐</div><h2>${fill(t('lvlReached'), [n])}</h2>
@@ -1093,7 +1137,7 @@ document.addEventListener('pointerup', () => { UI.pdown = false; if (UI.dirty &&
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
-  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore','awayGo','livemode','nextChapter'];
+  const always = ['close','restart','sel','layer','menu','tut','gloss','newgame','lang','missions','mission','startscreen','savecode','loadcode','doload','cycle','nextq','afterresults','drawer','closeDrawer','closeProv','subtab','adv','showScore','levels','awayGo','livemode','nextChapter'];
   if (S && S.over && !always.includes(a)){ toast('⏹️ ' + t('overNow')); return; }   // never a dead click
   if (['drawer','subtab','layer','sel','adv','closeDrawer','closeProv','tab','menu','gloss','speed','showScore'].includes(a)) sfx('tap');
   const T = LANG === 'ar';
@@ -1106,6 +1150,7 @@ document.addEventListener('click', ev => {
     case 'awayGo': return nextPending();
     case 'nextChapter': return nextChapter();
     case 'livemode': UI.live = v === 'live'; return startScreen();
+    case 'levels': return showLevels();
     case 'showScore': if (!isOpen('progress')) return gloss('score');   // the panel is not hers yet
       UI.drawer = 'progress'; UI.sub.progress = 'score'; if (isPhone()) UI.provOpen = false; break;
     case 'closeProv': UI.provOpen = false; break;

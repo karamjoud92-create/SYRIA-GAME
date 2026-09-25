@@ -343,9 +343,24 @@ textarea.code{ width:100%; min-height:120px; font:12px/1.4 ui-monospace, Menlo, 
 }
 
 /* ===== the country's level, where the year used to be ===== */
-.turn.lvl{ border:0; background:var(--card); cursor:pointer; text-align:start; }
-.turn.lvl .yr{ font-size:24px; font-weight:800; letter-spacing:-.01em; }
-.lvlbar{ background:var(--board-2); } .lvlbar i{ background:var(--gold); transition:width .4s ease; }
+/* The level block is the town hall: what you are, how close the next one is, and a way in. */
+.turn.lvl{ border:0; background:var(--card); color:var(--card-ink); cursor:pointer; text-align:start; border-radius:18px; padding:5px 14px 6px 6px; box-shadow:var(--shadow); }
+:root[dir="rtl"] .turn.lvl{ padding:5px 6px 6px 14px; }
+.turn.lvl:hover{ background:var(--card-2); }
+.turn.lvl .yr{ font-size:24px; font-weight:800; letter-spacing:-.01em; display:flex; align-items:center; gap:6px; }
+.turn.lvl .lvdot{ font-size:15px; line-height:1; animation:breathe 2.4s ease-in-out infinite; }
+.turn.lvl .lvgoal{ font-size:12px; font-weight:700; color:var(--card-muted); white-space:nowrap; }
+.lvlbar{ background:var(--card-2); } .lvlbar i{ background:var(--gold); transition:width .4s ease; }
+.lvlbar.building i{ background:var(--calm); }
+
+/* the ladder, so the summit is visible from the bottom of it */
+.ladder{ display:grid; gap:4px; margin:6px 0 10px; }
+.rung{ display:flex; align-items:center; gap:10px; padding:6px 11px; border-radius:12px; background:var(--card-2); font-size:13.5px; opacity:.55; }
+.rung b{ min-width:20px; font-size:15px; }
+.rung span{ flex:1; font-weight:700; }
+.rung i{ font-style:normal; font-size:15px; }
+.rung.done{ opacity:.8; background:#eaf5e6; }
+.rung.here{ opacity:1; background:var(--gold); color:var(--gold-ink); box-shadow:0 2px 0 var(--gold-deep); }
 
 /* ===== trading with another player's Syria ===== */
 .mprow{ flex-wrap:wrap; }
