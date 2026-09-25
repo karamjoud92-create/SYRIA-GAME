@@ -195,6 +195,13 @@ fast: a player should be able to think, and should not have to wait two years to
     Watch for caps hiding in two places — the port cap was in `ACT.portUpgrade` *and* the pipe
     handler, and `max:3` outlived its removal in the `INVEST` table and two UI files.
 
+- **Every screen has a way out.** `modal()` draws the ✕ itself rather than trusting 28 call sites
+  to remember — four of them had no exit at all. A screen that must be answered opts out by passing
+  a class in `MODAL_LOCKED`: a crisis, and the endings. Nothing else.
+- **One way in.** No clock pick, no difficulty pick, no mission list on the start screen: Learner
+  *is* the game. `MISSIONS`, `diff:'realistic'` and `UI.live` all still work in the engine and are
+  one button each to put back. Save codes are hidden the same way — `saveCode`/`loadCode`/`accept`
+  are untouched, only the buttons are gone.
 - **Nothing may fail silently.** `withEffects` toasts when an action is refused. A cap the player
   cannot see is a dead click: the services cap (`svcRoom`) sat only in the engine, so the button
   stayed live and nothing happened. Any new refusal needs a reason on the control too. The reason
@@ -261,7 +268,15 @@ fast: a player should be able to think, and should not have to wait two years to
    (`smart`) should reach about B on Learner and C on Realistic, and building industry (`builder`) should beat
    pumping oil (`trader`). The sim also prints `builder@5y/@10y/@20y` — that curve should climb and then fight
    for every point, not run away to an A.
-4. **No external assets.** The published page's CSP blocks remote images/scripts. Sounds are synthesized with Web Audio in `0-sfx.js` and must stay quiet.
+4. **No external assets, and no emoji.** The published page's CSP blocks remote images/scripts, so
+   every icon is an inline SVG in `src/ui/0-icons.js`: one 24-grid, one stroke weight, `currentColor`.
+   Use `ic('name')` inside a template, and store the **name** (not a glyph) in any `icon:`/`flag:`
+   field — the consumer calls `ic()`. Emoji are not a design system: the same glyph is a different
+   picture on every platform, several render as tofu where a font is missing, none can take the
+   page's colour, and they size off text metrics rather than the layout. `npm run levels` fails if
+   one reaches the screen. Two places an icon cannot go: `toast()` and anything through `esc()`,
+   because both escape their text — there the words have to stand alone. Sounds are synthesized
+   with Web Audio in `0-sfx.js` and must stay quiet.
 5. **Numbers are game-balanced, not real data**, except the $108B war-damage total (World Bank 2025). Don't present made-up figures as facts.
 6. **Politics:** stay neutral. No real living politicians. Crisis options describe trade-offs without taking sides.
 7. **Tone:** plain words for a 15-year-old, sentence case, no jargon without explanation.

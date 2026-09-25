@@ -15,11 +15,8 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
 
   // 1. the player is offered a way to play, and it is not decided for them
   const modes = await page.$$eval('.opt.mode', e => e.map(n => n.textContent.trim().slice(0, 30)));
-  ok(modes.length === 2, `${tag}: the start screen offers live or all-at-once (${modes.length})`);
-  ok(await page.$('.opt.mode.on[data-v=fast]') !== null, `${tag}: all-at-once is the default, so a single sitting still works`);
-
-  // 2. starting live gives a real clock, not speed buttons
-  await page.click('[data-act=livemode][data-v=live]'); await page.waitForTimeout(150);
+ok(modes.length === 0, `${tag}: the start screen no longer asks how you want the clock to run (${modes.length} pickers)`);
+  await page.evaluate(() => { UI.live = true; });
   await page.click('[data-act=newgame][data-v=learner]');
   for (let i = 0; i < 8; i++) { const x = await page.$('.modal .btn.primary'); if (x) await x.click(); await page.waitForTimeout(50); }
   await page.evaluate(() => { if (document.querySelector('#modal .scrim')) closeModal(); });

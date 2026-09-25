@@ -11,7 +11,7 @@ function layerOf(id){
     case 'jobs': return { fill:mix('#6f9d8f', '#c8612f', (pv.jobless - 15) / 60), val:Math.round(pv.jobless) + '%' };
   }
 }
-function provBadge(id){ const pv = S.provs[id]; return (pv.project === true ? '✅' : pv.project === 'building' ? '🏗️' : D.projects.includes(id) ? '🚧' : '') + (tierOf(pv.u) === 'revolt' ? '⚠️' : ''); }
+function provBadge(id){ const pv = S.provs[id]; return (pv.project === true ? 'check' : pv.project === 'building' ? 'crane' : D.projects.includes(id) ? 'police' : '') + (tierOf(pv.u) === 'revolt' ? 'alert' : ''); }
 function renderMap(){
   const order = PROVS.filter(p => p.id !== 'damascus').concat([PROV_BY.damascus]);
   const paths = order.map(p => `<path class="prov" fill-rule="evenodd" d="${MAP.paths[p.id]}" fill="${layerOf(p.id).fill}" data-act="sel" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(PN(p.id))}"><title>${esc(PN(p.id))}</title></path>`).join('');
@@ -35,7 +35,7 @@ function renderMap(){
     <circle cx="${IX}" cy="${IY}" r="${IR}" fill="var(--panel2)"/>
     <g clip-path="url(#zc)"><g transform="translate(${IX},${IY}) scale(${Z}) translate(${-dx},${-dy})">${['quneitra','daraa','rif','damascus'].map(insetPath).join('')}${insetSel}</g></g>
     <circle cx="${IX}" cy="${IY}" r="${IR}" fill="none" stroke="var(--wheat)" stroke-width="2" pointer-events="none"/>
-    <text x="${IX}" y="${IY - IR - 10}" text-anchor="middle" class="ztitle" pointer-events="none">🔍 ${t('zoom')}</text>
+    <text x="${IX}" y="${IY - IR - 10}" text-anchor="middle" class="ztitle" pointer-events="none">${ic('search')} ${t('zoom')}</text>
     <g pointer-events="none"><text x="${IX}" y="${IY - 2}" text-anchor="middle" class="lname">${t('damascusCity')}</text><text x="${IX}" y="${IY + 17}" text-anchor="middle" class="lval">${layerOf('damascus').val}</text>
     <text x="${IX}" y="${IY + IR - 22}" text-anchor="middle" class="lname zsm">${esc(PN('rif'))} ${layerOf('rif').val}</text></g>`;
   const C = STR[LANG].countries;
@@ -47,10 +47,10 @@ function renderMap(){
     : UI.layer === 'damage' ? `<span><i style="background:#6f9d8f"></i>${t('legLittle')}</span><span><i style="background:#8e2f36"></i>${t('legHeavy')}</span><span>${t('legDamageTxt')}</span>`
     : `<span><i style="background:#6f9d8f"></i>${t('legWorking')}</span><span><i style="background:#c8612f"></i>${t('legNoWork')}</span><span>${t('legJobsTxt')}</span>`;
   return `<div class="maphead"><h2>${t('mapTitle')}</h2><div class="layers" role="group">
-      ${[['unrest','🔥','layerAnger'],['power','💡','layerPower'],['damage','🏚️','layerDamage'],['jobs','💼','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${i} ${t(l)}</button>`).join('')}
+      ${[['unrest','flame','layerAnger'],['power','bulb','layerPower'],['damage','ruin','layerDamage'],['jobs','briefcase','layerJobs']].map(([k, i, l]) => `<button data-act="layer" data-v="${k}" aria-pressed="${UI.layer === k}">${ic(i)} ${t(l)}</button>`).join('')}
     </div></div>
     <svg class="map" viewBox="-190 -30 1010 800" preserveAspectRatio="xMidYMid meet" direction="ltr">${neighbors}<g>${paths}</g>${selPath}${labels}${inset}${star}</svg>
-    <div class="legend">${legend}<span>✅ ${t('legBuilt')}</span><span>🏗️ ${t('legBuilding')}</span><span>⭐ ${t('legCapital')}</span></div>`;
+    <div class="legend">${legend}<span>${ic('check')} ${t('legBuilt')}</span><span>${ic('crane')} ${t('legBuilding')}</span><span>${ic('star')} ${t('legCapital')}</span></div>`;
 }
 
 // ---------- province dossier ----------
@@ -59,7 +59,7 @@ function renderProvince(){
   const tier = tierOf(pv.u), hrs = provHours(S, id), on = D.projects.includes(id), c = draftCosts(S, D);
   const usdAvail = S.reserves - c.usd + Math.max(0, S.grant - c.fromGrant);
   let why = ''; if (!pv.project && !on){ if (x.pc > pcLeft()) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > usdAvail) why = fill(t('needsUsdProj'), [x.usd]); }
-  const meter = (icon, k, v, pct, col) => `<div class="meter"><div class="row spread"><span>${icon} ${k}</span><b>${v}</b></div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
+  const meter = (icon, k, v, pct, col) => `<div class="meter"><div class="row spread"><span>${ic(icon)} ${k}</span><b>${v}</b></div><div class="bar"><i style="width:${clamp(pct, 0, 100)}%;background:${col}"></i></div></div>`;
   const good = [], A = AR();
   if (x.unrest) good.push(fill(CHIP[LANG].prov, [PN(id), sign(x.unrest)])); if (x.power) good.push(A ? `+${x.power} ساعات كهرباء` : `+${x.power} hours of electricity`); if (x.jobs) good.push(A ? 'يخلق فرص عمل' : 'creates jobs');
   if (x.rev) good.push(A ? `يكسب ${bn(x.rev)} كل موسم` : `earns ${bn(x.rev)} cash every season`); if (x.transit) good.push(A ? `+${usdM(x.transit)} تجارة كل موسم` : `+${usdM(x.transit)} trade money every season`);
@@ -72,20 +72,20 @@ function renderProvince(){
   const pending = (S.pipe || []).find(i => i.kind === 'proj' && i.id === id);
   let action;
   if (pv.project === true) action = `<span class="chip up">${t('builtTag')}</span>${pv.leak > 0.05 ? `<div class="why">${fill(t('leaked'), [Math.round(x.usd * pv.leak)])}</div>` : ''}`;
-  else if (pv.project === 'building') action = `<span class="chip">🏗️ ${fill(t('building'), [seasonsTxt(pending ? pending.due - S.turn : 1)])}</span>`;
+  else if (pv.project === 'building') action = `<span class="chip">${ic('crane')} ${fill(t('building'), [seasonsTxt(pending ? pending.due - S.turn : 1)])}</span>`;
   else action = `<div class="contract">
-      <button class="opt mini${on && mode === 'fast' ? ' sel' : ''}" data-act="proj" data-id="${id}" data-mode="fast" ${why && !on ? 'disabled' : ''}><b>⚡ ${t('buildFast')}</b><span class="t">${fill(t('fastTxt'), [seasonsTxt(durF), leakF])}</span></button>
-      <button class="opt mini${on && mode === 'tender' ? ' sel' : ''}" data-act="proj" data-id="${id}" data-mode="tender" ${why && !on ? 'disabled' : ''}><b>⚖️ ${t('buildTender')}</b><span class="t">${fill(t('tenderTxt'), [seasonsTxt(durT), leakT])}</span></button></div>`;
+      <button class="opt mini${on && mode === 'fast' ? ' sel' : ''}" data-act="proj" data-id="${id}" data-mode="fast" ${why && !on ? 'disabled' : ''}><b>${ic('bolt')} ${t('buildFast')}</b><span class="t">${fill(t('fastTxt'), [seasonsTxt(durF), leakF])}</span></button>
+      <button class="opt mini${on && mode === 'tender' ? ' sel' : ''}" data-act="proj" data-id="${id}" data-mode="tender" ${why && !on ? 'disabled' : ''}><b>${ic('scales')} ${t('buildTender')}</b><span class="t">${fill(t('tenderTxt'), [seasonsTxt(durT), leakT])}</span></button></div>`;
   const note = id === 'rif' ? t('rifNote') : id === 'damascus' ? t('damNote') : '';
   return `<div class="dossier"><div class="row spread"><h2>${esc(PN(id))}</h2><span class="tier" style="background:${TIER_COL[tier]}">${tierName(tier)}</span></div>
     <p class="muted" style="margin:2px 0 12px">${note}${fill(t('people'), [p.pop.toFixed(1)])}</p>
-    ${meter('🔥', t('anger'), Math.round(pv.u) + ' / 100', pv.u, TIER_COL[tier])}
-    ${meter('💡', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
-    ${meter('🏚️', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}
-    ${meter('💼', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}
-    <div class="card project${on ? ' on' : ''}${pv.project === true ? ' done' : ''}"><div class="ptag">🏗️ ${t('bigProject')}</div>
+    ${meter('flame', t('anger'), Math.round(pv.u) + ' / 100', pv.u, TIER_COL[tier])}
+    ${meter('bulb', t('electricity'), hrs.toFixed(1) + ' ' + t('hDay'), hrs / 24 * 100, '#e2b93b')}
+    ${meter('ruin', t('destroyed'), usdM(pv.dmg * 1000), pv.dmg / Math.max(1, pv.dmg0) * 100, '#b4513a')}
+    ${meter('briefcase', t('jobless'), Math.round(pv.jobless) + '%', pv.jobless, '#c8612f')}
+    <div class="card project${on ? ' on' : ''}${pv.project === true ? ' done' : ''}"><div class="ptag">${ic('crane')} ${t('bigProject')}</div>
       <h4>${esc(tx[0])}</h4><p><b>${t('problem')}</b> ${esc(tx[1])}</p><p><b>${t('ifBuilt')}</b> ${esc(good.join(AR() ? '، ' : ', '))}.</p>
-      <div class="row" style="margin-bottom:8px"><span class="chip cost">🏦 ${usdM(x.usd)}</span><span class="chip cost">💵 ${bn(x.syp)}</span>${x.pc ? `<span class="chip cost">⭐ ${x.pc}</span>` : ''}</div>
+      <div class="row" style="margin-bottom:8px"><span class="chip cost">${ic('bank')} ${usdM(x.usd)}</span><span class="chip cost">${ic('cash')} ${bn(x.syp)}</span>${x.pc ? `<span class="chip cost">${ic('star')} ${x.pc}</span>` : ''}</div>
       ${action}${why && !on && !pv.project ? `<div class="why">${esc(why)}</div>` : ''}</div>
     <p class="muted" style="font-size:13px">${t('tapAnother')}</p></div>`;
 }
@@ -118,7 +118,7 @@ function personas(s){
     const exp = [['generator', (24 - hd) * 1.8], ['bribes', bribe], ['stock', 20 * (1 + infl / 100)], ['rent', 28], ['food', 30 * (1 + infl / 200)]];
     const why = (24 - hd) * 1.8 > 25 ? 'why_power' : bribe > 18 ? 'why_bribes' : infl > 10 ? 'why_fx' : null; out.samer = { inc, exp, why }; }
   Object.values(out).forEach(o => { o.i = o.inc.reduce((a, x) => a + x[1], 0); o.e = o.exp.reduce((a, x) => a + x[1], 0); o.net = o.i - o.e; const r = o.i / o.e;
-    o.status = r >= 1.08 ? 's_ok' : r >= 0.9 ? 's_tight' : (s.trust < 35 ? 's_leave' : 's_bad'); o.mood = r >= 1.08 ? '🙂' : r >= 0.9 ? '😐' : '😟'; });
+    o.status = r >= 1.08 ? 's_ok' : r >= 0.9 ? 's_tight' : (s.trust < 35 ? 's_leave' : 's_bad'); o.mood = r >= 1.08 ? 'faceOk' : r >= 0.9 ? 'faceFlat' : 'faceSad'; });
   return out;
 }
 function renderPeople(){
@@ -161,13 +161,13 @@ function chains(s){
 }
 function renderChain(title, icon, list, st){
   const C = CHAIN_TXT[LANG], stTxt = [t('statusSteady'), t('statusRisk'), t('statusBreaking')][st], stCls = ['good', 'warn', 'bad'][st];
-  return `<div class="chainbox"><div class="row spread"><h3 class="bh">${icon} ${title}</h3><span class="chip ${['up','','down'][st]}">${stTxt}</span></div>
+  return `<div class="chainbox"><div class="row spread"><h3 class="bh">${ic(icon)} ${title}</h3><span class="chip ${['up','','down'][st]}">${stTxt}</span></div>
     <div class="chain">${list.map(([k, l, r], i) => `<div class="node l${l}" title="${esc(C[r + (l ? '_bad' : '_ok')])}"><div class="nname">${C[k]}</div><div class="nstat">${[t('linkOk'), t('linkWeak'), t('linkBroken')][l]}</div></div>${i < list.length - 1 ? `<div class="arrow l${Math.max(l, list[i + 1][1])}" aria-hidden="true">${arrowFwd()}</div>` : ''}`).join('')}</div>
     <ul class="reasons">${list.filter(x => x[1] > 0).map(([k, l, r]) => `<li class="${l === 2 ? 'bad' : ''}"><b>${C[k]}:</b> ${esc(C[r + '_bad'])}</li>`).join('') || `<li class="good">${AR() ? 'كل الحلقات تعمل.' : 'Every link is working.'}</li>`}</ul></div>`;
 }
 function renderChains(){
   const c = chains(S);
-  return `<p class="intro">${t('chainsIntro')}</p>` + renderChain(t('breadChain'), '🍞', c.bread, c.sb) + renderChain(t('energyChain'), '💡', c.energy, c.se);
+  return `<p class="intro">${t('chainsIntro')}</p>` + renderChain(t('breadChain'), 'bread', c.bread, c.sb) + renderChain(t('energyChain'), 'bulb', c.energy, c.se);
 }
 
 // ---------- charts + cycles ----------
@@ -183,11 +183,11 @@ function spark(key, label, fmt, goodUp, color){
 function renderCharts(){
   const G = k => L2(GLOSS[k]).name;
   let h = S.history.length < 2 ? `<p class="intro">${t('chartsEmpty')}</p>` : `<p class="intro">${t('chartsIntro')}</p>` +
-    spark('trust', '🤝 ' + G('trust'), v => v.toFixed(0), true, '#4f9483') + spark('anger', '🔥 ' + G('anger'), v => v.toFixed(0), false, '#d4703a') +
-    spark('usd', '🏦 ' + G('usd'), usdM, true, '#6c9bd2') + spark('cash', '💵 ' + G('cash'), bn, true, '#86bd83') +
-    spark('fx', '💱 ' + G('fx'), v => v.toFixed(0), false, '#c9a444') + spark('pay', '👷 ' + G('pay'), usd, true, '#b48bd6') + spark('power', '💡 ' + G('power'), v => v.toFixed(1), true, '#e2b93b');
-  h += `<h3 class="bh" style="margin-top:18px">🔁 ${t('cyclesTitle')}</h3>`;
-  h += (S.cycles || []).length ? S.cycles.map(id => `<button class="cyclecard ${CYCLE_TXT[id].bad ? 'bad' : 'good'}" data-act="cycle" data-id="${id}">${CYCLE_TXT[id].bad ? '🔻' : '🔺'} ${esc(L2(CYCLE_TXT[id])[0])}</button>`).join('') : `<p class="muted" style="font-size:13px">${t('cyclesNone')}</p>`;
+    spark('trust', ' ' + G('trust'), v => v.toFixed(0), true, '#4f9483') + spark('anger', ' ' + G('anger'), v => v.toFixed(0), false, '#d4703a') +
+    spark('usd', ' ' + G('usd'), usdM, true, '#6c9bd2') + spark('cash', ' ' + G('cash'), bn, true, '#86bd83') +
+    spark('fx', ' ' + G('fx'), v => v.toFixed(0), false, '#c9a444') + spark('pay', ' ' + G('pay'), usd, true, '#b48bd6') + spark('power', ' ' + G('power'), v => v.toFixed(1), true, '#e2b93b');
+  h += `<h3 class="bh" style="margin-top:18px">${ic('cycle')} ${t('cyclesTitle')}</h3>`;
+  h += (S.cycles || []).length ? S.cycles.map(id => `<button class="cyclecard ${CYCLE_TXT[id].bad ? 'bad' : 'good'}" data-act="cycle" data-id="${id}">${CYCLE_TXT[id].bad ? 'down' : 'up'} ${esc(L2(CYCLE_TXT[id])[0])}</button>`).join('') : `<p class="muted" style="font-size:13px">${t('cyclesNone')}</p>`;
   return h;
 }
 
@@ -198,9 +198,9 @@ function renderBudget(P){
     return `<h3 class="bh">${title}</h3>${rows.map(r => `<div class="brow"><span>${esc(LB[r[0]] || r[0])}</span><div class="btrack"><i class="${r[1] < 0 ? 'neg' : 'pos'}" style="width:${Math.abs(r[1]) / mx * 100}%"></i></div><b class="${r[1] < 0 ? 'bad' : 'good'}">${fmt(r[1])}</b></div>`).join('')}
       <div class="brow total"><span>${t('leftOver')}</span><div></div><b class="${tot < 0 ? 'bad' : 'good'}">${fmt(tot)}</b></div>`; };
   const pipe = (S.pipe || []).slice().sort((a, b) => a.due - b.due);
-  const pipeHtml = pipe.length ? pipe.map(i => `<div class="pipe"><span>${i.kind === 'mw' ? '⚡ ' + fill(t('mwArrives'), [Math.round(i.mw)]) : '🏗️ ' + fill(t('projArrives'), [PN(i.id), L2(PROJ_TXT[i.id])[0]])}</span><b>${i.due - S.turn <= 0 ? t('atEnd') : fill(t('inSeasons'), [seasonsTxt(i.due - S.turn)])}</b></div>`).join('') : `<p class="muted" style="font-size:13px">${t('comingNone')}</p>`;
-  return `<h3 class="bh">⏳ ${t('comingSoon')}</h3>${pipeHtml}<p class="intro" style="margin-top:16px">${t('budgetIntro')}</p>` +
-    bars(Lg.syp, v => (v < 0 ? MINUS : '+') + bn(Math.abs(v)), '💵 ' + t('cashLira')) + bars(Lg.usd, v => (v < 0 ? MINUS : '+') + usdM(Math.abs(v)), '🏦 ' + t('dollars'));
+  const pipeHtml = pipe.length ? pipe.map(i => `<div class="pipe"><span>${i.kind === 'mw' ? ic('bolt') + ' ' + fill(t('mwArrives'), [Math.round(i.mw)]) : ic('crane') + ' ' + fill(t('projArrives'), [PN(i.id), L2(PROJ_TXT[i.id])[0]])}</span><b>${i.due - S.turn <= 0 ? t('atEnd') : fill(t('inSeasons'), [seasonsTxt(i.due - S.turn)])}</b></div>`).join('') : `<p class="muted" style="font-size:13px">${t('comingNone')}</p>`;
+  return `<h3 class="bh">${ic('hourglass')} ${t('comingSoon')}</h3>${pipeHtml}<p class="intro" style="margin-top:16px">${t('budgetIntro')}</p>` +
+    bars(Lg.syp, v => (v < 0 ? MINUS : '+') + bn(Math.abs(v)), ' ' + t('cashLira')) + bars(Lg.usd, v => (v < 0 ? MINUS : '+') + usdM(Math.abs(v)), ' ' + t('dollars'));
 }
 function noteText(n){
   const N = NOTE[LANG], [k, a, b, c] = n;

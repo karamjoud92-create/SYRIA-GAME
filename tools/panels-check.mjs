@@ -8,6 +8,7 @@ const file = 'file://' + path.resolve('dist/index.html');
 const b = await chromium.launch(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {});
 let fails = 0;
 const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') + m); if (!c) fails++; };
+const esc0 = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const clear = p => p.evaluate(() => { if (document.querySelector('#modal .scrim') && typeof closeModal === 'function') closeModal(); });
 
 for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
@@ -35,11 +36,13 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   });
   await page.waitForTimeout(250);
   const pipes = await page.$$eval('.drawer .pipe', els => els.map(e => e.innerText.replace(/\s+/g, ' ').trim()));
+  const pipeIcons = await page.$$eval('.drawer .pipe span svg.i', e => e.length);
   ok(pipes.length >= 6, `${tag}: everything under construction is listed (${pipes.length} entries)`);
   const joined = pipes.join(' | ');
   ok(!/undefined|\[object/.test(joined), `${tag}: with a name each, not undefined (${joined.slice(0, 60)})`);
-  ok(pipes.some(p => /🏫|🎓|🏥/.test(p)), `${tag}: a school under construction shows up`);
-  ok(pipes.some(p => /🏢/.test(p)), `${tag}: so does a multinational building its plants`);
+  ok(pipes.some(p => new RegExp(esc0(tag === 'en' ? 'Schools' : 'المدارس'), 'i').test(p)),
+    `${tag}: a school under construction shows up by name (${pipes.join(' | ').slice(0, 50)})`);
+  ok(pipeIcons >= 6, `${tag}: and every row carries a real icon, not an emoji (${pipeIcons} svgs)`);
   ok(errs.length === 0, `${tag}: and nothing threw (${errs.length} errors)`);
 
   // 2. A sector card quotes the price of the NEXT level, not the first one forever, and there
@@ -146,18 +149,27 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   });
   ok(grouped.same, `${tag}: sound, language and menu share a row (tops ${grouped.ys.join('/')})`);
 
-  // 9. "Back" on the load screen goes back to the start screen, not into a game nobody chose.
+  // 9. Save codes are hidden for now. Nothing may point at them, and the two screens they used
+  //     to sit on must still be whole — the multiplayer button anchored itself off one of them,
+  //     and the language switcher identified the menu by the other.
   await page.evaluate(() => { localStorage.removeItem('transition-syria-v6'); localStorage.removeItem('transition-syria-v6-bak'); });
   await page.reload(); await page.waitForTimeout(500);
-  await page.click('[data-act=loadcode]'); await page.waitForTimeout(250);
-  const backAct = await page.evaluate(() => { const e = [...document.querySelectorAll('#modal .btn')].find(x => x.dataset.act !== 'doload'); return e && e.dataset.act; });
-  ok(backAct === 'startscreen', `${tag}: "back" from the load screen returns to the start screen (${backAct})`);
-  await page.click(`#modal [data-act=${backAct}]`); await page.waitForTimeout(250);
-  const atStart = await page.evaluate(() => !!document.querySelector('#modal [data-act=newgame]'));
-  ok(atStart, `${tag}: and the difficulty is still the player's to pick`);
-
+  const startBtns = await page.$$eval('#modal [data-act]', e => e.map(n => n.dataset.act));
+  ok(!startBtns.includes('loadcode'), `${tag}: the start screen offers no save code (${startBtns.join(',')})`);
+  ok(startBtns.includes('newgame') && !startBtns.includes('livemode'),
+    `${tag}: one way in — no clock pick, no difficulty pick (${startBtns.join(',')})`);
   await page.click('[data-act=newgame][data-v=learner]');
   for (let i = 0; i < 8; i++) { const x = await page.$('.modal .btn.primary'); if (x) await x.click(); await page.waitForTimeout(50); }
+  await clear(page);
+  await page.click('[data-act=menu]'); await page.waitForTimeout(250);
+  const menuBtns = await page.$$eval('#modal [data-act]', e => e.map(n => n.dataset.act));
+  ok(!menuBtns.includes('savecode') && !menuBtns.includes('loadcode'), `${tag}: nor does the menu (${menuBtns.join(',')})`);
+  ok(menuBtns.includes('restart') && menuBtns.includes('lang'), `${tag}: which still restarts and still switches language`);
+  // the language switch used to find the menu by the savecode button; it must still come back
+  await page.click('#modal [data-act=lang]'); await page.waitForTimeout(300);
+  const stillMenu = await page.evaluate(() => !!document.querySelector('#modal [data-menu]'));
+  ok(stillMenu, `${tag}: and switching language in the menu keeps you in the menu`);
+  await page.click('#modal [data-act=lang]'); await page.waitForTimeout(300);   // back to this arm's language
   await clear(page);
 
   // 10. No English abbreviation may leak into Arabic. The oil split read "30k".
@@ -175,7 +187,8 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   });
   await page.waitForTimeout(300);
   const jobRow = await page.evaluate(() => {
-    const r = [...document.querySelectorAll('#modal .scores > div')].find(e => /💼/.test(e.innerText));
+    const want = L2(GLOSS.jobs).name;
+    const r = [...document.querySelectorAll('#modal .scores > div')].find(e => e.innerText.includes(want));
     if (!r) return null; const b = r.querySelector('b');
     return { arrow:b.innerText.trim()[0], cls:b.className };
   });

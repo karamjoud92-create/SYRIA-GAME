@@ -157,6 +157,33 @@ for (const [tag, loc] of [['en', 'en-US'], ['ar', 'ar']]) {
   ok(/4/.test(up) && /5/.test(up), `${tag}: it names the level reached and the one being worked towards`);
   await clear(page);
 
+  // 10. No emoji anywhere on screen. They are not a design system: the same glyph is a different
+  //     picture on every platform, several render as tofu where a font is missing, and none of
+  //     them can take the page's colour. Everything visual is an inline svg from ICON.
+  const strays = await page.evaluate(() => {
+    const re = /[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
+    const hits = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = w.nextNode())){
+      const p = n.parentElement;
+      if (!p || p.closest('script, style')) continue;
+      if (re.test(n.nodeValue)) hits.push((p.className || p.tagName) + ': ' + n.nodeValue.trim().slice(0, 30));
+    }
+    return hits.slice(0, 6);
+  });
+  ok(strays.length === 0, `${tag}: no emoji left on screen (${strays.join(' | ') || 'all icons'})`);
+  const svgs = await page.evaluate(() => document.querySelectorAll('svg.i').length);
+  ok(svgs > 20, `${tag}: and the icons are really there (${svgs} inline svgs)`);
+  // every screen has a way out, except the two you are meant to answer
+  await page.evaluate(() => { UI.drawer = null; render(true); });
+  await page.click('[data-act=menu]'); await page.waitForTimeout(250);
+  ok(await page.$('#modal .mclose'), `${tag}: the menu has an exit`);
+  await page.click('#modal .mclose'); await page.waitForTimeout(200);
+  ok(!(await page.$('#modal .scrim')), `${tag}: and it closes`);
+  await page.evaluate(() => { S.event = EVENTS[0].id; showEvent(); }); await page.waitForTimeout(250);
+  ok(!(await page.$('#modal .mclose')), `${tag}: a crisis has none — answering it is the game`);
+  await clear(page);
+
   if (errs.length) { console.error(`\n${tag} PAGE ERRORS:\n` + errs.join('\n')); fails += errs.length; }
   await page.screenshot({ path: `tools/shot-levels-${tag}.png` });
   await page.close();

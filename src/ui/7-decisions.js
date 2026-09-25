@@ -16,7 +16,7 @@ function decSkip(id){ UI.decSkip[id] = S.t; }
 function decisionDeck(){
   if (!S || S.over) return [];
   const out = [], A = AR();
-  const money = (usd, syp) => [usd ? `🏦 ${usdM(usd)}` : '', syp ? `💵 ${bn(syp)}` : ''].filter(Boolean);
+  const money = (usd, syp) => [usd ? `${ic('bank')} ${usdM(usd)}` : '', syp ? `${ic('cash')} ${bn(syp)}` : ''].filter(Boolean);
 
   // 1. the province that is angriest and still fixable
   if (isOpen('projects')){
@@ -26,7 +26,7 @@ function decisionDeck(){
       .sort((a, b) => b.u - a.u)[0];
     if (p){
       const x = PROJECTS[p.id], tx = L2(PROJ_TXT[p.id]);
-      out.push({ id:'prov_' + p.id, icon:'🏗️', weight:p.u, why:t('decProv'),
+      out.push({ id:'prov_' + p.id, icon:'crane', weight:p.u, why:t('decProv'),
         title:`${PN(p.id)}: ${tx[0]}`, text:tx[1],
         opts:[
           { label:t('decBuildT'), sub:fill(t('tenderTxt'), [monthsTxt(projMonths(p.id, 'tender')), Math.round(x.usd * projLeakRate(S, 'tender'))]), chips:money(x.usd, x.syp),
@@ -40,18 +40,18 @@ function decisionDeck(){
   // 2. a policy that is visibly hurting
   if (S.policy.print >= 15 && isOpen('polPrint') && !decSkipped('pol_print')){
     const pol = L2(POL.print);
-    out.push({ id:'pol_print', icon:'🖨️', weight:70, why:t('decPolicy'), title:pol.name, text:pol.hint[String(S.policy.print)],
+    out.push({ id:'pol_print', icon:'printer', weight:70, why:t('decPolicy'), title:pol.name, text:pol.hint[String(S.policy.print)],
       opts:[{ label:pol.opts['0'], sub:pol.hint['0'], chips:[], run:() => withEffects(`${pol.name}: ${pol.opts['0']}`, () => { S.policy.print = 0; return true; }) }] });
   }
   if (S.treasury < -15 && S.policy.fuel !== 'market' && isOpen('policy') && !decSkipped('pol_fuel')){
     const pol = L2(POL.fuel);
-    out.push({ id:'pol_fuel', icon:'⛽', weight:64, why:t('decPolicy'), title:pol.name, text:pol.hint[S.policy.fuel],
+    out.push({ id:'pol_fuel', icon:'fuel', weight:64, why:t('decPolicy'), title:pol.name, text:pol.hint[S.policy.fuel],
       opts:[{ label:pol.opts.market, sub:pol.hint.market, chips:[], run:() => withEffects(`${pol.name}: ${pol.opts.market}`, () => { S.policy.fuel = 'market'; return true; }) }] });
   }
 
   // 3. people are paid less than they expect
   if (isOpen('money') && !cooldown('lastRaise', 6) && realWage(S) < (S.expWage || 25) - 6 && S.treasury > 5 && !decSkipped('wage')){
-    out.push({ id:'wage', icon:'👷', weight:60, why:t('decWage'), title:t('raiseTitle'),
+    out.push({ id:'wage', icon:'worker', weight:60, why:t('decWage'), title:t('raiseTitle'),
       text:fill(t('raiseText'), [realWage(S).toFixed(0), (S.expWage || 25).toFixed(0)]),
       opts:[10, 25].map(v => ({ label:'+' + v + '%', sub:'', chips:[],
         run:() => withEffects(`${t('raiseTitle')} +${v}%`, () => ACT.wage(S, v)) })) });
@@ -94,7 +94,7 @@ function decisionDeck(){
     if (k && !decSkipped('deal_' + k)){
       const tx = L2(PART_TXT[k]);
       out.push({ id:'deal_' + k, icon:PARTNERS[k].flag, weight:44, why:t('decDeal'), title:`${tx[0]}: ${tx[1]}`, text:tx[2],
-        opts:[{ label:t('dealSign'), sub:tx[3], chips:[`⭐ ${PARTNERS[k].pc}`].concat(PARTNERS[k].sov ? [`${t('independence')} ${MINUS}${PARTNERS[k].sov}`] : []),
+        opts:[{ label:t('dealSign'), sub:tx[3], chips:[`${ic('star')} ${PARTNERS[k].pc}`].concat(PARTNERS[k].sov ? [`${t('independence')} ${MINUS}${PARTNERS[k].sov}`] : []),
           run:() => withEffects(`${tx[0]}: ${tx[1]}`, () => ACT.deal(S, k)) }] });
     }
   }
@@ -105,8 +105,8 @@ function decisionDeck(){
       && !(d.req && !d.req(S))).sort((a, b) => b.pc - a.pc)[0];
     if (k && !decSkipped('dec_' + k.id)){
       const tx = L2(DEC_TXT[k.id]);
-      out.push({ id:'dec_' + k.id, icon:'⭐', weight:40, why:t('decDecree'), title:tx[0], text:tx[1],
-        opts:[{ label:t('choose'), sub:tx[2], chips:[`⭐ ${k.pc}`].concat(money(k.usd, k.syp)),
+      out.push({ id:'dec_' + k.id, icon:'star', weight:40, why:t('decDecree'), title:tx[0], text:tx[1],
+        opts:[{ label:t('choose'), sub:tx[2], chips:[`${ic('star')} ${k.pc}`].concat(money(k.usd, k.syp)),
           run:() => withEffects(tx[0], () => ACT.decree(S, k.id)) }] });
     }
   }
@@ -119,9 +119,9 @@ function decisionDeck(){
     const spare = Math.max(0, S.reserves - 300);
     const amt = Math.min(S.debt, spare >= 1000 ? 1000 : 250);
     if (room > 0 && amt >= 250 && spare >= amt){
-      out.push({ id:'sovBuy', icon:'\u{1F9ED}', weight:70, why:t('decSov'), title:t('repayTitle'), text:t('sovBiteLong'),
+      out.push({ id:'sovBuy', icon:'compass', weight:70, why:t('decSov'), title:t('repayTitle'), text:t('sovBiteLong'),
         opts:[{ label:fill(t('decSovPay'), [usdM(amt)]), sub:t('decSovSub'),
-          chips:[`\u{1F3E6} ${usdM(amt)}`, `${t('independence')} +${Math.min(room, amt / SOV_PER_USD).toFixed(1)}`],
+          chips:[`${ic('bank')} ${usdM(amt)}`, `${t('independence')} +${Math.min(room, amt / SOV_PER_USD).toFixed(1)}`],
           run:() => withEffects(t('repayTitle'), () => ACT.repay(S, amt)) }] });
     }
   }
@@ -137,7 +137,7 @@ function renderDeck(){
   if (!deck.length){ box.innerHTML = ''; return; }
   const d = deck[0];
   box.innerHTML = `<div class="deck" role="group" aria-label="${t('decHeading')}">
-    <button class="close" data-act="decHide" aria-label="${t('hide')}">✕</button>
+    <button class="close" data-act="decHide" aria-label="${t('hide')}">${ic('close')}</button>
     <div class="dhead"><span class="dico" aria-hidden="true">${d.icon}</span>
       <div><div class="dwhy">${esc(d.why)}</div><h3>${esc(d.title)}</h3></div></div>
     <p class="dtext">${esc(d.text)}</p>

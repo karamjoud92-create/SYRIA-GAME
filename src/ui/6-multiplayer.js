@@ -15,7 +15,7 @@ function mpWhen(e){
 }
 const mpStateTxt = () => ({ live:t('mpLive'), syncing:t('mpSyncing'), offline:t('mpOffline'), codes:t('mpNoServer') }[MP.state] || '');
 function mpCopy(text, okMsg){
-  const done = () => toast('✅ ' + (okMsg || t('mpCopied')));
+  const done = () => toast(' ' + (okMsg || t('mpCopied')));
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(done, () => mpShowText(text));
   } catch(e){}
@@ -42,22 +42,22 @@ function mpTradeLine(e){
   if (e.me || e.over || e.src === 'code' || !S || S.over) return '';
   const K = PACT_TXT[LANG], pact = mpPactWith(e);
   if (pact) return `<div class="mptrade ${pact.live ? 'live' : 'wait'}">
-    <span>${pact.live ? '\u{1F91D}' : '\u{23F3}'} ${fill(t(pact.live ? 'pactLive' : 'pactWait'), [K[pact.get], K[pact.give]])}</span>
+    <span>${ic(pact.live ? 'handshake' : 'hourglass')} ${fill(t(pact.live ? 'pactLive' : 'pactWait'), [K[pact.get], K[pact.give]])}</span>
     <button class="btn small" data-act="mpPactEnd" data-id="${esc(e.id)}">${t('pactEnd')}</button></div>`;
   const m = mpMatch(e);
   if (!m) return `<div class="mptrade none">${t('pactNone')}</div>`;
   const full = (S.pacts || []).length >= PACT_MAX;
   return `<div class="mptrade">
-    <span>\u{1F504} ${fill(t('pactCan'), [K[m.get], K[m.give]])}</span>
+    <span>${ic('cycle')} ${fill(t('pactCan'), [K[m.get], K[m.give]])}</span>
     <button class="btn small primary" data-act="mpPactOffer" data-id="${esc(e.id)}" data-give="${m.give}" data-get="${m.get}" ${full ? 'disabled' : ''}>${t('pactOffer')}</button></div>`;
 }
 function mpPanel(){
   if (!MP.open || !MP.room) return '';
   const rows = MP.roster, others = rows.filter(e => !e.me).length;
   return `<aside class="mppanel" role="region" aria-label="${t('mpOpenBoard')}">
-    <div class="head"><div class="dic" aria-hidden="true">🏆</div>
+    <div class="head"><div class="dic" aria-hidden="true">${ic('trophy')}</div>
       <div class="ht"><h2>${t('mpFriends')}</h2><div class="sub">${fill(t('mpInRoom'), [esc(MP.room)])} · <span class="dot ${MP.state}"></span>${esc(mpStateTxt())}</div></div>
-      <button class="close" data-act="mpClose" aria-label="${t('mpCloseBoard')}">✕</button></div>
+      <button class="close" data-act="mpClose" aria-label="${t('mpCloseBoard')}">${ic('close')}</button></div>
     <div class="body">
       ${MP.state === 'offline' ? `<p class="mpnote bad">${t('mpOfflineTxt')}</p>` : ''}
       ${MP.state === 'codes' ? `<p class="mpnote">${t('mpNoServerTxt')}</p>` : ''}
@@ -66,17 +66,17 @@ function mpPanel(){
       <p class="mpnote small">${t('mpRules')}</p>
     </div>
     <div class="foot">
-      <button class="btn primary small" data-act="mpInvite">🔗 ${t('mpInvite')}</button>
-      <button class="btn small" data-act="mpCode">🔑 ${t('mpMyCode')}</button>
-      <button class="btn small" data-act="mpPaste">➕ ${t('mpAddCode')}</button>
-      <button class="btn small" data-act="mpServer">⚙️ ${t('mpServerBtn')}</button>
-      <button class="btn small" data-act="mpLeave">🚪 ${t('mpLeaveBtn')}</button>
+      <button class="btn primary small" data-act="mpInvite">${ic('link')} ${t('mpInvite')}</button>
+      <button class="btn small" data-act="mpCode">${ic('key')} ${t('mpMyCode')}</button>
+      <button class="btn small" data-act="mpPaste">${ic('plus')} ${t('mpAddCode')}</button>
+      <button class="btn small" data-act="mpServer">${ic('gear')} ${t('mpServerBtn')}</button>
+      <button class="btn small" data-act="mpLeave">${ic('door')} ${t('mpLeaveBtn')}</button>
     </div></aside>`;
 }
 function mpHudBtn(){
-  if (!MP.room) return `<button class="iconbtn" data-act="mpLobby" aria-label="${t('mpTitle')}" title="${t('mpTitle')}">🏆</button>`;
+  if (!MP.room) return `<button class="iconbtn" data-act="mpLobby" aria-label="${t('mpTitle')}" title="${t('mpTitle')}">${ic('trophy')}</button>`;
   const n = MP.roster.length;
-  return `<button class="iconbtn mpchip s-${MP.state}" data-act="mpBoard" aria-label="${t('mpOpenBoard')}" title="${t('mpOpenBoard')}">🏆 <b>${MP.rank && n > 1 ? fill(t('mpRankOf'), [MP.rank, n]) : esc(MP.room)}</b></button>`;
+  return `<button class="iconbtn mpchip s-${MP.state}" data-act="mpBoard" aria-label="${t('mpOpenBoard')}" title="${t('mpOpenBoard')}">${ic('trophy')} <b>${MP.rank && n > 1 ? fill(t('mpRankOf'), [MP.rank, n]) : esc(MP.room)}</b></button>`;
 }
 // Repaint only the two things that change; the rest of the board is untouched.
 function mpPaint(){
@@ -88,17 +88,17 @@ function mpPaint(){
 // ---------- screens ----------
 function mpLobby(msg){
   const room = MP.room || MP.pendingRoom || '';
-  modal(`<div class="tut-icon" aria-hidden="true">🏆</div><h2>${t('mpTitle')}</h2><p class="lede">${t('mpSub')}</p>
+  modal(`<div class="tut-icon" aria-hidden="true">${ic('trophy')}</div><h2>${t('mpTitle')}</h2><p class="lede">${t('mpSub')}</p>
   ${msg ? `<p class="why">${esc(msg)}</p>` : ''}
   <label class="mpfield"><span>${t('mpName')}</span><input id="mpname" maxlength="18" placeholder="${t('mpNamePh')}" value="${esc(MP.name || '')}"></label>
   <label class="mpfield"><span>${t('mpRoom')}</span><input id="mproom" maxlength="10" placeholder="${t('mpRoomPh')}" value="${esc(room)}" style="text-transform:uppercase"></label>
   <div class="row" style="margin-top:12px">
     <button class="btn primary" data-act="mpGo">${t('mpGo')}</button>
-    <button class="btn" data-act="mpNew">✨ ${t('mpCreateBtn')}</button>
+    <button class="btn" data-act="mpNew">${ic('star')} ${t('mpCreateBtn')}</button>
     ${MP.room ? `<button class="btn" data-act="mpLeave">${t('mpLeaveBtn')}</button>` : `<button class="btn" data-act="mpSkip">${t('mpPlayAlone')}</button>`}
   </div>
   <p class="muted small" style="margin-top:12px">${t('mpRules')}</p>
-  <div class="row" style="margin-top:6px"><button class="btn small" data-act="mpServer">⚙️ ${MP.relay ? esc(fill(t('mpServerHost'), [mpHost(MP.relay)])) : t('mpServerNone')}</button></div>`);
+  <div class="row" style="margin-top:6px"><button class="btn small" data-act="mpServer">${ic('gear')} ${MP.relay ? esc(fill(t('mpServerHost'), [mpHost(MP.relay)])) : t('mpServerNone')}</button></div>`);
   const f = $('#mpname'); if (f) f.focus();
 }
 // Leaving the lobby for the server settings must not throw away what the player already typed.
@@ -108,7 +108,7 @@ function mpStash(){
   if (r) MP.pendingRoom = mpRoomOk(r.value);
 }
 function mpServerModal(msg){
-  modal(`<h2>⚙️ ${t('mpServerTitle')}</h2><p class="lede">${t('mpServerTxt')}</p>
+  modal(`<h2>${ic('gear')} ${t('mpServerTitle')}</h2><p class="lede">${t('mpServerTxt')}</p>
   ${msg ? `<p class="why">${esc(msg)}</p>` : ''}
   <label class="mpfield"><span>${t('mpServerTitle')}</span><input id="mprelay" placeholder="${t('mpServerPh')}" value="${esc(MP.relay || '')}" dir="ltr"></label>
   <div class="row" style="margin-top:12px"><button class="btn primary" data-act="mpRelaySave">${t('mpSave')}</button><button class="btn" data-act="mpBack">${t('back')}</button></div>`);
@@ -118,12 +118,12 @@ function mpCodeModal(){
   const code = mpCode();
   if (!code) return modal(`<p class="lede">${t('mpStartFirst')}</p><button class="btn primary" data-act="close">${t('gotIt')}</button>`);
   mpCopy(code);
-  modal(`<h2>🔑 ${t('mpMyCode')}</h2><p>${t('mpMyCodeTxt')}</p><textarea class="code" readonly onclick="this.select()">${esc(code)}</textarea>
+  modal(`<h2>${ic('key')} ${t('mpMyCode')}</h2><p>${t('mpMyCodeTxt')}</p><textarea class="code" readonly onclick="this.select()">${esc(code)}</textarea>
   <div class="row"><button class="btn primary" data-act="mpBack">${t('back')}</button></div>`);
   const ta = $('#modal textarea'); if (ta){ ta.focus(); ta.select(); }
 }
 function mpPasteModal(msg){
-  modal(`<h2>➕ ${t('mpAddCode')}</h2>${msg ? `<p class="why">${esc(msg)}</p>` : ''}
+  modal(`<h2>${ic('plus')} ${t('mpAddCode')}</h2>${msg ? `<p class="why">${esc(msg)}</p>` : ''}
   <textarea class="code" id="mpcodein" placeholder="${t('pasteCode')}"></textarea>
   <div class="row"><button class="btn primary" data-act="mpAdd">${t('mpAddBtn')}</button><button class="btn" data-act="mpBack">${t('back')}</button></div>`);
   const f = $('#mpcodein'); if (f) f.focus();
@@ -163,7 +163,7 @@ menu = function(){
   const box = $('#modal .modal'); if (!box) return;
   const d = document.createElement('div');
   d.className = 'row'; d.style.marginTop = '10px';
-  d.innerHTML = `<button class="btn primary" data-act="${MP.room ? 'mpBoard' : 'mpLobby'}">🏆 ${MP.room ? t('mpOpenBoard') : t('mpTitle')}</button>`;
+  d.innerHTML = `<button class="btn primary" data-act="${MP.room ? 'mpBoard' : 'mpLobby'}">${ic('trophy')} ${MP.room ? t('mpOpenBoard') : t('mpTitle')}</button>`;
   box.appendChild(d);
 };
 const mpBaseStart = startScreen;
@@ -171,8 +171,8 @@ startScreen = function(){
   mpBaseStart();
   const box = $('#modal .modal'); if (!box) return;
   const d = document.createElement('div');
-  d.innerHTML = `<button class="opt" data-act="mpLobby"><b>🏆 ${t('mpTitle')}</b><span class="t">${t('mpSub')}</span></button>`;
-  const anchor = box.querySelector('[data-act="loadcode"]');
+  d.innerHTML = `<button class="opt" data-act="mpLobby"><b>${ic('trophy')} ${t('mpTitle')}</b><span class="t">${t('mpSub')}</span></button>`;
+  const anchor = box.querySelector('[data-act="missions"]') || box.querySelector('[data-act="newgame"]');
   if (anchor) anchor.after(d.firstElementChild); else box.appendChild(d.firstElementChild);
 };
 
@@ -211,7 +211,7 @@ document.addEventListener('click', ev => {
       const e = mpReadCode(val('#mpcodein'));
       if (!e) return mpPasteModal(t('mpBadCode'));
       mpSaveCode(e); mpMerge([], Date.now()); closeModal();
-      toast('🏆 ' + fill(t('mpAdded'), [e.name])); MP.open = true;
+      toast(' ' + fill(t('mpAdded'), [e.name])); MP.open = true;
       return render(true);
     }
     case 'mpServer': mpStash(); return mpServerModal();

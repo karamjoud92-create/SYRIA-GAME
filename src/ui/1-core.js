@@ -91,7 +91,7 @@ function metric(key, val, now, next, goodUp, dtxt, sub){
   const dcls = Math.abs(dl) < 1e-6 ? 'muted' : (dl > 0) === goodUp ? 'good' : 'bad';
   const arrow = Math.abs(dl) < 1e-6 ? '\u2192' : dl > 0 ? '\u2191' : '\u2193';
   return `<button class="metric h-${health(key, now)}" data-act="gloss" data-k="${key}">
-    <div class="k"><span class="ico" aria-hidden="true">${g.icon}</span><span class="lf">${G.name}</span><span class="ls">${G.short}</span></div>
+    <div class="k"><span class="ico" aria-hidden="true">${ic(g.icon)}</span><span class="lf">${G.name}</span><span class="ls">${G.short}</span></div>
     <div class="v">${val}</div><div class="d ${sub ? 'muted' : dcls}">${sub ? esc(sub) : `${arrow} ${dtxt} ${t('nextSeason')}`}</div></button>`;
 }
 function renderRibbon(P){
@@ -99,9 +99,9 @@ function renderRibbon(P){
   const st = S.flags.stats;
   const mission = S.mission ? `<div class="mbar">${MISSION_TXT[S.mission.id].icon} <b>${esc(L2(MISSION_TXT[S.mission.id])[0])}</b> · ${fill(t('seasonsLeft'), [Math.max(0, S.mission.end - S.turn)])}</div>` : '';
   return `<div class="ribbon" role="region">
-    <div class="date"><div class="yr">${yearOf(tn)}</div><div class="season">${seasonOf(S.turn) === 'H1' ? '🌾 ' + t('harvest') : '❄️ ' + t('winter')} · ${tn}/${S.mission ? S.mission.end - 1 : MAX_TURNS}</div>
+    <div class="date"><div class="yr">${yearOf(tn)}</div><div class="season">${seasonOf(S.turn) === 'H1' ? ' ' + t('harvest') : ' ' + t('winter')} · ${tn}/${S.mission ? S.mission.end - 1 : MAX_TURNS}</div>
       <div class="progress"><i style="width:${S.mission ? (S.turn - S.mission.start) / (S.mission.end - S.mission.start) * 100 : (tn - 1) / MAX_TURNS * 100}%"></i></div>
-      <button class="langbtn" data-act="lang">🌐 ${t('language')}</button></div>
+      <button class="langbtn" data-act="lang"> ${t('language')}</button></div>
     ${metric('cash', bn(S.treasury), S.treasury, P.treasury, true, sign(P.treasury - S.treasury, 1))}
     ${metric('usd', usdM(S.reserves), S.reserves, P.reserves, true, (P.reserves >= S.reserves ? '+' : MINUS) + usdM(Math.abs(P.reserves - S.reserves)))}
     ${metric('fx', st ? S.parallel.toFixed(0) : fog(S.parallel, 5), S.parallel, P.parallel, false, sign((P.parallel / S.parallel - 1) * 100, 0) + '%')}
@@ -135,9 +135,9 @@ function advisors(P){
 }
 function renderAdvisors(P){
   const a = advisors(P);
-  const card = (who, icon, x) => `<div class="advisor lvl-${x.lvl}"><div class="av" aria-hidden="true">${icon}</div><div class="atext"><div class="who">${who}</div>${esc(x.text)} <span class="muted">${esc(x.act)}</span></div>
+  const card = (who, icon, x) => `<div class="advisor lvl-${x.lvl}"><div class="av" aria-hidden="true">${ic(icon)}</div><div class="atext"><div class="who">${who}</div>${esc(x.text)} <span class="muted">${esc(x.act)}</span></div>
     ${x.go || x.sel ? `<button class="btn small" data-act="advgo" data-go="${x.go || ''}" data-sel="${x.sel || ''}">${t('showMe')}</button>` : ''}</div>`;
-  return `<div class="advisors">${card(t('economist'), '🧑‍💼', a.econ)}${card(t('securityChief'), '🎖️', a.sec)}</div>`;
+  return `<div class="advisors">${card(t('economist'), '', a.econ)}${card(t('securityChief'), '', a.sec)}</div>`;
 }
 
 // ---------- left panels ----------
@@ -156,7 +156,7 @@ function renderDecrees(){
     let why = '';
     if (!done && !on){ if (x.pc > pcl) why = fill(t('needsInfluence'), [x.pc]); else if (x.usd > usl) why = fill(t('needsUsd'), [x.usd]); else if (x.req && !x.req(S)) why = AR() ? 'يحتاج ثقة 40 أو أكثر' : 'Needs trust of 40+'; }
     return `<div class="card${on ? ' on' : ''}${done ? ' done' : ''}"><h4>${esc(tx[0])}</h4><p class="kid">${esc(tx[1])}</p><div class="fx">${esc(tx[2])}</div>
-      <div class="row spread"><div class="row"><span class="chip cost">⭐ ${x.pc}</span>${x.syp ? `<span class="chip cost">💵 ${bn(x.syp)}</span>` : ''}${x.usd ? `<span class="chip cost">🏦 ${usdM(x.usd)}</span>` : ''}</div>
+      <div class="row spread"><div class="row"><span class="chip cost"> ${x.pc}</span>${x.syp ? `<span class="chip cost"> ${bn(x.syp)}</span>` : ''}${x.usd ? `<span class="chip cost"> ${usdM(x.usd)}</span>` : ''}</div>
       ${done ? `<span class="chip up">${t('done')}</span>` : `<button class="btn${on ? ' on' : ''}" data-act="decree" data-id="${x.id}" ${why ? 'disabled' : ''}>${on ? t('chosen') : t('choose')}</button>`}</div>
       ${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   }).join('');
@@ -164,18 +164,18 @@ function renderDecrees(){
 function renderMoney(){
   const pcl = pcLeft(), rw = realWage(S);
   let h = `<p class="intro">${t('moneyIntro')}</p>`;
-  h += `<div class="group"><h3>👷 ${t('raiseTitle')}</h3><p>${fill(t('raiseText'), [rw.toFixed(0), (S.expWage || 25).toFixed(0)])}</p>
+  h += `<div class="group"><h3> ${t('raiseTitle')}</h3><p>${fill(t('raiseText'), [rw.toFixed(0), (S.expWage || 25).toFixed(0)])}</p>
     <div class="seg">${[0,10,25].map(v => `<button data-act="wage" data-v="${v}" aria-pressed="${D.wageRaise === v}">${v ? '+' + v + '%' : t('noRaise')}</button>`).join('')}</div></div>`;
-  h += `<div class="group"><h3>⭐ ${t('buyTitle')}</h3><p>${t('buyText')}</p>
-    <div class="card${D.grantPop ? ' on' : ''}"><h4>${t('giftTitle')}</h4><div class="row spread"><div class="row"><span class="chip cost">💵 ${bn(7)}</span><span class="chip up">⭐ +8</span></div><button class="btn${D.grantPop ? ' on' : ''}" data-act="grantPop">${D.grantPop ? t('chosen') : t('choose')}</button></div></div>
-    <div class="card${D.relief ? ' on' : ''}"><h4>${t('reliefTitle')}</h4><div class="row spread"><div class="row"><span class="chip cost">🏦 ${usdM(40)}</span><span class="chip up">⭐ +6</span><span class="chip up">${fill(CHIP[LANG].trust, ['+2'])}</span></div><button class="btn${D.relief ? ' on' : ''}" data-act="relief" ${!D.relief && usdLeft() < 40 ? 'disabled' : ''}>${D.relief ? t('chosen') : t('choose')}</button></div></div></div>`;
-  h += `<div class="group"><h3>🌍 ${t('abroadTitle')}</h3><p>${t('abroadText')}${S.grant > 0 ? ' ' + fill(t('grantOnHand'), [usdM(S.grant)]) : ''}</p>` + FACILITIES.map(f => {
+  h += `<div class="group"><h3> ${t('buyTitle')}</h3><p>${t('buyText')}</p>
+    <div class="card${D.grantPop ? ' on' : ''}"><h4>${t('giftTitle')}</h4><div class="row spread"><div class="row"><span class="chip cost"> ${bn(7)}</span><span class="chip up"> +8</span></div><button class="btn${D.grantPop ? ' on' : ''}" data-act="grantPop">${D.grantPop ? t('chosen') : t('choose')}</button></div></div>
+    <div class="card${D.relief ? ' on' : ''}"><h4>${t('reliefTitle')}</h4><div class="row spread"><div class="row"><span class="chip cost"> ${usdM(40)}</span><span class="chip up"> +6</span><span class="chip up">${fill(CHIP[LANG].trust, ['+2'])}</span></div><button class="btn${D.relief ? ' on' : ''}" data-act="relief" ${!D.relief && usdLeft() < 40 ? 'disabled' : ''}>${D.relief ? t('chosen') : t('choose')}</button></div></div></div>`;
+  h += `<div class="group"><h3> ${t('abroadTitle')}</h3><p>${t('abroadText')}${S.grant > 0 ? ' ' + fill(t('grantOnHand'), [usdM(S.grant)]) : ''}</p>` + FACILITIES.map(f => {
     const tx = L2(FAC_TXT[f.id]), st = S.facilities[f.id], on = D.facilities.includes(f.id);
     let why = ''; if (!st && !on){ if (f.pc > pcl) why = fill(t('needsInfluence'), [f.pc]); else if (f.signReq && !f.signReq(S)) why = f.id === 'gulf' ? (AR() ? 'يحتاج فساداً أقل من 50' : 'Needs corruption below 50') : (AR() ? 'يحتاج ثقة 40 أو أكثر' : 'Needs trust of 40+'); }
     const total = f.tranches.reduce((a, x) => a + x[1], 0);
     let status = ''; if (st) status = st.frozen ? `<span class="chip down">${t('frozen')}</span>` : st.paid >= f.tranches.length ? `<span class="chip up">${t('allPaid')}</span>` : `<span class="chip">${fill(t('paidOf'), [st.paid, f.tranches.length])}</span>`;
     return `<div class="card${on ? ' on' : ''}${st ? ' done' : ''}"><h4>${esc(tx[0])}: ${usdM(total)}</h4><p class="kid">${esc(tx[1])}</p>
-      <div class="row spread"><div class="row">${f.pc ? `<span class="chip cost">⭐ ${f.pc}</span>` : ''}<span class="chip down">${t('independence')} ${MINUS}${f.sov}</span>${f.debt ? `<span class="chip down">+${usdM(f.debt)} ${t('debt')}</span>` : ''}</div>
+      <div class="row spread"><div class="row">${f.pc ? `<span class="chip cost"> ${f.pc}</span>` : ''}<span class="chip down">${t('independence')} ${MINUS}${f.sov}</span>${f.debt ? `<span class="chip down">+${usdM(f.debt)} ${t('debt')}</span>` : ''}</div>
       ${st ? status : `<button class="btn${on ? ' on' : ''}" data-act="fac" data-id="${f.id}" ${why ? 'disabled' : ''}>${on ? t('chosen') : t('sign')}</button>`}</div>${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`;
   }).join('') + '</div>';
   return h;
